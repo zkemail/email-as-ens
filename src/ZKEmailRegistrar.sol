@@ -38,7 +38,7 @@ contract ZKEmailRegistrar {
         if (result != ZKEmailUtils.EmailProofError.NoError) {
             revert InvalidProof(result);
         } else if (
-            keccak256(abi.encodePacked("TODO:IMPLEMENT POSEIDON HASH", authMsg.proof.accountSalt))
+            keccak256(abi.encodePacked("TODO:IMPLEMENT POSEIDON HASH", name))
                 != authMsg.proof.accountSalt
         ) {
             revert InvalidAccountSalt();
