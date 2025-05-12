@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
-import {ZKEmailRegistrar} from "../src/ZKEmailRegistrar.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {EmailAuthMsgFixtures, EmailAuthMsg} from "@zk-email/email-tx-builder/test/fixtures/EmailAuthMsgFixtures.sol";
 import {Groth16Verifier} from "@zk-email/email-tx-builder/test/fixtures/Groth16Verifier.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {IVerifier} from "@zk-email/email-tx-builder/src/interfaces/IVerifier.sol";
 import {Verifier} from "@zk-email/email-tx-builder/src/utils/Verifier.sol";
+
+import {Test, console} from "forge-std/Test.sol";
+
+import {ZKEmailRegistrar} from "../src/ZKEmailRegistrar.sol";
 
 contract MockDKIMRegistry {
     function isDKIMPublicKeyHashValid(string memory, bytes32) external pure returns (bool) {
@@ -18,7 +21,7 @@ contract ZKEmailRegistrarTest is Test {
     ZKEmailRegistrar public zkEmailRegistrar;
 
     function setUp() public {
-        zkEmailRegistrar = new ZKEmailRegistrar(_deployVerifier(address(this)), address(new MockDKIMRegistry()));
+        zkEmailRegistrar = new ZKEmailRegistrar(_deployVerifier(address(this)), new MockDKIMRegistry());
     }
 
     function test_proveAndClaim_shouldClaimWithValidProof() public {
@@ -27,7 +30,7 @@ contract ZKEmailRegistrarTest is Test {
 
     // ==== Helpers ====
 
-    function _deployVerifier(address owner) internal returns (address) {
+    function _deployVerifier(address owner) internal returns (IVerifier) {
         address verifierProxyAddress;
         Verifier verifierImpl = new Verifier();
         Groth16Verifier groth16Verifier = new Groth16Verifier();
@@ -36,6 +39,6 @@ contract ZKEmailRegistrarTest is Test {
                 address(verifierImpl), abi.encodeCall(verifierImpl.initialize, (owner, address(groth16Verifier)))
             )
         );
-        return verifierProxyAddress;
+        return IVerifier(verifierProxyAddress);
     }
 }

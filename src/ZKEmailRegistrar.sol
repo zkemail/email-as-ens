@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ZKEmailUtils} from "@openzeppelin/community-contracts/utils/cryptography/ZKEmailUtils.sol";
 import {CommandUtils} from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import {EmailAuthMsg} from "@zk-email/email-tx-builder/src/interfaces/IEmailTypes.sol";
 import {IDKIMRegistry} from "@zk-email/contracts/DKIMRegistry.sol";
 import {IVerifier} from "@zk-email/email-tx-builder/src/interfaces/IVerifier.sol";
+import {ZKEmailUtils} from "@openzeppelin/community-contracts/utils/cryptography/ZKEmailUtils.sol";
 
 contract ZKEmailRegistrar {
     using ZKEmailUtils for EmailAuthMsg;
@@ -16,9 +16,9 @@ contract ZKEmailRegistrar {
     error InvalidProof(ZKEmailUtils.EmailProofError error);
     error InvalidAccountSalt();
 
-    constructor(address _verifier, address _dkimregistry) {
-        verifier = IVerifier(_verifier);
-        dkimregistry = IDKIMRegistry(_dkimregistry);
+    constructor(IVerifier _verifier, IDKIMRegistry _dkimregistry) {
+        verifier = _verifier;
+        dkimregistry = _dkimregistry;
     }
 
     /// @notice Allows the owner of an email address to claim the corresponding ENS name for any ethereum address.
