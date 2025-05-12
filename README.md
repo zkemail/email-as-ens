@@ -27,6 +27,13 @@ cd email-as-ens
 forge install
 ```
 
+2.5 Install npm dependencies of `lib/openzeppelin-community-contracts`
+```
+cd lib/openzeppelin-community-contracts
+npm install
+cd ../..
+```
+
 3. Build the project:
 ```shell
 forge build
