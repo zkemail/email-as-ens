@@ -5,13 +5,14 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {EmailAuthMsgFixtures, EmailAuthMsg} from "@zk-email/email-tx-builder/test/fixtures/EmailAuthMsgFixtures.sol";
 import {Groth16Verifier} from "@zk-email/email-tx-builder/test/fixtures/Groth16Verifier.sol";
 import {IVerifier} from "@zk-email/email-tx-builder/src/interfaces/IVerifier.sol";
+import {IDKIMRegistry} from "@zk-email/contracts/DKIMRegistry.sol";
 import {Verifier} from "@zk-email/email-tx-builder/src/utils/Verifier.sol";
 
 import {Test, console} from "forge-std/Test.sol";
 
 import {ZKEmailRegistrar} from "../src/ZKEmailRegistrar.sol";
 
-contract MockDKIMRegistry {
+contract MockDKIMRegistry is IDKIMRegistry {
     function isDKIMPublicKeyHashValid(string memory, bytes32) external pure returns (bool) {
         return true;
     }
