@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {EmailAuthMsgFixtures, EmailAuthMsg} from "@zk-email/email-tx-builder/test/fixtures/EmailAuthMsgFixtures.sol";
