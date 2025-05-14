@@ -1,66 +1,73 @@
-## Foundry
+# Email-as-ENS Registrar
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A decentralized registrar that allows users to claim ENS names based on their email ownership using zk-email proofs.
 
-Foundry consists of:
+## Overview
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+This project enables users to claim ENS names corresponding to their email addresses. For example, if you own "myemail@example.com", you can claim "myemail@example.com.email.eth" and set any Ethereum address as the owner.
 
-## Documentation
+The system uses zk-email proofs to verify email ownership, ensuring that only the legitimate owner of an email address can claim the corresponding ENS name.
 
-https://book.getfoundry.sh/
+## Prerequisites
 
-## Usage
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- Node.js (for testing)
+- Git
 
-### Build
+## Setup
 
+1. Clone the repository:
 ```shell
-$ forge build
+git clone https://github.com/yourusername/email-as-ens.git
+cd email-as-ens
 ```
 
-### Test
-
+2. Install dependencies:
 ```shell
-$ forge test
+forge install
 ```
 
-### Format
+3. Install npm dependencies of `lib/openzeppelin-community-contracts`
+```
+cd lib/openzeppelin-community-contracts
+npm install
+cd ../..
+```
+
+4. Build the project:
+```shell
+forge build
+```
+
+## Development
+
+### Testing
 
 ```shell
-$ forge fmt
+forge test
+```
+
+### Format Code
+
+```shell
+forge fmt
 ```
 
 ### Gas Snapshots
 
 ```shell
-$ forge snapshot
+forge snapshot
 ```
 
-### Anvil
+### Local Development
 
+Start a local Ethereum node:
 ```shell
-$ anvil
+anvil
 ```
 
-### Deploy
+## Project Structure
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- `src/` - Smart contract source files
+  - `ZKEmailRegistrar.sol` - Main registrar contract
+- `test/` - Tests
