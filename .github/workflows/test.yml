@@ -25,6 +25,7 @@ jobs:
         with:
           node-version: 20.x
           cache: 'npm'
+          cache-dependency-path: 'lib/openzeppelin-community-contracts/package-lock.json'
 
       - name: Install npm dependencies
         working-directory: lib/openzeppelin-community-contracts
