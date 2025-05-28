@@ -61,7 +61,7 @@ contract VerifierTest is Test {
         assertTrue(isValid);
     }
 
-    function test_isValid_returnsFalseForInvalidCommanad() public view {
+    function test_isValid_returnsFalseForInvalidCommand() public view {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         command.email = "bob@example.com";
         bool isValid = _verifier.isValid(abi.encode(command));
