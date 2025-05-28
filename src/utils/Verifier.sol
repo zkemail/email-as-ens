@@ -28,38 +28,22 @@ struct ProveAndClaimCommand {
     /// @notice The timestamp from the email header, or 0 if not supported
     /// @dev Some email providers (like Outlook) don't sign timestamps, so this field may be 0
     uint256 timestamp;
-    /// @notice Account salt for additional security in proof generation
-    /// @dev Used in the ZK proof generation process but not directly used in on-chain verification
+    /// @notice Account salt for additional privacy.
+    /// @dev Used to hide email address on-chain. Which is not relavant here.
     bytes32 accountSalt;
     /// @notice Indicates whether the verification code is embedded in the email
-    /// @dev Used in proof verification to handle different email formats and verification methods
+    /// @dev Used in proof verification
     bool isCodeEmbedded;
     /// @notice Additional data for future compatibility and flexibility
     /// @dev This field can contain DNSSEC proof data, additional verification parameters,
     ///      or any other data required by specific verifier implementations. Can be 0x0 if unused.
     bytes miscellaneousData;
     /// @notice The zero-knowledge proof that validates all fields in this struct
-    /// @dev Contains the ZK-SNARK proof that cryptographically proves email ownership and command validity
+    /// @dev Contains the proof compatible with verifier
     bytes proof;
 }
 
-/**
- * @title IGroth16Verifier
- * @notice Interface for Groth16 zero-knowledge proof verification
- * @dev This interface defines the standard Groth16 verifier contract used for ZK-SNARK verification.
- *      It follows the common pattern used in many ZK applications for proof verification.
- */
 interface IGroth16Verifier {
-    /**
-     * @notice Verifies a Groth16 zero-knowledge proof
-     * @param _pA The A component of the proof (2 field elements)
-     * @param _pB The B component of the proof (2x2 field elements)
-     * @param _pC The C component of the proof (2 field elements)
-     * @param _pubSignals The public signals array (60 field elements for this specific circuit)
-     * @return True if the proof is valid, false otherwise
-     * @dev The public signals must be properly formatted and correspond to the circuit's expected inputs.
-     *      All proof components must be valid field elements within the BN128 curve order.
-     */
     function verifyProof(
         uint256[2] calldata _pA,
         uint256[2][2] calldata _pB,
@@ -73,9 +57,8 @@ interface IGroth16Verifier {
 
 /**
  * @title ProveAndClaimCommandVerifier
- * @author ZK Email Team
  * @notice Verifies zero-knowledge proofs for email-based ENS name claiming
- * @dev This contract validates ProveAndClaimCommand structs by verifying their embedded ZK proofs.
+ * @dev This contract validates ProveAndClaimCommand structs by verifying their ZK proof.
  *      It ensures that users can cryptographically prove email ownership.
  *
  *      The verification process includes:
@@ -113,7 +96,7 @@ contract ProveAndClaimCommandVerifier {
      * @notice Verifies the validity of a ProveAndClaimCommand
      * @param data The ABI-encoded ProveAndClaimCommand struct to verify
      * @return True if the command and its proof are valid, false otherwise
-     * @dev This function performs comprehensive verification including:
+     * @dev This function performs verification:
      *      1. Decoding the command from the provided data
      *      2. Extracting and validating the ZK proof components
      *      3. Ensuring all proof elements are within the valid field range
@@ -122,8 +105,8 @@ contract ProveAndClaimCommandVerifier {
      *
      *      The function will return false if:
      *      - The proof components are not valid field elements
-     *      - The proof verification fails
-     *      - Any step in the verification process encounters an error
+     *      - The zk proof verification fails
+     *      - Any step in the verification process encounters an error (note to reviewer: how to make sure?)
      *
      */
     function isValid(bytes memory data) external view returns (bool) {
