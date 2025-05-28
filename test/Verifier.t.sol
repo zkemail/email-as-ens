@@ -10,7 +10,7 @@ import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
 contract VerifierTest is ProveAndClaimCommandVerifier {
     constructor() ProveAndClaimCommandVerifier(address(0)) { }
 
-    function buildPubSignals(ProveAndClaimCommand memory command) public view returns (uint256[60] memory) {
+    function buildPubSignals(ProveAndClaimCommand memory command) public pure returns (uint256[60] memory) {
         return _buildPubSignals(command);
     }
 }
@@ -37,7 +37,6 @@ contract FixturesTest is Test {
         //     return bytes_data.decode('ascii').rstrip('\x00')[::-1]  # reverse
         //
         // Example: field_to_ascii(2_018_721_414_038_404_820_327) returns "gmail.com"
-
         uint256[60] memory expectedPubSignals = [
             // "gmail.com" - email domain (9 parts)
             2_018_721_414_038_404_820_327,
@@ -80,8 +79,8 @@ contract FixturesTest is Test {
             // not enforced in ENS context as email is public.
             6_462_823_065_239_948_963_336_625_999_299_932_081_772_838_850_050_016_167_388_148_022_706_945_490_790,
             // Boolean, 0 or 1.
-            // 1 if private account code has been included in the sender email
-            // it provided by the relayer
+            // 1: private account code has been included in the sender email
+            // 0: it provided by the relayer
             0,
             // RSA public key modulus
             2_107_195_391_459_410_975_264_579_855_291_297_887, // part 1
@@ -112,5 +111,12 @@ contract FixturesTest is Test {
             0, // part 8
             0 // part 9
         ];
+
+        VerifierTest verifier = new VerifierTest();
+        uint256[60] memory publicSignals = verifier.buildPubSignals(command);
+
+        for (uint8 i = 0; i < 60; i++) {
+            assertEq(publicSignals[i], expectedPubSignals[i]);
+        }
     }
 }
