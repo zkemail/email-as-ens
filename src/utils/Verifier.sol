@@ -90,36 +90,13 @@ contract ProveAndClaimCommandVerifier {
     uint256 public constant Q =
         21_888_242_871_839_275_222_246_405_745_257_275_088_696_311_157_297_823_662_689_037_894_645_226_208_583;
 
-    /// @notice Number of field elements used to represent domain names
-    /// @dev Domain names are packed into 9 field elements
     uint256 public constant DOMAIN_FIELDS = 9;
-
-    /// @notice Maximum number of bytes for domain names after padding
-    /// @dev Domain names are padded to 255 bytes
     uint256 public constant DOMAIN_BYTES = 255;
-
-    /// @notice Number of field elements used to represent email addresses
-    /// @dev Email addresses are packed into 9 field elements
     uint256 public constant EMAIL_FIELDS = 9;
-
-    /// @notice Maximum number of bytes for email addresses after padding
-    /// @dev Email addresses are padded to 256 bytes
     uint256 public constant EMAIL_BYTES = 256;
-
-    /// @notice Number of field elements used to represent command strings
-    /// @dev Commands are packed into 20 field elements
     uint256 public constant COMMAND_FIELDS = 20;
-
-    /// @notice Maximum number of bytes for command strings after padding
-    /// @dev Commands are padded to 605 bytes
     uint256 public constant COMMAND_BYTES = 605;
-
-    /// @notice Number of field elements used to represent RSA public keys
-    /// @dev RSA public keys are decomposed into 17 field elements
     uint256 public constant PUBKEY_FIELDS = 17;
-
-    /// @notice The address of the Groth16 verifier contract
-    /// @dev This contract performs the actual ZK proof verification using the Groth16 protocol
     address public immutable GORTH16_VERIFIER;
 
     /**
