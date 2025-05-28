@@ -81,6 +81,8 @@ contract ProveAndClaimCommandVerifier {
 
         // verify the proof
         return IGroth16Verifier(GORTH16_VERIFIER).verifyProof(pA, pB, pC, pubSignals);
+
+        // todo: verify DKIM oracle proof
     }
 
     /**
