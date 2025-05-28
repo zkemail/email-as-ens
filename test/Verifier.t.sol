@@ -22,7 +22,7 @@ contract FixturesTest is Test {
         _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()));
     }
 
-    function test_buildPublicSignlas_correctlyBuildsSignalsFromCommand() public {
+    function test_buildPublicSignals_correctlyBuildsSignalsFromCommand() public {
         ProveAndClaimCommand memory command;
         uint256[60] memory expectedPubSignals;
         (command, expectedPubSignals) = TestFixtures.claimEnsCommand();
