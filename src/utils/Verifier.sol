@@ -2,7 +2,6 @@
 pragma solidity ^0.8.29;
 
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
-import { console } from "forge-std/console.sol";
 
 struct ProveAndClaimCommand {
     // e.g gmail.com
@@ -43,8 +42,8 @@ interface IGroth16Verifier {
 }
 
 contract ProveAndClaimCommandVerifier {
-    address public immutable GORTH16_VERIFIER;
-
+    uint256 public constant Q =
+        21_888_242_871_839_275_222_246_405_745_257_275_088_696_311_157_297_823_662_689_037_894_645_226_208_583;
     uint256 public constant DOMAIN_FIELDS = 9;
     uint256 public constant DOMAIN_BYTES = 255;
     uint256 public constant EMAIL_FIELDS = 9;
@@ -53,14 +52,13 @@ contract ProveAndClaimCommandVerifier {
     uint256 public constant COMMAND_BYTES = 605;
     uint256 public constant PUBKEY_FIELDS = 17;
 
-    uint256 public constant Q =
-        21_888_242_871_839_275_222_246_405_745_257_275_088_696_311_157_297_823_662_689_037_894_645_226_208_583;
+    address public immutable GORTH16_VERIFIER;
 
     constructor(address _groth16Verifier) {
         GORTH16_VERIFIER = _groth16Verifier;
     }
 
-    function isValid(bytes memory data) external returns (bool) {
+    function isValid(bytes memory data) external view returns (bool) {
         // decode the data into a ProveAndClaimCommand struct
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
 
@@ -76,17 +74,6 @@ contract ProveAndClaimCommandVerifier {
             )
         ) {
             return false;
-        }
-        for (uint256 i = 0; i < 2; i++) {
-            console.log(pA[i]);
-        }
-        for (uint256 i = 0; i < 2; i++) {
-            for (uint256 j = 0; j < 2; j++) {
-                console.log(pB[i][j]);
-            }
-        }
-        for (uint256 i = 0; i < 2; i++) {
-            console.log(pC[i]);
         }
 
         // build the public signals
@@ -117,13 +104,9 @@ contract ProveAndClaimCommandVerifier {
         uint256[60] memory pubSignals;
 
         uint256[] memory domainFields = _packBytes2Fields(bytes(command.domain), DOMAIN_BYTES);
-        console.log("done getting domain fields");
         uint256[] memory emailFields = _packBytes2Fields(bytes(command.email), EMAIL_BYTES);
-        console.log("done getting email fields");
         uint256[] memory commandFields = _packBytes2Fields(_getExpectedCommand(command.owner), COMMAND_BYTES);
-        console.log("done getting command fields");
         uint256[PUBKEY_FIELDS] memory pubKeyFields = abi.decode(command.miscellaneousData, (uint256[17]));
-        console.log("done getting pubkey fields");
 
         // domain_name
         for (uint256 i = 0; i < DOMAIN_FIELDS; i++) {
@@ -195,7 +178,6 @@ contract ProveAndClaimCommandVerifier {
         template[5] = CommandUtils.ETH_ADDR_MATCHER;
         bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(_owner);
-        console.log("done getting command params and template");
         return bytes(CommandUtils.computeExpectedCommand(commandParams, template, 0));
     }
 }
