@@ -3,12 +3,69 @@ pragma solidity ^0.8.29;
 
 import { ProveAndClaimCommand } from "../../src/utils/Verifier.sol";
 
+/**
+ * @title TestFixtures
+ * @notice Provides test data and fixtures for ZK Email ENS registrar testing
+ * @dev This library contains pre-computed test data including valid ProveAndClaimCommand structs
+ *      and their corresponding expected public signals for verification testing.
+ *
+ *      The test data includes:
+ *      - A complete ProveAndClaimCommand with real cryptographic proof components
+ *      - The expected 60-element public signals array for proof verification
+ *      - ASCII text representations encoded as BN128 field elements
+ *      - Valid RSA public key components for DKIM verification
+ *
+ *      This data is used to test the verifier's ability to correctly process and verify
+ *      email-based ENS claims without requiring live email generation during testing.
+ */
 library TestFixtures {
+    /**
+     * @notice Provides a complete test case for ENS claim verification
+     * @return command A fully populated ProveAndClaimCommand struct with test data
+     * @return expectedPubSignals The expected 60-element public signals array for verification
+     * @dev This function returns test data representing a claim for "thezdev3[at]gmail.com" to be
+     *      mapped to ENS name ownership by address 0xafBD210c60dD651892a61804A989eEF7bD63CBA0.
+     *
+     *      The returned data includes:
+     *      - Domain: "gmail.com"
+     *      - Email: "thezdev3[at]gmail.com"
+     *      - Owner: 0xafBD210c60dD651892a61804A989eEF7bD63CBA0
+     *      - Valid ZK proof components (pA, pB, pC) for Groth16 verification
+     *      - DKIM signer hash for Gmail's public key
+     *      - Nullifier to prevent replay attacks
+     *      - RSA public key components encoded in miscellaneousData
+     *
+     *      The expectedPubSignals array contains field elements representing:
+     *      1. Domain name "gmail.com" (packed into 9 fields)
+     *      2. DKIM signer hash (1 field)
+     *      3. Email nullifier (1 field)
+     *      4. Timestamp (1 field, set to 0)
+     *      5. Command text "Claim ENS name for address 0x..." (packed into 20 fields)
+     *      6. Account salt (1 field)
+     *      7. Code embedded flag (1 field, set to 0)
+     *      8. RSA public key modulus (17 fields)
+     *      9. Email address "thezdev3[at]gmail.com" (packed into 9 fields)
+     *
+     *      ASCII text conversion note:
+     *      Field elements represent ASCII text in reversed byte order. To verify conversion:
+     *      ```python
+     *      def field_to_ascii(field_value):
+     *          hex_str = hex(field_value)[2:]
+     *          if len(hex_str) % 2:
+     *              hex_str = '0' + hex_str
+     *          bytes_data = bytes.fromhex(hex_str)
+     *          return bytes_data.decode('ascii').rstrip('\x00')[::-1]  # reverse
+     *      ```
+     *
+     *      Example: field_to_ascii(2_018_721_414_038_404_820_327) returns "gmail.com"
+     */
     function claimEnsCommand()
         internal
         pure
         returns (ProveAndClaimCommand memory, uint256[60] memory expectedPubSignals)
     {
+        // RSA public key modulus decomposed into 17 field elements for ZK circuit compatibility
+        // This represents Gmail's DKIM public key used for signature verification
         uint256[17] memory pubkey = [
             uint256(2_107_195_391_459_410_975_264_579_855_291_297_887),
             uint256(2_562_632_063_603_354_817_278_035_230_349_645_235),
@@ -28,10 +85,14 @@ library TestFixtures {
             uint256(518_946_826_903_468_667_178_458_656_376_730_744),
             uint256(3_222_036_726_675_473_160_989_497_427_257_757)
         ];
+
+        // Groth16 proof component A (2 field elements)
         uint256[2] memory pA = [
             0x03e1490fc469798ca99a36702a322ccc8227cc3595058d0aac83aea22fbb2ccf,
             0x2551cd0add70fe3900b05e2dd03b7ba5102ddb63e1b4003ec839a537c6453cfc
         ];
+
+        // Groth16 proof component B (2x2 field elements)
         uint256[2][2] memory pB = [
             [
                 0x25c35e8d24d948a808a1ea128831cd54ce4a3532a40ab136dc81bbf0b2635c24,
@@ -42,25 +103,29 @@ library TestFixtures {
                 0x2dc6e057e138dd1b7c10c1be1f99261b826cd4fcf081ae5a90885aab3358dca4
             ]
         ];
+
+        // Groth16 proof component C (2 field elements)
         uint256[2] memory pC = [
             0x2ef0d8f5b88cdc952bcf26adeaa6a30176584496df21bd21fbc997432172c9e7,
             0x24b4201c52b7eec75377b727ac0fe51049d534bac7918175096596fa351862c1
         ];
 
+        // Complete ProveAndClaimCommand struct with test data for "thezdev3@gmail.com"
         ProveAndClaimCommand memory command = ProveAndClaimCommand({
             domain: "gmail.com",
             email: "thezdev3@gmail.com",
             owner: 0xafBD210c60dD651892a61804A989eEF7bD63CBA0,
             dkimSignerHash: hex"0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788",
             nullifier: hex"0A11F2664AE4F7E3A9C3BA43394B01347FD5B76FC0A7FDB09D91324DA1F6ADA4",
-            timestamp: 0,
+            timestamp: 0, // Gmail doesn't sign timestamps
             accountSalt: hex"0E49D406A4D84DA7DB65C161EB11D06E8C52F1C0EDD91BC557E4F23FF01D7F66",
-            isCodeEmbedded: false,
-            miscellaneousData: abi.encode(pubkey),
-            proof: abi.encode(pA, pB, pC)
-        });
+            isCodeEmbedded: false, // Code provided by relayer, not embedded in email
+            miscellaneousData: abi.encode(pubkey), // RSA public key components
+            proof: abi.encode(pA, pB, pC) // Groth16 proof components
+         });
 
-        // Field elements below represent ASCII text (reversed) and represented as bn128 filed elements.
+        // Expected public signals array (60 elements) for proof verification
+        // Field elements below represent ASCII text (reversed) encoded as BN128 field elements.
         // ASCII text is encoded as big-endian integers and then reversed.
         //
         // To verify ASCII conversion in Python:
@@ -74,42 +139,44 @@ library TestFixtures {
         // Example: field_to_ascii(2_018_721_414_038_404_820_327) returns "gmail.com"
         expectedPubSignals = [
             // "gmail.com" - email domain (9 parts)
-            2_018_721_414_038_404_820_327,
-            0, // part 2
-            0, // part 3
-            0, // part 4
-            0, // part 5
-            0, // part 6
-            0, // part 7
-            0, // part 8
-            0, // part 9
+            2_018_721_414_038_404_820_327, // Contains "gmail.com"
+            0, // part 2 (padding)
+            0, // part 3 (padding)
+            0, // part 4 (padding)
+            0, // part 5 (padding)
+            0, // part 6 (padding)
+            0, // part 7 (padding)
+            0, // part 8 (padding)
+            0, // part 9 (padding)
             // dkim signer Poseidon hash
             6_632_353_713_085_157_925_504_008_443_078_919_716_322_386_156_160_602_218_536_961_028_046_468_237_192,
-            // nullifier
+            // nullifier - prevents replay attacks
             4_554_837_866_351_681_469_140_157_310_807_394_956_517_436_905_901_938_745_944_947_421_127_000_894_884,
-            // timestamp - not enabled in circuits
+            // timestamp - not enabled in circuits for Gmail
             0,
             // "Claim ENS name for address 0xafBD210c60dD651892a61804A989eEF7bD63CBA0" - command text (20 parts)
-            180_891_110_264_973_503_160_226_225_538_030_206_223_858_091_522_603_795_023_666_265_748_100_181_059,
-            173_532_502_901_810_909_445_165_194_544_006_900_992_761_359_126_983_071_590_425_318_149_531_518_018,
+            180_891_110_264_973_503_160_226_225_538_030_206_223_858_091_522_603_795_023_666_265_748_100_181_059, // part
+                // 1
+            173_532_502_901_810_909_445_165_194_544_006_900_992_761_359_126_983_071_590_425_318_149_531_518_018, // part
+                // 2
             13_582_551_733_188_164, // part 3
-            0, // part 4
-            0, // part 5
-            0, // part 6
-            0, // part 7
-            0, // part 8
-            0, // part 9
-            0, // part 10
-            0, // part 11
-            0, // part 12
-            0, // part 13
-            0, // part 14
-            0, // part 15
-            0, // part 16
-            0, // part 17
-            0, // part 18
-            0, // part 19
-            0, // part 20
+            0, // part 4 (padding)
+            0, // part 5 (padding)
+            0, // part 6 (padding)
+            0, // part 7 (padding)
+            0, // part 8 (padding)
+            0, // part 9 (padding)
+            0, // part 10 (padding)
+            0, // part 11 (padding)
+            0, // part 12 (padding)
+            0, // part 13 (padding)
+            0, // part 14 (padding)
+            0, // part 15 (padding)
+            0, // part 16 (padding)
+            0, // part 17 (padding)
+            0, // part 18 (padding)
+            0, // part 19 (padding)
+            0, // part 20 (padding)
             // account salt. Poseidon(email, accountCode a.k.a the private salt).
             // not enforced in ENS context as email is public.
             6_462_823_065_239_948_963_336_625_999_299_932_081_772_838_850_050_016_167_388_148_022_706_945_490_790,
@@ -117,7 +184,7 @@ library TestFixtures {
             // 1: private account code has been included in the sender email
             // 0: it provided by the relayer
             0,
-            // RSA public key modulus
+            // RSA public key modulus (17 parts)
             2_107_195_391_459_410_975_264_579_855_291_297_887, // part 1
             2_562_632_063_603_354_817_278_035_230_349_645_235, // part 2
             1_868_388_447_387_859_563_289_339_873_373_526_818, // part 3
@@ -136,15 +203,16 @@ library TestFixtures {
             518_946_826_903_468_667_178_458_656_376_730_744, // part 16
             3_222_036_726_675_473_160_989_497_427_257_757, // part 17
             // "thezdev3@gmail.com" - sender email address (9 parts)
+            // Contains "thezdev3@gmail.com"
             9_533_142_343_906_178_599_764_761_233_821_773_221_685_364,
-            0, // part 2
-            0, // part 3
-            0, // part 4
-            0, // part 5
-            0, // part 6
-            0, // part 7
-            0, // part 8
-            0 // part 9
+            0, // part 2 (padding)
+            0, // part 3 (padding)
+            0, // part 4 (padding)
+            0, // part 5 (padding)
+            0, // part 6 (padding)
+            0, // part 7 (padding)
+            0, // part 8 (padding)
+            0 // part 9 (padding)
         ];
 
         return (command, expectedPubSignals);

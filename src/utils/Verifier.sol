@@ -3,33 +3,63 @@ pragma solidity ^0.8.29;
 
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 
+/**
+ * @title ProveAndClaimCommand
+ * @notice A struct representing a zero-knowledge proof command for claiming ENS names via email verification
+ * @dev This struct contains all the necessary data for proving email ownership and claiming corresponding ENS names.
+ *      It includes the email details, cryptographic proofs, and metadata required for verification.
+ */
 struct ProveAndClaimCommand {
-    // e.g gmail.com
+    /// @notice The domain part of the email address (e.g., "gmail.com")
+    /// @dev Used to identify the email provider and corresponding DKIM public key for verification
     string domain;
-    // e.g email@gmail.com
+    /// @notice The complete email address (e.g., "user@gmail.com")
+    /// @dev This is the email address being claimed, which will correspond to the ENS subdomain
     string email;
-    // on-chain owner of email@gmail.com.zk.eth
+    /// @notice The Ethereum address that will own the claimed ENS name
+    /// @dev This address becomes the owner of the ENS name derived from the email address
     address owner;
-    // hash of RSA pubkey
+    /// @notice Hash of the RSA public key used for DKIM signature verification
+    /// @dev This hash uniquely identifies the DKIM public key and ensures the email's authenticity
     bytes32 dkimSignerHash;
-    // used to prevent double use of the command
+    /// @notice A unique identifier used to prevent replay attacks
+    /// @dev This nullifier ensures that each email can only be used once for claiming an ENS name
     bytes32 nullifier;
-    // signed timestamp in email header. 0 if not supported (e.g outlook.com dosn't sign timestamp)
+    /// @notice The timestamp from the email header, or 0 if not supported
+    /// @dev Some email providers (like Outlook) don't sign timestamps, so this field may be 0
     uint256 timestamp;
-    // ignored here but needed for zk proof verification
+    /// @notice Account salt for additional security in proof generation
+    /// @dev Used in the ZK proof generation process but not directly used in on-chain verification
     bytes32 accountSalt;
-    // same
+    /// @notice Indicates whether the verification code is embedded in the email
+    /// @dev Used in proof verification to handle different email formats and verification methods
     bool isCodeEmbedded;
-    // Miscellaneous data field for future compatibility and flexibility.
-    // This field can hold any additional data that the verifier implementation might need to parse.
-    // For example, it could contain DNSSEC proof data for DNSSEC oracle verification.
-    // Alternatively, it could be set to 0x0 if no additional data is required.
+    /// @notice Additional data for future compatibility and flexibility
+    /// @dev This field can contain DNSSEC proof data, additional verification parameters,
+    ///      or any other data required by specific verifier implementations. Can be 0x0 if unused.
     bytes miscellaneousData;
-    // zkemail proof of validity of the fields of this struct
+    /// @notice The zero-knowledge proof that validates all fields in this struct
+    /// @dev Contains the ZK-SNARK proof that cryptographically proves email ownership and command validity
     bytes proof;
 }
 
+/**
+ * @title IGroth16Verifier
+ * @notice Interface for Groth16 zero-knowledge proof verification
+ * @dev This interface defines the standard Groth16 verifier contract used for ZK-SNARK verification.
+ *      It follows the common pattern used in many ZK applications for proof verification.
+ */
 interface IGroth16Verifier {
+    /**
+     * @notice Verifies a Groth16 zero-knowledge proof
+     * @param _pA The A component of the proof (2 field elements)
+     * @param _pB The B component of the proof (2x2 field elements)
+     * @param _pC The C component of the proof (2 field elements)
+     * @param _pubSignals The public signals array (60 field elements for this specific circuit)
+     * @return True if the proof is valid, false otherwise
+     * @dev The public signals must be properly formatted and correspond to the circuit's expected inputs.
+     *      All proof components must be valid field elements within the BN128 curve order.
+     */
     function verifyProof(
         uint256[2] calldata _pA,
         uint256[2][2] calldata _pB,
@@ -41,23 +71,84 @@ interface IGroth16Verifier {
         returns (bool);
 }
 
+/**
+ * @title ProveAndClaimCommandVerifier
+ * @author ZK Email Team
+ * @notice Verifies zero-knowledge proofs for email-based ENS name claiming
+ * @dev This contract validates ProveAndClaimCommand structs by verifying their embedded ZK proofs.
+ *      It ensures that users can cryptographically prove email ownership.
+ *
+ *      The verification process includes:
+ *      1. Decoding the command and extracting the ZK proof
+ *      2. Building public signals from the command data
+ *      3. Verifying the proof against the expected circuit constraints
+ *      4. TODO: verifying DKIM oracle proofs for additional security
+ */
 contract ProveAndClaimCommandVerifier {
+    /// @notice The order of the BN128 elliptic curve used in the ZK proofs
+    /// @dev All field elements in proofs must be less than this value
     uint256 public constant Q =
         21_888_242_871_839_275_222_246_405_745_257_275_088_696_311_157_297_823_662_689_037_894_645_226_208_583;
+
+    /// @notice Number of field elements used to represent domain names
+    /// @dev Domain names are packed into 9 field elements
     uint256 public constant DOMAIN_FIELDS = 9;
+
+    /// @notice Maximum number of bytes for domain names after padding
+    /// @dev Domain names are padded to 255 bytes
     uint256 public constant DOMAIN_BYTES = 255;
+
+    /// @notice Number of field elements used to represent email addresses
+    /// @dev Email addresses are packed into 9 field elements
     uint256 public constant EMAIL_FIELDS = 9;
+
+    /// @notice Maximum number of bytes for email addresses after padding
+    /// @dev Email addresses are padded to 256 bytes
     uint256 public constant EMAIL_BYTES = 256;
+
+    /// @notice Number of field elements used to represent command strings
+    /// @dev Commands are packed into 20 field elements
     uint256 public constant COMMAND_FIELDS = 20;
+
+    /// @notice Maximum number of bytes for command strings after padding
+    /// @dev Commands are padded to 605 bytes
     uint256 public constant COMMAND_BYTES = 605;
+
+    /// @notice Number of field elements used to represent RSA public keys
+    /// @dev RSA public keys are decomposed into 17 field elements
     uint256 public constant PUBKEY_FIELDS = 17;
 
+    /// @notice The address of the Groth16 verifier contract
+    /// @dev This contract performs the actual ZK proof verification using the Groth16 protocol
     address public immutable GORTH16_VERIFIER;
 
+    /**
+     * @notice Initializes the verifier with a Groth16 verifier contract
+     * @param _groth16Verifier The address of the deployed Groth16Verifier contract
+     * @dev The Groth16 verifier must be compatible with the specific circuit used for email verification.
+     *      This address is immutable to prevent unauthorized changes to the verification logic.
+     */
     constructor(address _groth16Verifier) {
         GORTH16_VERIFIER = _groth16Verifier;
     }
 
+    /**
+     * @notice Verifies the validity of a ProveAndClaimCommand
+     * @param data The ABI-encoded ProveAndClaimCommand struct to verify
+     * @return True if the command and its proof are valid, false otherwise
+     * @dev This function performs comprehensive verification including:
+     *      1. Decoding the command from the provided data
+     *      2. Extracting and validating the ZK proof components
+     *      3. Ensuring all proof elements are within the valid field range
+     *      4. Building the public signals array from command data
+     *      5. Verifying the proof against the Groth16 verifier
+     *
+     *      The function will return false if:
+     *      - The proof components are not valid field elements
+     *      - The proof verification fails
+     *      - Any step in the verification process encounters an error
+     *
+     */
     function isValid(bytes memory data) external view returns (bool) {
         // decode the data into a ProveAndClaimCommand struct
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
@@ -86,21 +177,25 @@ contract ProveAndClaimCommandVerifier {
     }
 
     /**
-     * Builds the public signals required for the proof verification.
+     * @notice Builds the public signals required for proof verification
+     * @param command The ProveAndClaimCommand struct containing the necessary data
+     * @return An array of 60 uint256 values representing the public signals
+     * @dev The public signals are structured as follows (in order, totaling 60 fields):
+     *      - domain_name: 9 fields (packed representation of the email domain)
+     *      - public_key_hash: 1 field (hash of the DKIM RSA public key)
+     *      - email_nullifier: 1 field (unique identifier preventing replay attacks)
+     *      - timestamp: 1 field (email timestamp, 0 if not supported)
+     *      - masked_command: 20 fields (packed representation of the expected command)
+     *      - account_salt: 1 field (additional randomness for security)
+     *      - is_code_exist: 1 field (boolean indicating embedded verification code)
+     *      - pubkey: 17 fields (decomposed RSA public key components)
+     *      - email_address: 9 fields (packed representation of the full email address)
      *
-     * The expected public signals are (in order to be packed into 60 fields):
-     * - domain_name: 9 fields
-     * - public_key_hash: 1 field
-     * - email_nullifier: 1 field
-     * - timestamp: 1 field
-     * - masked_command: 20 fields
-     * - account_salt: 1 field
-     * - is_code_exist: 1 field
-     * - pubkey: 17 fields
-     * - email_address: 9 fields
+     *      All string data (domain, email, command) is packed into field elements using a specific
+     *      encoding scheme that packs 31 bytes per field element for efficiency.
      *
-     * @param command The ProveAndClaimCommand struct containing the necessary data.
-     * @return An array of 60 uint256 values representing the public signals.
+     *      The expected command format is: "Claim ENS name for address {ethAddr}"
+     *      where {ethAddr} is replaced with the actual Ethereum address from the command.
      */
     function _buildPubSignals(ProveAndClaimCommand memory command) internal pure returns (uint256[60] memory) {
         uint256[60] memory pubSignals;
@@ -140,6 +235,20 @@ contract ProveAndClaimCommandVerifier {
         return pubSignals;
     }
 
+    /**
+     * @notice Packs byte arrays into field elements for ZK circuit compatibility
+     * @param _bytes The byte array to pack into field elements
+     * @param _paddedSize The target size after padding (must be larger than or equal to _bytes.length)
+     * @return An array of field elements containing the packed byte data
+     * @dev This function packs bytes into field elements by:
+     *      1. Determining how many field elements are needed (31 bytes per field element)
+     *      2. Packing bytes in little-endian order within each field element
+     *      3. Padding with zeros if the input is shorter than _paddedSize
+     *      4. Ensuring the resulting field elements are compatible with ZK circuits
+     *
+     *      Each field element can contain up to 31 bytes to ensure the result stays below
+     *      the BN128 curve order. Bytes are packed as: byte0 + (byte1 << 8) + (byte2 << 16) + ...
+     */
     function _packBytes2Fields(bytes memory _bytes, uint256 _paddedSize) internal pure returns (uint256[] memory) {
         uint256 remain = _paddedSize % 31;
         uint256 numFields = (_paddedSize - remain) / 31;
@@ -170,6 +279,13 @@ contract ProveAndClaimCommandVerifier {
         return fields;
     }
 
+    /**
+     * @notice Generates the expected command string for a given owner address
+     * @param _owner The Ethereum address that should appear in the command
+     * @return The expected command bytes that should be present in the verified email
+     * @dev This function creates the command format: "Claim ENS name for address {ethAddr}"
+     *      where {ethAddr} is replaced with the actual Ethereum address.
+     */
     function _getExpectedCommand(address _owner) internal pure returns (bytes memory) {
         string[] memory template = new string[](6);
         template[0] = "Claim";
