@@ -10,7 +10,7 @@ The system uses zk-email proofs to verify email ownership, ensuring that only th
 
 ## Installing Dependencies
 
-Install dependency:
+Install dependencies:
 
 ```bash
 yarn install
