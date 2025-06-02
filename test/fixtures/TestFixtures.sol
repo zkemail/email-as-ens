@@ -62,7 +62,7 @@ library TestFixtures {
     function claimEnsCommand()
         internal
         pure
-        returns (ProveAndClaimCommand memory, uint256[60] memory expectedPubSignals)
+        returns (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals)
     {
         // RSA public key modulus decomposed into 17 field elements for ZK circuit compatibility
         // This represents Gmail's DKIM public key used for signature verification
@@ -111,7 +111,7 @@ library TestFixtures {
         ];
 
         // Complete ProveAndClaimCommand struct with test data for "thezdev3@gmail.com"
-        ProveAndClaimCommand memory command = ProveAndClaimCommand({
+        command = ProveAndClaimCommand({
             domain: "gmail.com",
             email: "thezdev3@gmail.com",
             owner: 0xafBD210c60dD651892a61804A989eEF7bD63CBA0,
