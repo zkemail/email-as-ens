@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import { ProveAndClaimCommand } from "./utils/Verifier.sol";
 
 /**
- * @title ZkEmailRgistrar
+ * @title ZkEmailRegistrar
  * @notice A contract that enables email address owners to claim corresponding ENS names using zero-knowledge proofs
  * @dev This contract uses ZK-EMAIL to verify email ownership.
  *      It allows users to prove they own an email address (e.g., "user[at]example.com") and claim
