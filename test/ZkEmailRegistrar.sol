@@ -8,7 +8,7 @@ import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
 import { ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
 
 contract PublicZkEmailRegistrar is ZkEmailRegistrar {
-    constructor(bytes32 rootNode) ZkEmailRegistrar(rootNode) { }
+    constructor(bytes32 rootNode, address verifier) ZkEmailRegistrar(rootNode, verifier) { }
 
     function nameHash(bytes memory nameBytes, uint256 offset) public pure returns (bytes32, bytes32) {
         return _nameHash(nameBytes, offset);
@@ -25,7 +25,7 @@ contract ZkEmailRegistrarTest is Test {
 
     function setUp() public {
         _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()));
-        _registrar = new PublicZkEmailRegistrar(ROOT_NODE);
+        _registrar = new PublicZkEmailRegistrar(ROOT_NODE, address(_verifier));
     }
 
     function test_nameHash_returnsCorrectHash() public view {
