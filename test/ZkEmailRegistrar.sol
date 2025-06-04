@@ -18,7 +18,7 @@ contract PublicZkEmailRegistrar is ZkEmailRegistrar {
 contract ZkEmailRegistrarTest is Test {
     // namehash(zk.eth)
     // the emails will be claimed as follows: e@d.com.zk.eth
-    bytes32 internal constant ROOT_NODE = 0xc415680e10d4f52260859f9d558b33c0bd5d28ec16d9ae046d2695cb7144ee64;
+    bytes32 public constant ROOT_NODE = 0xc415680e10d4f52260859f9d558b33c0bd5d28ec16d9ae046d2695cb7144ee64;
 
     ProveAndClaimCommandVerifier internal _verifier;
     PublicZkEmailRegistrar internal _registrar;
@@ -26,6 +26,18 @@ contract ZkEmailRegistrarTest is Test {
     function setUp() public {
         _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()));
         _registrar = new PublicZkEmailRegistrar(ROOT_NODE, address(_verifier));
+    }
+
+    function test_proveAndClaim_passesForValidCommand() public {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        _registrar.proveAndClaim(command);
+    }
+
+    function test_proveAndClaim_revertsForInvalidCommand() public {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        command.email = "bob@example.com";
+        vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.InvalidCommand.selector));
+        _registrar.proveAndClaim(command);
     }
 
     function test_nameHash_returnsCorrectHash() public view {

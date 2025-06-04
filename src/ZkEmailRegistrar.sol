@@ -4,15 +4,27 @@ pragma solidity ^0.8.30;
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { ProveAndClaimCommand } from "./utils/Verifier.sol";
 
+interface IVerifier {
+    function isValid(bytes memory data) external view returns (bool);
+}
+
 contract ZkEmailRegistrar {
     using Bytes for bytes;
 
     bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e@d.com.zk.eth
     address public immutable VERIFIER; // ProveAndClaimCommand Verifier contract address
 
+    error InvalidCommand();
+
     constructor(bytes32 rootNode, address verifier) {
         ROOT_NODE = rootNode;
         VERIFIER = verifier;
+    }
+
+    function proveAndClaim(ProveAndClaimCommand memory command) external {
+        if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
+            revert InvalidCommand();
+        }
     }
 
     function _nameHash(bytes memory nameBytes, uint256 offset) internal pure returns (bytes32 node, bytes32 domain) {
