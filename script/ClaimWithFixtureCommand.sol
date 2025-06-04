@@ -34,7 +34,7 @@ contract ClaimWithFixtureCommandScript is Script {
 
         try registrar.proveAndClaim(command) {
             console.log("Successfully claimed ENS name!");
-            bytes32 node = 0xb543dfbad6a1819b3c971e07534acd306294f23b7441d27154569c8fe3c11899;
+            bytes32 node = 0xe732be81ce46c5f5caddad0003bac9aa8fe88e5c22eaf2576470f380b975df38;
             try registrar.setRecord(node, command.owner, PUBLIC_RESOLVER, 0) {
                 console.log("Successfully set record!");
             } catch Error(string memory reason) {

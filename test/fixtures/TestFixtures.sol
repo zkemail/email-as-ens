@@ -110,9 +110,10 @@ library TestFixtures {
             0x24b4201c52b7eec75377b727ac0fe51049d534bac7918175096596fa351862c1
         ];
 
-        string[] memory emailParts = new string[](2);
-        emailParts[0] = "thezdev3@gmail";
-        emailParts[1] = "com";
+        string[] memory emailParts = new string[](3);
+        emailParts[0] = "thezdev3";
+        emailParts[1] = "gmail";
+        emailParts[2] = "com";
 
         // Complete ProveAndClaimCommand struct with test data for "thezdev3@gmail.com"
         command = ProveAndClaimCommand({

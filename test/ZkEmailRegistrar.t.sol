@@ -7,7 +7,6 @@ import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/utils
 import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
 import { ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
-import { console } from "forge-std/console.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
@@ -20,7 +19,7 @@ contract PublicZkEmailRegistrar is ZkEmailRegistrar {
 }
 
 contract MockResolver {
-    function approve(bytes32 node, address delegate, bool approved) public {
+    function approve(bytes32, address, bool) public {
         // no-op
     }
 }
@@ -121,13 +120,18 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_nameHash_returnsCorrectHash() public pure {
-        bytes memory nameBytes = "wevm.eth";
-        bytes32 expectedHash = 0x08c85f2f4059e930c45a6aeff9dcd3bd95dc3c5c1cddef6a0626b31152248560;
+        bytes memory nameBytes = "thezdev3.gmail.com.zk.eth";
+        bytes32 expectedHash = 0x62907bb39b3053cafa99c539f1c1d2d2f4d2c62c49a8427a0832a30ef2067f67;
         bytes32 actualHash = _nameHash(nameBytes, 0);
         assertEq(actualHash, expectedHash);
     }
 
     function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
+        uint256 atSignIndex = name.indexOf(0x40);
+        if (atSignIndex != type(uint256).max) {
+            name[atSignIndex] = bytes1(".");
+        }
+
         uint256 len = name.length;
 
         if (offset >= len) {
