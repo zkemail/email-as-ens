@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { ProveAndClaimCommand } from "./utils/Verifier.sol";
 import { ENS as IEns } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 
@@ -10,8 +9,6 @@ interface IVerifier {
 }
 
 contract ZkEmailRegistrar {
-    using Bytes for bytes;
-
     bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e@d.com.zk.eth
     address public immutable VERIFIER; // ProveAndClaimCommand Verifier contract address
     address public immutable ENS; // ENS registry contract address
@@ -28,37 +25,24 @@ contract ZkEmailRegistrar {
         if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
             revert InvalidCommand();
         }
+
+        _claim(command.emailParts, command.owner);
     }
 
-    function _nameHash(bytes memory nameBytes, uint256 offset) internal pure returns (bytes32 node, bytes32 domain) {
-        uint256 len = nameBytes.length;
+    function _claim(string[] memory domainParts, address owner) internal {
+        uint256 lastPartIndex = domainParts.length - 1;
+        bytes32 parent = ROOT_NODE;
 
-        if (offset >= len) {
-            return (bytes32(0), bytes32(0));
+        while (lastPartIndex > 0) {
+            bytes32 labelHash = keccak256(bytes(domainParts[lastPartIndex]));
+            IEns(ENS).setSubnodeOwner(parent, labelHash, address(this));
+            parent = keccak256(abi.encodePacked(parent, labelHash));
+            --lastPartIndex;
         }
 
-        uint256 labelEnd = _findLabelEnd(nameBytes, offset);
-        bytes memory label = nameBytes.slice(offset, labelEnd);
-        bytes32 labelHash = keccak256(label);
+        assert(lastPartIndex == 0);
 
-        // Recursive case: hash of (parent nameHash + current labelHash)
-        (domain,) = _nameHash(nameBytes, labelEnd + 1);
-        node = keccak256(abi.encodePacked(domain, labelHash));
-
-        return (node, domain);
-    }
-
-    // return the position of the first dot or the end of the string
-    function _findLabelEnd(bytes memory nameBytes, uint256 offset) internal pure returns (uint256) {
-        uint256 len = nameBytes.length;
-
-        for (uint256 i = offset; i < len; i++) {
-            if (nameBytes[i] == 0x2E) {
-                // ASCII '.'
-                return i;
-            }
-        }
-
-        return len; // No dot found, return end of string
+        bytes32 labelHash = keccak256(bytes(domainParts[0]));
+        IEns(ENS).setSubnodeOwner(parent, labelHash, owner);
     }
 }

@@ -8,16 +8,20 @@ import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
 import { ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { console } from "forge-std/console.sol";
+import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract PublicZkEmailRegistrar is ZkEmailRegistrar {
     constructor(bytes32 rootNode, address verifier, address ens) ZkEmailRegistrar(rootNode, verifier, ens) { }
 
-    function nameHash(bytes memory nameBytes, uint256 offset) public pure returns (bytes32, bytes32) {
-        return _nameHash(nameBytes, offset);
+    function claim(string[] memory domainParts, address owner) public {
+        _claim(domainParts, owner);
     }
 }
 
 contract ZkEmailRegistrarTest is Test {
+    using Bytes for bytes;
+
     // namehash(0)
     bytes32 public constant ROOT_NODE = 0x0;
     // namehash(zk.eth)
@@ -46,19 +50,15 @@ contract ZkEmailRegistrarTest is Test {
         ens.setSubnodeOwner(ETH_NODE, keccak256(bytes("zk")), address(registrar));
     }
 
-    function test_setup() public {
-        address rootOwner = ens.owner(ROOT_NODE);
-        address ethOwner = ens.owner(ETH_NODE);
-        address zkOwner = ens.owner(ZKEMAIL_NODE);
-
-        assertEq(rootOwner, owner);
-        assertEq(ethOwner, owner);
-        assertEq(zkOwner, address(registrar));
-    }
-
     function test_proveAndClaim_passesForValidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        bytes memory expectedEnsName = abi.encodePacked(bytes(command.email), bytes(".zk.eth"));
+        bytes32 expectedNode = _nameHash(expectedEnsName, 0);
+        address ownerBefore = ens.owner(expectedNode);
+        assertEq(ownerBefore, address(0));
         registrar.proveAndClaim(command);
+        address ownerAfter = ens.owner(expectedNode);
+        assertEq(ownerAfter, command.owner);
     }
 
     function test_proveAndClaim_revertsForInvalidCommand() public {
@@ -68,13 +68,36 @@ contract ZkEmailRegistrarTest is Test {
         registrar.proveAndClaim(command);
     }
 
-    function test_nameHash_returnsCorrectHash() public view {
+    function test_setup() public view {
+        address rootOwner = ens.owner(ROOT_NODE);
+        address ethOwner = ens.owner(ETH_NODE);
+        address zkOwner = ens.owner(ZKEMAIL_NODE);
+
+        assertEq(rootOwner, owner);
+        assertEq(ethOwner, owner);
+        assertEq(zkOwner, address(registrar));
+    }
+
+    function test_nameHash_returnsCorrectHash() public pure {
         bytes memory nameBytes = "wevm.eth";
         bytes32 expectedHash = 0x08c85f2f4059e930c45a6aeff9dcd3bd95dc3c5c1cddef6a0626b31152248560;
         bytes32 expectedDomain = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
-
-        (bytes32 actualHash, bytes32 actualDomain) = registrar.nameHash(bytes(nameBytes), 0);
+        bytes32 actualHash = _nameHash(nameBytes, 0);
         assertEq(actualHash, expectedHash);
-        assertEq(actualDomain, expectedDomain);
+    }
+
+    function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
+        uint256 len = name.length;
+
+        if (offset >= len) {
+            return bytes32(0);
+        }
+
+        uint256 labelEnd = Math.min(name.indexOf(0x2E, offset), len);
+        bytes memory label = name.slice(offset, labelEnd);
+        bytes32 labelHash = keccak256(label);
+
+        // Recursive case: hash of (parent nameHash + current labelHash)
+        return keccak256(abi.encodePacked(_nameHash(name, labelEnd + 1), labelHash));
     }
 }
