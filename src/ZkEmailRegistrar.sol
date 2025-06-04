@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { ProveAndClaimCommand } from "./utils/Verifier.sol";
+import { ENS as IEns } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 
 interface IVerifier {
     function isValid(bytes memory data) external view returns (bool);
@@ -13,12 +14,14 @@ contract ZkEmailRegistrar {
 
     bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e@d.com.zk.eth
     address public immutable VERIFIER; // ProveAndClaimCommand Verifier contract address
+    address public immutable ENS; // ENS registry contract address
 
     error InvalidCommand();
 
-    constructor(bytes32 rootNode, address verifier) {
+    constructor(bytes32 rootNode, address verifier, address ens) {
         ROOT_NODE = rootNode;
         VERIFIER = verifier;
+        ENS = ens;
     }
 
     function proveAndClaim(ProveAndClaimCommand memory command) external {
