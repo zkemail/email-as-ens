@@ -8,6 +8,11 @@ interface IVerifier {
     function isValid(bytes memory data) external view returns (bool);
 }
 
+interface IResolver {
+    /// @dev Approve a delegate to be able to updated records on a node.
+    function approve(bytes32 node, address delegate, bool approved) external;
+}
+
 /**
  * @title ZkEmailRegistrar
  * @notice A contract for registering email-based ENS names
@@ -58,6 +63,7 @@ contract ZkEmailRegistrar {
      */
     function setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) public onlyOwner(node) {
         ENS(REGISTRY).setRecord(node, address(this), resolver, ttl);
+        IResolver(resolver).approve(node, newOwner, true);
         owner[node] = newOwner;
         emit SetRecord(node, newOwner, resolver, ttl);
     }

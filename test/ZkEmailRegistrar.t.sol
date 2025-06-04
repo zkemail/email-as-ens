@@ -19,6 +19,12 @@ contract PublicZkEmailRegistrar is ZkEmailRegistrar {
     }
 }
 
+contract MockResolver {
+    function approve(bytes32 node, address delegate, bool approved) public {
+        // no-op
+    }
+}
+
 contract ZkEmailRegistrarTest is Test {
     using Bytes for bytes;
 
@@ -85,7 +91,7 @@ contract ZkEmailRegistrarTest is Test {
         address resolverBefore = ens.resolver(expectedNode);
         assertEq(resolverBefore, address(0));
 
-        address resolver = makeAddr("resolver");
+        address resolver = address(new MockResolver());
         address newOwner = makeAddr("newOwner");
         vm.prank(command.owner);
         registrar.setRecord(expectedNode, newOwner, resolver, 0);
