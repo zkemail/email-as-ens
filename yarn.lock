@@ -176,7 +176,7 @@
   resolved "https://registry.yarnpkg.com/@ensdomains/buffer/-/buffer-0.1.1.tgz#6c275ba7e457e935405b67876f1f0d980c8baa63"
   integrity sha512-92SfSiNS8XorgU7OUBHo/i1ZU7JV7iz/6bKuLPNVsMxV79/eI7fJR6jfJJc40zAHjs3ha+Xo965Idomlq3rqnw==
 
-"@ensdomains/ens-contracts@^1.5.1":
+"@ensdomains/ens-contracts@1.5.1":
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/@ensdomains/ens-contracts/-/ens-contracts-1.5.1.tgz#8da94aa2d17af313e189699eada67216982ade93"
   integrity sha512-u+DvsJdAZk1NbBA4KrdCkUAr4GUa1QxS8ikIk80DJ40+8/223nm5OMdcytQAovttcrd3UXHiKdRz+c2vyusCGA==
