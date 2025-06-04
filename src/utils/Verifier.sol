@@ -16,6 +16,9 @@ struct ProveAndClaimCommand {
     /// @notice The complete email address (e.g., "user@gmail.com")
     /// @dev This is the email address being claimed, which will correspond to the ENS subdomain
     string email;
+    /// @notice The parts of the email address dot separated (e.g., ["user@gmail", "com"])
+    /// @dev Used to verify the email address
+    string[] emailParts;
     /// @notice The Ethereum address that will own the claimed ENS name
     /// @dev This address becomes the owner of the ENS name derived from the email address
     address owner;
@@ -127,6 +130,10 @@ contract ProveAndClaimCommandVerifier {
             return false;
         }
 
+        if (!_verifyEmailParts(command.emailParts, command.email)) {
+            return false;
+        }
+
         // build the public signals
         uint256[60] memory pubSignals = _buildPubSignals(command);
 
@@ -134,6 +141,23 @@ contract ProveAndClaimCommandVerifier {
         return IGroth16Verifier(GORTH16_VERIFIER).verifyProof(pA, pB, pC, pubSignals);
 
         // todo: verify DKIM oracle proof
+    }
+
+    /**
+     * @notice Verifies that the email parts are dot separated and match the claimed email
+     * @param emailParts The parts of the email address dot separated
+     * @param email The complete email address
+     * @return True if the email parts are dot separated and match the claimed email, false otherwise
+     */
+    function _verifyEmailParts(string[] memory emailParts, string memory email) internal pure returns (bool) {
+        bytes memory composedEmail = bytes("");
+        for (uint256 i = 0; i < emailParts.length; i++) {
+            composedEmail = abi.encodePacked(composedEmail, bytes(emailParts[i]));
+            if (i < emailParts.length - 1) {
+                composedEmail = abi.encodePacked(composedEmail, bytes("."));
+            }
+        }
+        return keccak256(bytes(email)) == keccak256(composedEmail);
     }
 
     /**
