@@ -2,47 +2,77 @@
 pragma solidity ^0.8.30;
 
 import { ProveAndClaimCommand } from "./utils/Verifier.sol";
-import { ENS as IEns } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
+import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 
 interface IVerifier {
     function isValid(bytes memory data) external view returns (bool);
 }
 
+/**
+ * @title ZkEmailRegistrar
+ * @notice A contract for registering email-based ENS names
+ */
 contract ZkEmailRegistrar {
     bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e@d.com.zk.eth
     address public immutable VERIFIER; // ProveAndClaimCommand Verifier contract address
-    address public immutable ENS; // ENS registry contract address
+    address public immutable REGISTRY; // ENS registry contract address
+
+    mapping(bytes32 node => address owner) public owner;
+
+    event Claimed(bytes32 indexed node, address indexed owner);
+    event SetRecord(bytes32 indexed node, address indexed newOwner, address indexed resolver, uint64 ttl);
 
     error InvalidCommand();
+    error NotOwner();
 
-    constructor(bytes32 rootNode, address verifier, address ens) {
-        ROOT_NODE = rootNode;
-        VERIFIER = verifier;
-        ENS = ens;
+    modifier onlyOwner(bytes32 node) {
+        if (owner[node] != msg.sender) {
+            revert NotOwner();
+        }
+        _;
     }
 
+    constructor(bytes32 rootNode, address verifier, address registry) {
+        ROOT_NODE = rootNode;
+        VERIFIER = verifier;
+        REGISTRY = registry;
+    }
+
+    /**
+     * @notice Proves and claims an email-based ENS name
+     * @param command The command to prove and claim
+     */
     function proveAndClaim(ProveAndClaimCommand memory command) external {
         if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
             revert InvalidCommand();
         }
-
         _claim(command.emailParts, command.owner);
     }
 
-    function _claim(string[] memory domainParts, address owner) internal {
-        uint256 lastPartIndex = domainParts.length - 1;
+    /**
+     * @notice Sets the record for an ENS name (only callable by the owner of the node)
+     * @param node The node to set the record for
+     * @param newOwner The new owner of the node
+     * @param resolver The resolver for the node
+     * @param ttl The TTL for the node
+     */
+    function setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) public onlyOwner(node) {
+        ENS(REGISTRY).setRecord(node, address(this), resolver, ttl);
+        owner[node] = newOwner;
+        emit SetRecord(node, newOwner, resolver, ttl);
+    }
+
+    function _claim(string[] memory domainParts, address newOwner) internal {
         bytes32 parent = ROOT_NODE;
 
-        while (lastPartIndex > 0) {
-            bytes32 labelHash = keccak256(bytes(domainParts[lastPartIndex]));
-            IEns(ENS).setSubnodeOwner(parent, labelHash, address(this));
+        for (uint256 i = domainParts.length; i > 0; i--) {
+            bytes32 labelHash = keccak256(bytes(domainParts[i - 1]));
+            ENS(REGISTRY).setSubnodeOwner(parent, labelHash, address(this));
             parent = keccak256(abi.encodePacked(parent, labelHash));
-            --lastPartIndex;
         }
 
-        assert(lastPartIndex == 0);
-
-        bytes32 labelHash = keccak256(bytes(domainParts[0]));
-        IEns(ENS).setSubnodeOwner(parent, labelHash, owner);
+        // parent is now the node corresponding to the full email domain
+        owner[parent] = newOwner;
+        emit Claimed(parent, newOwner);
     }
 }

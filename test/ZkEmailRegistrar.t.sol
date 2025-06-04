@@ -54,11 +54,47 @@ contract ZkEmailRegistrarTest is Test {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.email), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
+
+        // check that the node is not owned by anyone
         address ownerBefore = ens.owner(expectedNode);
+        address ownerBeforeInRegistrar = registrar.owner(expectedNode);
         assertEq(ownerBefore, address(0));
+        assertEq(ownerBeforeInRegistrar, address(0));
+
         registrar.proveAndClaim(command);
+
+        // check ownership has been set in both ENS and registrar correctly
         address ownerAfter = ens.owner(expectedNode);
-        assertEq(ownerAfter, command.owner);
+        address ownerAfterInRegistrar = registrar.owner(expectedNode);
+        assertEq(ownerAfter, address(registrar));
+        assertEq(ownerAfterInRegistrar, command.owner);
+    }
+
+    function test_setRecord_revertsForNonOwner() public {
+        bytes32 node = _nameHash(abi.encodePacked(bytes("zk.eth")), 0);
+        vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.NotOwner.selector));
+        registrar.setRecord(node, owner, address(0), 0);
+    }
+
+    function test_setRecord_setsRecordCorrectlyIfOwner() public {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        bytes memory expectedEnsName = abi.encodePacked(bytes(command.email), bytes(".zk.eth"));
+        bytes32 expectedNode = _nameHash(expectedEnsName, 0);
+        registrar.proveAndClaim(command);
+
+        address resolverBefore = ens.resolver(expectedNode);
+        assertEq(resolverBefore, address(0));
+
+        address resolver = makeAddr("resolver");
+        address newOwner = makeAddr("newOwner");
+        vm.prank(command.owner);
+        registrar.setRecord(expectedNode, newOwner, resolver, 0);
+
+        // check that the record has been set correctly
+        address ownerAfter = ens.owner(expectedNode); // should still be registrar
+        address ownerAfterInRegistrar = registrar.owner(expectedNode);
+        assertEq(ownerAfter, address(registrar));
+        assertEq(ownerAfterInRegistrar, newOwner);
     }
 
     function test_proveAndClaim_revertsForInvalidCommand() public {
@@ -81,7 +117,6 @@ contract ZkEmailRegistrarTest is Test {
     function test_nameHash_returnsCorrectHash() public pure {
         bytes memory nameBytes = "wevm.eth";
         bytes32 expectedHash = 0x08c85f2f4059e930c45a6aeff9dcd3bd95dc3c5c1cddef6a0626b31152248560;
-        bytes32 expectedDomain = 0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae;
         bytes32 actualHash = _nameHash(nameBytes, 0);
         assertEq(actualHash, expectedHash);
     }
