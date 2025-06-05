@@ -75,6 +75,13 @@ contract ZkEmailRegistrarTest is Test {
         assertEq(ownerAfterInRegistrar, command.owner);
     }
 
+    function test_proveAndClaim_preventsDoubleUseOfNullifier() public {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        registrar.proveAndClaim(command); // passes the first time
+        vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.NullifierUsed.selector));
+        registrar.proveAndClaim(command); // fails the second time
+    }
+
     function test_setRecord_revertsForNonOwner() public {
         bytes32 node = _nameHash(abi.encodePacked(bytes("zk.eth")), 0);
         vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.NotOwner.selector));

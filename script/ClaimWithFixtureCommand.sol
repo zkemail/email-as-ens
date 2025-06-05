@@ -1,3 +1,4 @@
+/// NOTE: this script is not used for production, it is only used for testing
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 

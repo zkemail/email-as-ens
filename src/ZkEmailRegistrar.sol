@@ -23,11 +23,13 @@ contract ZkEmailRegistrar {
     address public immutable REGISTRY; // ENS registry contract address
 
     mapping(bytes32 node => address owner) public owner;
+    mapping(bytes32 nullifier => bool used) internal _isUsed;
 
     event Claimed(bytes32 indexed node, address indexed owner);
     event SetRecord(bytes32 indexed node, address indexed newOwner, address indexed resolver, uint64 ttl);
 
     error InvalidCommand();
+    error NullifierUsed();
     error NotOwner();
 
     modifier onlyOwner(bytes32 node) {
@@ -48,9 +50,12 @@ contract ZkEmailRegistrar {
      * @param command The command to prove and claim
      */
     function proveAndClaim(ProveAndClaimCommand memory command) external {
-        if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
+        if (_isUsed[command.nullifier]) {
+            revert NullifierUsed();
+        } else if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
             revert InvalidCommand();
         }
+        _isUsed[command.nullifier] = true;
         _claim(command.emailParts, command.owner);
     }
 
@@ -63,6 +68,7 @@ contract ZkEmailRegistrar {
      */
     function setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) public onlyOwner(node) {
         ENS(REGISTRY).setRecord(node, address(this), resolver, ttl);
+        IResolver(resolver).approve(node, owner[node], false);
         IResolver(resolver).approve(node, newOwner, true);
         owner[node] = newOwner;
         emit SetRecord(node, newOwner, resolver, ttl);
