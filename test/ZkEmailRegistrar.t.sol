@@ -127,8 +127,8 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_nameHash_returnsCorrectHash() public pure {
-        bytes memory nameBytes = "thezdev3.gmail.com.zk.eth";
-        bytes32 expectedHash = 0x62907bb39b3053cafa99c539f1c1d2d2f4d2c62c49a8427a0832a30ef2067f67;
+        bytes memory nameBytes = "thezdev3$gmail.com.zk.eth";
+        bytes32 expectedHash = 0xd3f54039086a0b9a16feda37bd0cb0dc73ef8ed3449303620fd902e2d1e38c54;
         bytes32 actualHash = _nameHash(nameBytes, 0);
         assertEq(actualHash, expectedHash);
     }
@@ -136,7 +136,7 @@ contract ZkEmailRegistrarTest is Test {
     function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
         uint256 atSignIndex = name.indexOf(0x40);
         if (atSignIndex != type(uint256).max) {
-            name[atSignIndex] = bytes1(".");
+            name[atSignIndex] = bytes1("$");
         }
 
         uint256 len = name.length;
