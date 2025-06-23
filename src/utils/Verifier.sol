@@ -164,7 +164,7 @@ contract ProveAndClaimCommandVerifier {
         bytes memory emailBytes = bytes(email);
 
         // check if the email parts are dot separated and match the claimed email
-        // note since at sign is not in dns encoding valid char set, we are arbitrarily replacing it with a $
+        // note since @ sign is not in dns encoding valid char set, we are arbitrarily replacing it with a $
         // note to reviewer: this is a bit of a hack, what better way to do this?
         for (uint256 i = 0; i < emailBytes.length; i++) {
             bytes1 currentByte = emailBytes[i];
