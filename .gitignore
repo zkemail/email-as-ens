@@ -1,6 +1,7 @@
 # broadcast logs
 !/broadcast
 /broadcast/*/31337/
+/broadcast/*/11155111/
 /broadcast/**/dry-run/
 
 # dirs
@@ -15,5 +16,3 @@ bun.lock
 package-lock.json
 pnpm-lock.yaml
 lcov.info
-
-broadcast/
