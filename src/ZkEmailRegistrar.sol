@@ -26,7 +26,7 @@ contract ZkEmailRegistrar {
     mapping(bytes32 nullifier => bool used) internal _isUsed;
 
     event Claimed(bytes32 indexed node, address indexed owner);
-    event SetRecord(bytes32 indexed node, address indexed newOwner, address indexed resolver, uint64 ttl);
+    event RecordSet(bytes32 indexed node, address indexed newOwner, address indexed resolver, uint64 ttl);
 
     error InvalidCommand();
     error NullifierUsed();
@@ -71,7 +71,7 @@ contract ZkEmailRegistrar {
         IResolver(resolver).approve(node, owner[node], false);
         IResolver(resolver).approve(node, newOwner, true);
         owner[node] = newOwner;
-        emit SetRecord(node, newOwner, resolver, ttl);
+        emit RecordSet(node, newOwner, resolver, ttl);
     }
 
     function _claim(string[] memory domainParts, address newOwner) internal {
