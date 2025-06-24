@@ -5,7 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "./fixtures/TestFixtures.sol";
 import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/utils/Verifier.sol";
 import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
-import { ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
+import { IResolver, ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -15,12 +15,6 @@ contract PublicZkEmailRegistrar is ZkEmailRegistrar {
 
     function claim(string[] memory domainParts, address owner) public {
         _claim(domainParts, owner);
-    }
-}
-
-contract MockResolver {
-    function approve(bytes32, address, bool) public {
-        // no-op
     }
 }
 
@@ -97,8 +91,11 @@ contract ZkEmailRegistrarTest is Test {
         address resolverBefore = ens.resolver(expectedNode);
         assertEq(resolverBefore, address(0));
 
-        address resolver = address(new MockResolver());
+        address resolver = makeAddr("resolver");
         address newOwner = makeAddr("newOwner");
+
+        _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
+        _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, newOwner, true)), "");
         vm.prank(command.owner);
         registrar.setRecord(expectedNode, newOwner, resolver, 0);
 
@@ -131,6 +128,11 @@ contract ZkEmailRegistrarTest is Test {
         bytes32 expectedHash = 0xd3f54039086a0b9a16feda37bd0cb0dc73ef8ed3449303620fd902e2d1e38c54;
         bytes32 actualHash = _nameHash(nameBytes, 0);
         assertEq(actualHash, expectedHash);
+    }
+
+    function _mockAndExpect(address target, bytes memory call, bytes memory ret) internal {
+        vm.mockCall(target, call, ret);
+        vm.expectCall(target, call);
     }
 
     function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
