@@ -110,10 +110,15 @@ library TestFixtures {
             0x24b4201c52b7eec75377b727ac0fe51049d534bac7918175096596fa351862c1
         ];
 
+        string[] memory emailParts = new string[](2);
+        emailParts[0] = "thezdev3$gmail";
+        emailParts[1] = "com";
+
         // Complete ProveAndClaimCommand struct with test data for "thezdev3@gmail.com"
         command = ProveAndClaimCommand({
             domain: "gmail.com",
             email: "thezdev3@gmail.com",
+            emailParts: emailParts,
             owner: 0xafBD210c60dD651892a61804A989eEF7bD63CBA0,
             dkimSignerHash: hex"0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788",
             nullifier: hex"0A11F2664AE4F7E3A9C3BA43394B01347FD5B76FC0A7FDB09D91324DA1F6ADA4",

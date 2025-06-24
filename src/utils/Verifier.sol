@@ -2,6 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
+import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 
 /**
  * @title ProveAndClaimCommand
@@ -16,6 +17,9 @@ struct ProveAndClaimCommand {
     /// @notice The complete email address (e.g., "user@gmail.com")
     /// @dev This is the email address being claimed, which will correspond to the ENS subdomain
     string email;
+    /// @notice The parts of the email address dot separated (e.g., ["user", "gmail", "com"])
+    /// @dev Used to verify the email address
+    string[] emailParts;
     /// @notice The Ethereum address that will own the claimed ENS name
     /// @dev This address becomes the owner of the ENS name derived from the email address
     address owner;
@@ -68,6 +72,8 @@ interface IGroth16Verifier {
  *      4. TODO: verifying DKIM oracle proofs for additional security
  */
 contract ProveAndClaimCommandVerifier {
+    using Bytes for bytes;
+
     /// @notice The order of the BN128 elliptic curve used in the ZK proofs
     /// @dev All field elements in proofs must be less than this value
     uint256 public constant Q =
@@ -127,6 +133,10 @@ contract ProveAndClaimCommandVerifier {
             return false;
         }
 
+        if (!_verifyEmailParts(command.emailParts, command.email)) {
+            return false;
+        }
+
         // build the public signals
         uint256[60] memory pubSignals = _buildPubSignals(command);
 
@@ -134,6 +144,43 @@ contract ProveAndClaimCommandVerifier {
         return IGroth16Verifier(GORTH16_VERIFIER).verifyProof(pA, pB, pC, pubSignals);
 
         // todo: verify DKIM oracle proof
+    }
+
+    /**
+     * @notice Verifies that the email parts are dot separated and match the claimed email
+     * @param emailParts The parts of the email address dot separated
+     * @param email The complete email address
+     * @return True if the email parts are dot separated and match the claimed email, false otherwise
+     */
+    function _verifyEmailParts(string[] memory emailParts, string memory email) internal pure returns (bool) {
+        bytes memory composedEmail = bytes("");
+        for (uint256 i = 0; i < emailParts.length; i++) {
+            composedEmail = abi.encodePacked(composedEmail, bytes(emailParts[i]));
+            if (i < emailParts.length - 1) {
+                composedEmail = abi.encodePacked(composedEmail, bytes("."));
+            }
+        }
+
+        bytes memory emailBytes = bytes(email);
+
+        // Ensure composedEmail and emailBytes have the same length
+        if (composedEmail.length != emailBytes.length) {
+            return false;
+        }
+        // check if the email parts are dot separated and match the claimed email
+        // note since @ sign is not in dns encoding valid char set, we are arbitrarily replacing it with a $
+        for (uint256 i = 0; i < emailBytes.length; i++) {
+            bytes1 currentByte = emailBytes[i];
+            if (currentByte == "@") {
+                if (composedEmail[i] != "$") {
+                    return false;
+                }
+            } else if (currentByte != composedEmail[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
