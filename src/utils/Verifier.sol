@@ -163,6 +163,10 @@ contract ProveAndClaimCommandVerifier {
 
         bytes memory emailBytes = bytes(email);
 
+        // Ensure composedEmail and emailBytes have the same length
+        if (composedEmail.length != emailBytes.length) {
+            return false;
+        }
         // check if the email parts are dot separated and match the claimed email
         // note since @ sign is not in dns encoding valid char set, we are arbitrarily replacing it with a $
         for (uint256 i = 0; i < emailBytes.length; i++) {
