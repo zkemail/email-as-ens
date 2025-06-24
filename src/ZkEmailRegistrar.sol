@@ -18,7 +18,7 @@ interface IResolver {
  * @notice A contract for registering email-based ENS names
  */
 contract ZkEmailRegistrar {
-    bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e@d.com.zk.eth
+    bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e$d.com.zk.eth
     address public immutable VERIFIER; // ProveAndClaimCommand Verifier contract address
     address public immutable REGISTRY; // ENS registry contract address
 
@@ -67,11 +67,13 @@ contract ZkEmailRegistrar {
      * @param ttl The TTL for the node
      */
     function setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) public onlyOwner(node) {
-        ENS(REGISTRY).setRecord(node, address(this), resolver, ttl);
-        IResolver(resolver).approve(node, owner[node], false);
-        IResolver(resolver).approve(node, newOwner, true);
+        address previousOwner = owner[node];
         owner[node] = newOwner;
         emit RecordSet(node, newOwner, resolver, ttl);
+
+        ENS(REGISTRY).setRecord(node, address(this), resolver, ttl);
+        IResolver(resolver).approve(node, previousOwner, false);
+        IResolver(resolver).approve(node, newOwner, true);
     }
 
     function _claim(string[] memory domainParts, address newOwner) internal {
