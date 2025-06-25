@@ -9,6 +9,7 @@ import { IResolver, ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { StringUtils } from "../src/utils/StringUtils.sol";
 
 contract PublicZkEmailRegistrar is ZkEmailRegistrar {
     constructor(bytes32 rootNode, address verifier, address ens) ZkEmailRegistrar(rootNode, verifier, ens) { }
@@ -128,6 +129,17 @@ contract ZkEmailRegistrarTest is Test {
         bytes32 expectedHash = 0xd3f54039086a0b9a16feda37bd0cb0dc73ef8ed3449303620fd902e2d1e38c54;
         bytes32 actualHash = _nameHash(nameBytes, 0);
         assertEq(actualHash, expectedHash);
+    }
+
+    function test_fixturePublicSignals_areDecodable() public pure {
+        (, uint256[60] memory expectedPubSignals) = TestFixtures.claimEnsCommand();
+        // The first public signal is the domain name "gmail.com"
+        string memory domainFromSignal = StringUtils.fieldToAscii(expectedPubSignals[0]);
+        assertEq(domainFromSignal, "gmail.com");
+
+        // The email address "thezdev3@gmail.com" is at index 51 in the public signals
+        string memory emailFromSignal = StringUtils.fieldToAscii(expectedPubSignals[51]);
+        assertEq(emailFromSignal, "thezdev3@gmail.com");
     }
 
     function _mockAndExpect(address target, bytes memory call, bytes memory ret) internal {
