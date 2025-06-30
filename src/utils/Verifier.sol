@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
+import { StringUtils } from "./StringUtils.sol";
 
 /**
  * @title ProveAndClaimCommand
@@ -204,9 +205,9 @@ contract ProveAndClaimCommandVerifier {
     function _buildPubSignals(ProveAndClaimCommand memory command) internal pure returns (uint256[60] memory) {
         uint256[60] memory pubSignals;
 
-        uint256[] memory domainFields = _packBytes2Fields(bytes(command.domain), DOMAIN_BYTES);
-        uint256[] memory emailFields = _packBytes2Fields(bytes(command.email), EMAIL_BYTES);
-        uint256[] memory commandFields = _packBytes2Fields(_getExpectedCommand(command.owner), COMMAND_BYTES);
+        uint256[] memory domainFields = StringUtils.bytesToFields(bytes(command.domain), DOMAIN_BYTES);
+        uint256[] memory emailFields = StringUtils.bytesToFields(bytes(command.email), EMAIL_BYTES);
+        uint256[] memory commandFields = StringUtils.bytesToFields(_getExpectedCommand(command.owner), COMMAND_BYTES);
         uint256[PUBKEY_FIELDS] memory pubKeyFields = abi.decode(command.miscellaneousData, (uint256[17]));
 
         // domain_name
@@ -237,50 +238,6 @@ contract ProveAndClaimCommandVerifier {
         }
 
         return pubSignals;
-    }
-
-    /**
-     * @notice Packs byte arrays into field elements for ZK circuit compatibility
-     * @param _bytes The byte array to pack into field elements
-     * @param _paddedSize The target size after padding (must be larger than or equal to _bytes.length)
-     * @return An array of field elements containing the packed byte data
-     * @dev This function packs bytes into field elements by:
-     *      1. Determining how many field elements are needed (31 bytes per field element)
-     *      2. Packing bytes in little-endian order within each field element
-     *      3. Padding with zeros if the input is shorter than _paddedSize
-     *      4. Ensuring the resulting field elements are compatible with ZK circuits
-     *
-     *      Each field element can contain up to 31 bytes to ensure the result stays below
-     *      the BN128 curve order. Bytes are packed as: byte0 + (byte1 << 8) + (byte2 << 16) + ...
-     */
-    function _packBytes2Fields(bytes memory _bytes, uint256 _paddedSize) internal pure returns (uint256[] memory) {
-        uint256 remain = _paddedSize % 31;
-        uint256 numFields = (_paddedSize - remain) / 31;
-        if (remain > 0) {
-            numFields += 1;
-        }
-        uint256[] memory fields = new uint256[](numFields);
-        uint256 idx = 0;
-        uint256 byteVal = 0;
-        for (uint256 i = 0; i < numFields; i++) {
-            for (uint256 j = 0; j < 31; j++) {
-                idx = i * 31 + j;
-                if (idx >= _paddedSize) {
-                    break;
-                }
-                if (idx >= _bytes.length) {
-                    byteVal = 0;
-                } else {
-                    byteVal = uint256(uint8(_bytes[idx]));
-                }
-                if (j == 0) {
-                    fields[i] = byteVal;
-                } else {
-                    fields[i] += (byteVal << (8 * j));
-                }
-            }
-        }
-        return fields;
     }
 
     /**

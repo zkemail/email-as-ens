@@ -60,4 +60,76 @@ library StringUtils {
 
         return string(reversedBytes);
     }
+
+    /**
+     * @notice Packs byte arrays into field elements for ZK circuit compatibility
+     * @param _bytes The byte array to pack into field elements
+     * @param _paddedSize The target size after padding (must be larger than or equal to _bytes.length)
+     * @return An array of field elements containing the packed byte data
+     * @dev This function packs bytes into field elements by:
+     *      1. Determining how many field elements are needed (31 bytes per field element)
+     *      2. Packing bytes in little-endian order within each field element
+     *      3. Padding with zeros if the input is shorter than _paddedSize
+     *      4. Ensuring the resulting field elements are compatible with ZK circuits
+     *
+     *      Each field element can contain up to 31 bytes to ensure the result stays below
+     *      the BN128 curve order. Bytes are packed as: byte0 + (byte1 << 8) + (byte2 << 16) + ...
+     */
+    function bytesToFields(bytes memory _bytes, uint256 _paddedSize) internal pure returns (uint256[] memory) {
+        uint256 remain = _paddedSize % 31;
+        uint256 numFields = (_paddedSize - remain) / 31;
+        if (remain > 0) {
+            numFields += 1;
+        }
+        uint256[] memory fields = new uint256[](numFields);
+        uint256 idx = 0;
+        uint256 byteVal = 0;
+        for (uint256 i = 0; i < numFields; i++) {
+            for (uint256 j = 0; j < 31; j++) {
+                idx = i * 31 + j;
+                if (idx >= _paddedSize) {
+                    break;
+                }
+                if (idx >= _bytes.length) {
+                    byteVal = 0;
+                } else {
+                    byteVal = uint256(uint8(_bytes[idx]));
+                }
+                if (j == 0) {
+                    fields[i] = byteVal;
+                } else {
+                    fields[i] += (byteVal << (8 * j));
+                }
+            }
+        }
+        return fields;
+    }
+
+    /**
+     * @notice Converts an array of field elements back into a byte array.
+     * @param fields The array of uint256 field elements.
+     * @param originalSize The original size of the byte array before padding and packing.
+     * @return The reconstructed byte array.
+     * @dev This function is the reverse of `bytesToFields`. It unpacks field elements,
+     *      each containing up to 31 bytes, and reconstructs the original byte array.
+     *      The `originalSize` parameter is crucial to correctly handle padding and avoid
+     *      including extra zero bytes that might have been added during packing.
+     */
+    function fieldsToBytes(uint256[] memory fields, uint256 originalSize) internal pure returns (bytes memory) {
+        bytes memory result = new bytes(originalSize);
+        uint256 byteIndex = 0;
+        for (uint256 i = 0; i < fields.length; i++) {
+            uint256 field = fields[i];
+            for (uint256 j = 0; j < 31; j++) {
+                if (byteIndex < originalSize) {
+                    result[byteIndex] = bytes1(uint8(field & 0xFF));
+                    field >>= 8;
+                    byteIndex++;
+                } else {
+                    break;
+                }
+            }
+        }
+        return result;
+    }
 }

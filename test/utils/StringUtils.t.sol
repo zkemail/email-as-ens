@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { StringUtils } from "../../src/utils/StringUtils.sol";
+import "forge-std/console.sol";
 
 contract StringUtilsTest is Test {
     function testFieldToAscii_Gmail() public {
@@ -43,5 +44,56 @@ contract StringUtilsTest is Test {
         string memory expected = "654321zyxwvutsrqponmlkjihgfedcba";
         string memory result = StringUtils.fieldToAscii(field);
         assertEq(result, expected);
+    }
+
+    function testBytesToFieldsAndBack() public {
+        string memory original =
+            "This is a test string for the purpose of testing bytesToFields and fieldsToBytes conversion.";
+        bytes memory originalBytes = bytes(original);
+        uint256 paddedSize = originalBytes.length;
+        if (paddedSize % 31 != 0) {
+            paddedSize = (paddedSize / 31 + 1) * 31;
+        }
+
+        uint256[] memory fields = StringUtils.bytesToFields(originalBytes, paddedSize);
+        bytes memory reconstructedBytes = StringUtils.fieldsToBytes(fields, originalBytes.length);
+
+        assertEq(reconstructedBytes, originalBytes);
+    }
+
+    function benchmarkBytesToFields() public {
+        string memory text =
+            "This is a test string for benchmarking field conversion operations.";
+        bytes memory textBytes = bytes(text);
+        uint256 paddedSize = textBytes.length;
+        if (paddedSize % 31 != 0) {
+            paddedSize = (paddedSize / 31 + 1) * 31;
+        }
+
+        vm.txGasPrice(1);
+        uint256 gasStart = gasleft();
+        uint256[] memory fields = StringUtils.bytesToFields(textBytes, paddedSize);
+        uint256 gasEnd = gasleft();
+        console.log("Gas for bytesToFields:", gasStart - gasEnd);
+        // Prevent unused variable warning
+        fields[0] = fields[0];
+    }
+
+    function benchmarkFieldsToBytes() public {
+        string memory text =
+            "This is a test string for benchmarking field conversion operations.";
+        bytes memory textBytes = bytes(text);
+        uint256 paddedSize = textBytes.length;
+        if (paddedSize % 31 != 0) {
+            paddedSize = (paddedSize / 31 + 1) * 31;
+        }
+        uint256[] memory fields = StringUtils.bytesToFields(textBytes, paddedSize);
+
+        vm.txGasPrice(1);
+        uint256 gasStart = gasleft();
+        bytes memory reconstructedBytes = StringUtils.fieldsToBytes(fields, textBytes.length);
+        uint256 gasEnd = gasleft();
+        console.log("Gas for fieldsToBytes:", gasStart - gasEnd);
+        assertEq(reconstructedBytes, textBytes, "Reconstructed bytes should match original");
     }
 }
