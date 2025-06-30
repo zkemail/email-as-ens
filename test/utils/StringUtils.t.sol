@@ -62,8 +62,7 @@ contract StringUtilsTest is Test {
     }
 
     function benchmarkBytesToFields() public {
-        string memory text =
-            "This is a test string for benchmarking field conversion operations.";
+        string memory text = "This is a test string for benchmarking field conversion operations.";
         bytes memory textBytes = bytes(text);
         uint256 paddedSize = textBytes.length;
         if (paddedSize % 31 != 0) {
@@ -80,8 +79,7 @@ contract StringUtilsTest is Test {
     }
 
     function benchmarkFieldsToBytes() public {
-        string memory text =
-            "This is a test string for benchmarking field conversion operations.";
+        string memory text = "This is a test string for benchmarking field conversion operations.";
         bytes memory textBytes = bytes(text);
         uint256 paddedSize = textBytes.length;
         if (paddedSize % 31 != 0) {
