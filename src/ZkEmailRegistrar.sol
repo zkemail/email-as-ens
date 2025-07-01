@@ -5,7 +5,7 @@ import { ProveAndClaimCommand } from "./utils/Verifier.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 
 interface IVerifier {
-    function isValid(bytes memory data) external view returns (bool);
+    function isValid(ProveAndClaimCommand calldata command) external view returns (bool);
 }
 
 interface IResolver {
@@ -52,7 +52,7 @@ contract ZkEmailRegistrar {
     function proveAndClaim(ProveAndClaimCommand memory command) external {
         if (_isUsed[command.nullifier]) {
             revert NullifierUsed();
-        } else if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
+        } else if (!IVerifier(VERIFIER).isValid(command)) {
             revert InvalidCommand();
         }
         _isUsed[command.nullifier] = true;

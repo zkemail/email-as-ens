@@ -100,14 +100,13 @@ contract ProveAndClaimCommandVerifier {
 
     /**
      * @notice Verifies the validity of a ProveAndClaimCommand
-     * @param data The ABI-encoded ProveAndClaimCommand struct to verify
+     * @param command The ProveAndClaimCommand struct to verify
      * @return True if the command and its proof are valid, false otherwise
      * @dev This function performs verification:
-     *      1. Decoding the command from the provided data
-     *      2. Extracting and validating the ZK proof components
-     *      3. Ensuring all proof elements are within the valid field range
-     *      4. Building the public signals array from command data
-     *      5. Verifying the proof against the Groth16 verifier
+     *      1. Extracting and validating the ZK proof components
+     *      2. Ensuring all proof elements are within the valid field range
+     *      3. Building the public signals array from command data
+     *      4. Verifying the proof against the Groth16 verifier
      *
      *      The function will return false if:
      *      - The proof components are not valid field elements
@@ -115,11 +114,7 @@ contract ProveAndClaimCommandVerifier {
      *      - Any step in the verification process encounters an error (note to reviewer: how to make sure?)
      *
      */
-    function isValid(bytes memory data) external view returns (bool) {
-        // decode the data into a ProveAndClaimCommand struct
-        ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
-
-        // decode the proof
+    function isValid(ProveAndClaimCommand calldata command) external view returns (bool) {
         (uint256[2] memory pA, uint256[2][2] memory pB, uint256[2] memory pC) =
             abi.decode(command.proof, (uint256[2], uint256[2][2], uint256[2]));
 

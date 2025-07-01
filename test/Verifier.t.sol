@@ -56,7 +56,7 @@ contract VerifierTest is Test {
 
     function test_isValid_returnsTrueForValidCommand() public view {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bool isValid = _verifier.isValid(abi.encode(command));
+        bool isValid = _verifier.isValid(command);
         assertTrue(isValid);
     }
 
@@ -67,7 +67,7 @@ contract VerifierTest is Test {
         emailParts[1] = "com";
         command.email = "bob@example.com";
         command.emailParts = emailParts;
-        bool isValid = _verifier.isValid(abi.encode(command));
+        bool isValid = _verifier.isValid(command);
         assertFalse(isValid);
     }
 
@@ -75,7 +75,7 @@ contract VerifierTest is Test {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         command.emailParts = new string[](1);
         command.emailParts[0] = "bob@example";
-        bool isValid = _verifier.isValid(abi.encode(command));
+        bool isValid = _verifier.isValid(command);
         assertFalse(isValid);
     }
 }
