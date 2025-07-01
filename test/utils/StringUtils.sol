@@ -132,4 +132,21 @@ library StringUtils {
         }
         return result;
     }
+
+    /**
+     * @notice Converts a byte array to a string, trimming any trailing null bytes.
+     * @param data The byte array to convert.
+     * @return The resulting string.
+     */
+    function bytesToString(bytes memory data) internal pure returns (string memory) {
+        uint256 len = data.length;
+        while (len > 0 && data[len - 1] == 0) {
+            len--;
+        }
+        bytes memory s = new bytes(len);
+        for (uint256 i = 0; i < len; i++) {
+            s[i] = data[i];
+        }
+        return string(s);
+    }
 }
