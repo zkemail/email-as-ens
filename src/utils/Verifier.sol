@@ -329,24 +329,39 @@ contract ProveAndClaimCommandVerifier {
 
         for (uint256 i = 0; i < emailBytes.length; i++) {
             if (emailBytes[i] == ".") {
-                bytes memory part = new bytes(i - startIndex);
-                for (uint256 j = startIndex; j < i; j++) {
-                    part[j - startIndex] = emailBytes[j];
-                }
-                parts[partIndex] = string(part);
+                parts[partIndex] = _copyBytesToString(emailBytes, startIndex, i);
                 partIndex++;
                 startIndex = i + 1;
             }
         }
 
         // Add the last part
-        bytes memory lastPart = new bytes(emailBytes.length - startIndex);
-        for (uint256 j = startIndex; j < emailBytes.length; j++) {
-            lastPart[j - startIndex] = emailBytes[j];
-        }
-        parts[partIndex] = string(lastPart);
+        parts[partIndex] = _copyBytesToString(emailBytes, startIndex, emailBytes.length);
 
         return parts;
+    }
+
+    /**
+     * @notice Copies a slice of bytes into a new string
+     * @param emailBytes The source bytes
+     * @param startIndex The starting index (inclusive)
+     * @param endIndex The ending index (exclusive)
+     * @return The extracted part as a string
+     */
+    function _copyBytesToString(
+        bytes memory emailBytes,
+        uint256 startIndex,
+        uint256 endIndex
+    )
+        internal
+        pure
+        returns (string memory)
+    {
+        bytes memory part = new bytes(endIndex - startIndex);
+        for (uint256 j = startIndex; j < endIndex; j++) {
+            part[j - startIndex] = emailBytes[j];
+        }
+        return string(part);
     }
 
     /**
@@ -372,19 +387,27 @@ contract ProveAndClaimCommandVerifier {
         uint256 addr = 0;
         for (uint256 i = 0; i < 40; i++) {
             uint8 b = uint8(strBytes[uint256(last0x) + 2 + i]);
-            uint8 nibble;
-            if (b >= 48 && b <= 57) {
-                nibble = b - 48; // '0'-'9'
-            } else if (b >= 65 && b <= 70) {
-                nibble = b - 55; // 'A'-'F'
-            } else if (b >= 97 && b <= 102) {
-                nibble = b - 87; // 'a'-'f'
-            } else {
-                revert InvalidHexInAddress();
-            }
+            uint8 nibble = _hexCharToNibble(b);
             addr = (addr << 4) | uint256(nibble);
         }
         return address(uint160(addr));
+    }
+
+    /**
+     * @notice Converts a hex character to its numeric value
+     * @param b The hex character byte
+     * @return The numeric value of the hex character
+     */
+    function _hexCharToNibble(uint8 b) internal pure returns (uint8) {
+        if (b >= 48 && b <= 57) {
+            return b - 48; // '0'-'9'
+        } else if (b >= 65 && b <= 70) {
+            return b - 55; // 'A'-'F'
+        } else if (b >= 97 && b <= 102) {
+            return b - 87; // 'a'-'f'
+        } else {
+            revert InvalidHexInAddress();
+        }
     }
 
     /**
