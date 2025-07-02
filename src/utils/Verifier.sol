@@ -108,6 +108,24 @@ contract ProveAndClaimCommandVerifier {
     address public immutable GORTH16_VERIFIER;
 
     /**
+     * @notice Error thrown when the public signals array length is not exactly 60
+     * @dev The ZK circuit expects exactly 60 public signals for verification
+     */
+    error InvalidPublicSignalsLength();
+
+    /**
+     * @notice Error thrown when no valid Ethereum address is found in the command string
+     * @dev The command should contain a valid 0x-prefixed Ethereum address
+     */
+    error NoAddressFoundInCommand();
+
+    /**
+     * @notice Error thrown when invalid hexadecimal characters are found in the address parsing
+     * @dev Only valid hex characters (0-9, a-f, A-F) are allowed in Ethereum addresses
+     */
+    error InvalidHexInAddress();
+
+    /**
      * @notice Initializes the verifier with a Groth16 verifier contract
      * @param _groth16Verifier The address of the deployed Groth16Verifier contract
      * @dev The Groth16 verifier must be compatible with the specific circuit used for email verification.
@@ -198,7 +216,7 @@ contract ProveAndClaimCommandVerifier {
         pure
         returns (bytes memory encodedCommand)
     {
-        require(publicSignals.length == 60, "Invalid public signals length");
+        if (publicSignals.length != 60) revert InvalidPublicSignalsLength();
 
         return abi.encode(
             ProveAndClaimCommand({
@@ -338,7 +356,7 @@ contract ProveAndClaimCommandVerifier {
                 last0x = int256(i);
             }
         }
-        require(last0x >= 0 && uint256(last0x) + 42 <= strBytes.length, "No address found in command");
+        if (last0x < 0 || uint256(last0x) + 42 > strBytes.length) revert NoAddressFoundInCommand();
 
         // Parse the next 40 hex characters
         uint256 addr = 0;
@@ -352,7 +370,7 @@ contract ProveAndClaimCommandVerifier {
             } else if (b >= 97 && b <= 102) {
                 nibble = b - 87; // 'a'-'f'
             } else {
-                revert("Invalid hex in address");
+                revert InvalidHexInAddress();
             }
             addr = (addr << 4) | uint256(nibble);
         }
