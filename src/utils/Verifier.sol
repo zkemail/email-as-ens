@@ -212,6 +212,8 @@ contract ProveAndClaimCommandVerifier {
                     _unpackFields2Bytes(publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES)
                 ),
                 owner: _extractOwner(
+                    // foundry's known line_length soft limit issue: https://github.com/foundry-rs/foundry/issues/4450
+                    // solhint-disable-next-line max-line-length
                     _unpackFields2Bytes(publicSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_FIELDS, MASKED_COMMAND_BYTES)
                 ),
                 dkimSignerHash: bytes32(publicSignals[PUBLIC_KEY_HASH_OFFSET]),
