@@ -79,13 +79,32 @@ contract ProveAndClaimCommandVerifier {
     uint256 public constant Q =
         21_888_242_871_839_275_222_246_405_745_257_275_088_696_311_157_297_823_662_689_037_894_645_226_208_583;
 
-    uint256 public constant DOMAIN_FIELDS = 9;
-    uint256 public constant DOMAIN_BYTES = 255;
-    uint256 public constant EMAIL_FIELDS = 9;
-    uint256 public constant EMAIL_BYTES = 256;
-    uint256 public constant COMMAND_FIELDS = 20;
-    uint256 public constant COMMAND_BYTES = 605;
+    // publicSignals[0-8] -> 9 fields -> domain_name
+    uint256 public constant DOMAIN_NAME_OFFSET = 0;
+    uint256 public constant DOMAIN_NAME_FIELDS = 9;
+    uint256 public constant DOMAIN_NAME_BYTES = 255;
+    // publicSignals[9] -> 1 field -> public_key_hash
+    uint256 public constant PUBLIC_KEY_HASH_OFFSET = 9;
+    // publicSignals[10] -> 1 field -> email_nullifier
+    uint256 public constant EMAIL_NULLIFIER_OFFSET = 10;
+    // publicSignals[11] -> 1 field -> timestamp
+    uint256 public constant TIMESTAMP_OFFSET = 11;
+    // publicSignals[12-31] -> 20 fields -> masked_command
+    uint256 public constant MASKED_COMMAND_OFFSET = 12;
+    uint256 public constant MASKED_COMMAND_FIELDS = 20;
+    uint256 public constant MASKED_COMMAND_BYTES = 605;
+    // publicSignals[32] -> 1 field -> account_salt
+    uint256 public constant ACCOUNT_SALT_OFFSET = 32;
+    // publicSignals[33] -> 1 field -> is_code_exist
+    uint256 public constant IS_CODE_EXIST_OFFSET = 33;
+    // publicSignals[34-50] -> 17 fields -> pubkey
+    uint256 public constant PUBKEY_OFFSET = 34;
     uint256 public constant PUBKEY_FIELDS = 17;
+    // publicSignals[51-59] -> 9 fields -> email_address
+    uint256 public constant EMAIL_ADDRESS_OFFSET = 51;
+    uint256 public constant EMAIL_ADDRESS_FIELDS = 9;
+    uint256 public constant EMAIL_ADDRESS_BYTES = 256;
+
     address public immutable GORTH16_VERIFIER;
 
     /**
@@ -147,6 +166,221 @@ contract ProveAndClaimCommandVerifier {
     }
 
     /**
+     * @notice Unpacks the public signals and proof into a ProveAndClaimCommand struct and encodes it into bytes
+     * @param publicSignals Array of public signals from the ZK proof
+     * @param proof The zero-knowledge proof bytes
+     * @return encodedCommand ABI-encoded ProveAndClaimCommand struct in bytes
+     * @dev This function allows off-chain encoding of proof parameters to avoid
+     *      expensive on-chain encoding. The backend can call this as a view function
+     *      to get the properly formatted proof data for on-chain submission.
+     *
+     *      The publicSignals array should contain 60 elements in the same order
+     *      as defined in _buildPubSignals:
+     *       -------------------------------------------------------------------------------------
+     *      | Range | #fields | Field name      | Description                                     |
+     *      |-------------------------------------------------------------------------------------|
+     *      | 0-8   | 9       | domain_name     | packed representation of the email domain       |
+     *      | 9     | 1       | public_key_hash | hash of the DKIM RSA public key                 |
+     *      | 10    | 1       | email_nullifier | unique identifier preventing replay attacks     |
+     *      | 11    | 1       | timestamp       | email timestamp, 0 if not supported             |
+     *      | 12-31 | 20      | masked_command  | packed representation of the expected command   |
+     *      | 32    | 1       | account_salt    | additional randomness for security              |
+     *      | 33    | 1       | is_code_exist   | boolean indicating embedded verification code   |
+     *      | 34-50 | 17      | pubkey          | decomposed RSA public key components            |
+     *      | 51-59 | 9       | email_address   | packed representation of the full email address |
+     *       -------------------------------------------------------------------------------------
+     */
+    function encode(
+        uint256[] calldata publicSignals,
+        bytes calldata proof
+    )
+        public
+        pure
+        returns (bytes memory encodedCommand)
+    {
+        require(publicSignals.length == 60, "Invalid public signals length");
+
+        return abi.encode(
+            ProveAndClaimCommand({
+                domain: string(
+                    _unpackFields2Bytes(publicSignals, DOMAIN_NAME_OFFSET, DOMAIN_NAME_FIELDS, DOMAIN_NAME_BYTES)
+                ),
+                email: string(
+                    _unpackFields2Bytes(publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES)
+                ),
+                emailParts: _extractEmailParts(
+                    _unpackFields2Bytes(publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES)
+                ),
+                owner: _extractOwner(
+                    _unpackFields2Bytes(publicSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_FIELDS, MASKED_COMMAND_BYTES)
+                ),
+                dkimSignerHash: bytes32(publicSignals[PUBLIC_KEY_HASH_OFFSET]),
+                nullifier: bytes32(publicSignals[EMAIL_NULLIFIER_OFFSET]),
+                timestamp: publicSignals[TIMESTAMP_OFFSET],
+                accountSalt: bytes32(publicSignals[ACCOUNT_SALT_OFFSET]),
+                isCodeEmbedded: publicSignals[IS_CODE_EXIST_OFFSET] == 1,
+                miscellaneousData: _unpackFields2PubKey(publicSignals, PUBKEY_OFFSET, PUBKEY_FIELDS),
+                proof: proof
+            })
+        );
+    }
+
+    /**
+     * @notice Unpacks field elements back to bytes
+     * @param publicSignals Array of public signals
+     * @param startIndex Starting index in publicSignals
+     * @param numFields Number of fields to unpack
+     * @param paddedSize Original padded size of the bytes
+     * @return The unpacked bytes
+     */
+    function _unpackFields2Bytes(
+        uint256[] calldata publicSignals,
+        uint256 startIndex,
+        uint256 numFields,
+        uint256 paddedSize
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        bytes memory result = new bytes(paddedSize);
+        uint256 resultIndex = 0;
+
+        for (uint256 i = 0; i < numFields; i++) {
+            uint256 field = publicSignals[startIndex + i];
+            for (uint256 j = 0; j < 31 && resultIndex < paddedSize; j++) {
+                result[resultIndex] = bytes1(uint8(field & 0xFF));
+                field = field >> 8;
+                resultIndex++;
+            }
+        }
+
+        // Trim trailing zeros
+        uint256 actualLength = 0;
+        for (uint256 i = 0; i < result.length; i++) {
+            if (result[i] != 0) {
+                actualLength = i + 1;
+            }
+        }
+
+        bytes memory trimmedResult = new bytes(actualLength);
+        for (uint256 i = 0; i < actualLength; i++) {
+            trimmedResult[i] = result[i];
+        }
+
+        return trimmedResult;
+    }
+
+    /**
+     * @notice Splits email bytes into parts by dots
+     * @param emailBytes The email bytes to split
+     * @return Array of email parts
+     */
+    function _extractEmailParts(bytes memory emailBytes) internal pure returns (string[] memory) {
+        // replace @ with $
+        for (uint256 i = 0; i < emailBytes.length; i++) {
+            if (emailBytes[i] == "@") {
+                emailBytes[i] = "$";
+            }
+        }
+
+        uint256 dotCount = 0;
+
+        // Count dots
+        for (uint256 i = 0; i < emailBytes.length; i++) {
+            if (emailBytes[i] == ".") {
+                dotCount++;
+            }
+        }
+
+        string[] memory parts = new string[](dotCount + 1);
+        uint256 partIndex = 0;
+        uint256 startIndex = 0;
+
+        for (uint256 i = 0; i < emailBytes.length; i++) {
+            if (emailBytes[i] == ".") {
+                bytes memory part = new bytes(i - startIndex);
+                for (uint256 j = startIndex; j < i; j++) {
+                    part[j - startIndex] = emailBytes[j];
+                }
+                parts[partIndex] = string(part);
+                partIndex++;
+                startIndex = i + 1;
+            }
+        }
+
+        // Add the last part
+        bytes memory lastPart = new bytes(emailBytes.length - startIndex);
+        for (uint256 j = startIndex; j < emailBytes.length; j++) {
+            lastPart[j - startIndex] = emailBytes[j];
+        }
+        parts[partIndex] = string(lastPart);
+
+        return parts;
+    }
+
+    /**
+     * @notice Extracts the owner address from the command bytes
+     * @param commandBytes The command bytes
+     * @return The owner address
+     */
+    function _extractOwner(bytes memory commandBytes) internal pure returns (address) {
+        // Convert bytes to string
+        string memory commandStr = string(commandBytes);
+        bytes memory strBytes = bytes(commandStr);
+
+        // Find the last occurrence of '0x'
+        int256 last0x = -1;
+        for (uint256 i = 0; i + 1 < strBytes.length; i++) {
+            if (strBytes[i] == "0" && (strBytes[i + 1] == "x" || strBytes[i + 1] == "X")) {
+                last0x = int256(i);
+            }
+        }
+        require(last0x >= 0 && uint256(last0x) + 42 <= strBytes.length, "No address found in command");
+
+        // Parse the next 40 hex characters
+        uint256 addr = 0;
+        for (uint256 i = 0; i < 40; i++) {
+            uint8 b = uint8(strBytes[uint256(last0x) + 2 + i]);
+            uint8 nibble;
+            if (b >= 48 && b <= 57) {
+                nibble = b - 48; // '0'-'9'
+            } else if (b >= 65 && b <= 70) {
+                nibble = b - 55; // 'A'-'F'
+            } else if (b >= 97 && b <= 102) {
+                nibble = b - 87; // 'a'-'f'
+            } else {
+                revert("Invalid hex in address");
+            }
+            addr = (addr << 4) | uint256(nibble);
+        }
+        return address(uint160(addr));
+    }
+
+    /**
+     * @notice Unpacks pubkey fields from public signals
+     * @param publicSignals Array of public signals
+     * @param startIndex Starting index of pubkey fields
+     * @param numFields Number of pubkey fields
+     * @return ABI-encoded pubkey fields
+     */
+    function _unpackFields2PubKey(
+        uint256[] calldata publicSignals,
+        uint256 startIndex,
+        uint256 numFields
+    )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        uint256[17] memory pubKeyFields;
+        for (uint256 i = 0; i < numFields; i++) {
+            pubKeyFields[i] = publicSignals[startIndex + i];
+        }
+        return abi.encode(pubKeyFields);
+    }
+
+    /**
      * @notice Verifies that the email parts are dot separated and match the claimed email
      * @param emailParts The parts of the email address dot separated
      * @param email The complete email address
@@ -167,6 +401,7 @@ contract ProveAndClaimCommandVerifier {
         if (composedEmail.length != emailBytes.length) {
             return false;
         }
+
         // check if the email parts are dot separated and match the claimed email
         // note since @ sign is not in dns encoding valid char set, we are arbitrarily replacing it with a $
         for (uint256 i = 0; i < emailBytes.length; i++) {
@@ -188,15 +423,19 @@ contract ProveAndClaimCommandVerifier {
      * @param command The ProveAndClaimCommand struct containing the necessary data
      * @return An array of 60 uint256 values representing the public signals
      * @dev The public signals are structured as follows (in order, totaling 60 fields):
-     *      - domain_name: 9 fields (packed representation of the email domain)
-     *      - public_key_hash: 1 field (hash of the DKIM RSA public key)
-     *      - email_nullifier: 1 field (unique identifier preventing replay attacks)
-     *      - timestamp: 1 field (email timestamp, 0 if not supported)
-     *      - masked_command: 20 fields (packed representation of the expected command)
-     *      - account_salt: 1 field (additional randomness for security)
-     *      - is_code_exist: 1 field (boolean indicating embedded verification code)
-     *      - pubkey: 17 fields (decomposed RSA public key components)
-     *      - email_address: 9 fields (packed representation of the full email address)
+     *       -------------------------------------------------------------------------------------
+     *      | Range | #fields | Field name      | Description                                     |
+     *      |-------------------------------------------------------------------------------------|
+     *      | 0-8   | 9       | domain_name     | packed representation of the email domain       |
+     *      | 9     | 1       | public_key_hash | hash of the DKIM RSA public key                 |
+     *      | 10    | 1       | email_nullifier | unique identifier preventing replay attacks     |
+     *      | 11    | 1       | timestamp       | email timestamp, 0 if not supported             |
+     *      | 12-31 | 20      | masked_command  | packed representation of the expected command   |
+     *      | 32    | 1       | account_salt    | additional randomness for security              |
+     *      | 33    | 1       | is_code_exist   | boolean indicating embedded verification code   |
+     *      | 34-50 | 17      | pubkey          | decomposed RSA public key components            |
+     *      | 51-59 | 9       | email_address   | packed representation of the full email address |
+     *       -------------------------------------------------------------------------------------
      *
      *      All string data (domain, email, command) is packed into field elements using a specific
      *      encoding scheme that packs 31 bytes per field element for efficiency.
@@ -207,36 +446,36 @@ contract ProveAndClaimCommandVerifier {
     function _buildPubSignals(ProveAndClaimCommand memory command) internal pure returns (uint256[60] memory) {
         uint256[60] memory pubSignals;
 
-        uint256[] memory domainFields = _packBytes2Fields(bytes(command.domain), DOMAIN_BYTES);
-        uint256[] memory emailFields = _packBytes2Fields(bytes(command.email), EMAIL_BYTES);
-        uint256[] memory commandFields = _packBytes2Fields(_getExpectedCommand(command.owner), COMMAND_BYTES);
-        uint256[PUBKEY_FIELDS] memory pubKeyFields = abi.decode(command.miscellaneousData, (uint256[17]));
+        uint256[] memory domainFields = _packBytes2Fields(bytes(command.domain), DOMAIN_NAME_BYTES);
+        uint256[] memory emailFields = _packBytes2Fields(bytes(command.email), EMAIL_ADDRESS_BYTES);
+        uint256[] memory commandFields = _packBytes2Fields(_getExpectedCommand(command.owner), MASKED_COMMAND_BYTES);
+        uint256[PUBKEY_FIELDS] memory pubKeyFields = _packPubKey2Fields(command.miscellaneousData);
 
         // domain_name
-        for (uint256 i = 0; i < DOMAIN_FIELDS; i++) {
+        for (uint256 i = 0; i < DOMAIN_NAME_FIELDS; i++) {
             pubSignals[i] = domainFields[i];
         }
         // public_key_hash
-        pubSignals[DOMAIN_FIELDS] = uint256(command.dkimSignerHash);
+        pubSignals[PUBLIC_KEY_HASH_OFFSET] = uint256(command.dkimSignerHash);
         // email_nullifier
-        pubSignals[DOMAIN_FIELDS + 1] = uint256(command.nullifier);
+        pubSignals[EMAIL_NULLIFIER_OFFSET] = uint256(command.nullifier);
         // timestamp
-        pubSignals[DOMAIN_FIELDS + 2] = uint256(command.timestamp);
+        pubSignals[TIMESTAMP_OFFSET] = uint256(command.timestamp);
         // masked_command
-        for (uint256 i = 0; i < COMMAND_FIELDS; i++) {
-            pubSignals[DOMAIN_FIELDS + 3 + i] = commandFields[i];
+        for (uint256 i = 0; i < MASKED_COMMAND_FIELDS; i++) {
+            pubSignals[MASKED_COMMAND_OFFSET + i] = commandFields[i];
         }
         // account_salt
-        pubSignals[DOMAIN_FIELDS + 3 + COMMAND_FIELDS] = uint256(command.accountSalt);
+        pubSignals[ACCOUNT_SALT_OFFSET] = uint256(command.accountSalt);
         // is_code_exist
-        pubSignals[DOMAIN_FIELDS + 3 + COMMAND_FIELDS + 1] = command.isCodeEmbedded ? 1 : 0;
+        pubSignals[IS_CODE_EXIST_OFFSET] = command.isCodeEmbedded ? 1 : 0;
         // pubkey
         for (uint256 i = 0; i < PUBKEY_FIELDS; i++) {
-            pubSignals[DOMAIN_FIELDS + 3 + COMMAND_FIELDS + 2 + i] = pubKeyFields[i];
+            pubSignals[PUBKEY_OFFSET + i] = pubKeyFields[i];
         }
         // email_address
-        for (uint256 i = 0; i < EMAIL_FIELDS; i++) {
-            pubSignals[DOMAIN_FIELDS + 3 + COMMAND_FIELDS + 2 + PUBKEY_FIELDS + i] = emailFields[i];
+        for (uint256 i = 0; i < EMAIL_ADDRESS_FIELDS; i++) {
+            pubSignals[EMAIL_ADDRESS_OFFSET + i] = emailFields[i];
         }
 
         return pubSignals;
@@ -304,5 +543,14 @@ contract ProveAndClaimCommandVerifier {
         bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(_owner);
         return bytes(CommandUtils.computeExpectedCommand(commandParams, template, 0));
+    }
+
+    /**
+     * @notice Packs pubkey fields into uint256 array
+     * @param fields The pubkey fields to pack
+     * @return The packed pubkey fields
+     */
+    function _packPubKey2Fields(bytes memory fields) internal pure returns (uint256[17] memory) {
+        return abi.decode(fields, (uint256[17]));
     }
 }
