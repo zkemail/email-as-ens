@@ -124,16 +124,31 @@ contract ProveAndClaimCommandVerifier {
     error InvalidPublicSignalsLength();
 
     /**
-     * @notice Error thrown when no valid Ethereum address is found in the command string
-     * @dev The command should contain a valid 0x-prefixed Ethereum address
+     * @notice Error thrown when the command length is invalid
+     * @dev The command should have the expected format and length
      */
-    error NoAddressFoundInCommand();
+    error InvalidCommandLength();
 
     /**
-     * @notice Error thrown when invalid hexadecimal characters are found in the address parsing
-     * @dev Only valid hex characters (0-9, a-f, A-F) are allowed in Ethereum addresses
+     * @notice Error thrown when an invalid hex character is encountered
+     * @dev Only valid hex characters (0-9, a-f, A-F) are allowed
      */
-    error InvalidHexInAddress();
+    error InvalidHexCharacter();
+
+    /**
+     * @notice Error thrown when no valid Ethereum address is found in the command string
+     * @dev The command should contain a valid ethereum address:
+     * - 42 characters long
+     * - start with 0x
+     * - contain only valid hex characters (0-9, a-f, A-F)
+     */
+    error InvalidEthereumAddress();
+
+    /**
+     * @notice Error thrown when the email doesn't contain an @ symbol
+     * @dev Valid email addresses must contain exactly one @ symbol
+     */
+    error InvalidEmailAddress();
 
     /**
      * @notice Initializes the verifier with a Groth16 verifier contract
@@ -199,7 +214,7 @@ contract ProveAndClaimCommandVerifier {
      * @param proof The zero-knowledge proof bytes
      * @return encodedCommand ABI-encoded ProveAndClaimCommand struct in bytes
      * @dev This function allows off-chain encoding of proof parameters to avoid
-     *      expensive on-chain encoding. The backend can call this as a view function
+     *      expensive on-chain encoding. The backend can call this as a pure function
      *      to get the properly formatted proof data for on-chain submission.
      *
      *      The publicSignals array should contain 60 elements in the same order
@@ -249,7 +264,7 @@ contract ProveAndClaimCommandVerifier {
                 timestamp: publicSignals[TIMESTAMP_OFFSET],
                 accountSalt: bytes32(publicSignals[ACCOUNT_SALT_OFFSET]),
                 isCodeEmbedded: publicSignals[IS_CODE_EXIST_OFFSET] == 1,
-                miscellaneousData: _unpackFields2PubKey(publicSignals, PUBKEY_OFFSET, PUBKEY_FIELDS),
+                miscellaneousData: abi.encode(_extractPubKeyFields(publicSignals, PUBKEY_OFFSET, PUBKEY_FIELDS)),
                 proof: proof
             })
         );
@@ -286,7 +301,7 @@ contract ProveAndClaimCommandVerifier {
         uint256[] memory domainFields = _packBytes2Fields(bytes(command.domain), DOMAIN_NAME_BYTES);
         uint256[] memory emailFields = _packBytes2Fields(bytes(command.email), EMAIL_ADDRESS_BYTES);
         uint256[] memory commandFields = _packBytes2Fields(_getExpectedCommand(command.owner), MASKED_COMMAND_BYTES);
-        uint256[PUBKEY_FIELDS] memory pubKeyFields = _packPubKey2Fields(command.miscellaneousData);
+        uint256[PUBKEY_FIELDS] memory pubKeyFields = abi.decode(command.miscellaneousData, (uint256[17]));
 
         // domain_name
         for (uint256 i = 0; i < DOMAIN_NAME_FIELDS; i++) {
@@ -357,6 +372,50 @@ contract ProveAndClaimCommandVerifier {
     }
 
     /**
+     * @notice Packs byte arrays into field elements for ZK circuit compatibility
+     * @param _bytes The byte array to pack into field elements
+     * @param _paddedSize The target size after padding (must be larger than or equal to _bytes.length)
+     * @return An array of field elements containing the packed byte data
+     * @dev This function packs bytes into field elements by:
+     *      1. Determining how many field elements are needed (31 bytes per field element)
+     *      2. Packing bytes in little-endian order within each field element
+     *      3. Padding with zeros if the input is shorter than _paddedSize
+     *      4. Ensuring the resulting field elements are compatible with ZK circuits
+     *
+     *      Each field element can contain up to 31 bytes to ensure the result stays below
+     *      the BN128 curve order. Bytes are packed as: byte0 + (byte1 << 8) + (byte2 << 16) + ...
+     */
+    function _packBytes2Fields(bytes memory _bytes, uint256 _paddedSize) internal pure returns (uint256[] memory) {
+        uint256 remain = _paddedSize % 31;
+        uint256 numFields = (_paddedSize - remain) / 31;
+        if (remain > 0) {
+            numFields += 1;
+        }
+        uint256[] memory fields = new uint256[](numFields);
+        uint256 idx = 0;
+        uint256 byteVal = 0;
+        for (uint256 i = 0; i < numFields; i++) {
+            for (uint256 j = 0; j < 31; j++) {
+                idx = i * 31 + j;
+                if (idx >= _paddedSize) {
+                    break;
+                }
+                if (idx >= _bytes.length) {
+                    byteVal = 0;
+                } else {
+                    byteVal = uint256(uint8(_bytes[idx]));
+                }
+                if (j == 0) {
+                    fields[i] = byteVal;
+                } else {
+                    fields[i] += (byteVal << (8 * j));
+                }
+            }
+        }
+        return fields;
+    }
+
+    /**
      * @notice Unpacks field elements back to bytes
      * @param publicSignals Array of public signals
      * @param startIndex Starting index in publicSignals
@@ -403,168 +462,6 @@ contract ProveAndClaimCommandVerifier {
     }
 
     /**
-     * @notice Packs byte arrays into field elements for ZK circuit compatibility
-     * @param _bytes The byte array to pack into field elements
-     * @param _paddedSize The target size after padding (must be larger than or equal to _bytes.length)
-     * @return An array of field elements containing the packed byte data
-     * @dev This function packs bytes into field elements by:
-     *      1. Determining how many field elements are needed (31 bytes per field element)
-     *      2. Packing bytes in little-endian order within each field element
-     *      3. Padding with zeros if the input is shorter than _paddedSize
-     *      4. Ensuring the resulting field elements are compatible with ZK circuits
-     *
-     *      Each field element can contain up to 31 bytes to ensure the result stays below
-     *      the BN128 curve order. Bytes are packed as: byte0 + (byte1 << 8) + (byte2 << 16) + ...
-     */
-    function _packBytes2Fields(bytes memory _bytes, uint256 _paddedSize) internal pure returns (uint256[] memory) {
-        uint256 remain = _paddedSize % 31;
-        uint256 numFields = (_paddedSize - remain) / 31;
-        if (remain > 0) {
-            numFields += 1;
-        }
-        uint256[] memory fields = new uint256[](numFields);
-        uint256 idx = 0;
-        uint256 byteVal = 0;
-        for (uint256 i = 0; i < numFields; i++) {
-            for (uint256 j = 0; j < 31; j++) {
-                idx = i * 31 + j;
-                if (idx >= _paddedSize) {
-                    break;
-                }
-                if (idx >= _bytes.length) {
-                    byteVal = 0;
-                } else {
-                    byteVal = uint256(uint8(_bytes[idx]));
-                }
-                if (j == 0) {
-                    fields[i] = byteVal;
-                } else {
-                    fields[i] += (byteVal << (8 * j));
-                }
-            }
-        }
-        return fields;
-    }
-
-    /**
-     * @notice Splits email bytes into parts by dots
-     * @param emailBytes The email bytes to split
-     * @return Array of email parts
-     */
-    function _extractEmailParts(bytes memory emailBytes) internal pure returns (string[] memory) {
-        // replace @ with $
-        for (uint256 i = 0; i < emailBytes.length; i++) {
-            if (emailBytes[i] == "@") {
-                emailBytes[i] = "$";
-            }
-        }
-
-        uint256 dotCount = 0;
-
-        // Count dots
-        for (uint256 i = 0; i < emailBytes.length; i++) {
-            if (emailBytes[i] == ".") {
-                dotCount++;
-            }
-        }
-
-        string[] memory parts = new string[](dotCount + 1);
-        uint256 partIndex = 0;
-        uint256 startIndex = 0;
-
-        for (uint256 i = 0; i < emailBytes.length; i++) {
-            if (emailBytes[i] == ".") {
-                parts[partIndex] = _copyBytesToString(emailBytes, startIndex, i);
-                partIndex++;
-                startIndex = i + 1;
-            }
-        }
-
-        // Add the last part
-        parts[partIndex] = _copyBytesToString(emailBytes, startIndex, emailBytes.length);
-
-        return parts;
-    }
-
-    /**
-     * @notice Extracts the owner address from the command bytes
-     * @param commandBytes The command bytes
-     * @return The owner address
-     */
-    function _extractOwner(bytes memory commandBytes) internal pure returns (address) {
-        // Convert bytes to string
-        string memory commandStr = string(commandBytes);
-        bytes memory strBytes = bytes(commandStr);
-
-        // Find the last occurrence of '0x'
-        int256 last0x = -1;
-        for (uint256 i = 0; i + 1 < strBytes.length; i++) {
-            if (strBytes[i] == "0" && (strBytes[i + 1] == "x" || strBytes[i + 1] == "X")) {
-                last0x = int256(i);
-            }
-        }
-        if (last0x < 0 || uint256(last0x) + 42 > strBytes.length) revert NoAddressFoundInCommand();
-
-        // Parse the next 40 hex characters
-        uint256 addr = 0;
-        for (uint256 i = 0; i < 40; i++) {
-            uint8 b = uint8(strBytes[uint256(last0x) + 2 + i]);
-            uint8 nibble = _hexCharToNibble(b);
-            addr = (addr << 4) | uint256(nibble);
-        }
-        return address(uint160(addr));
-    }
-
-    /**
-     * @notice Converts a hex character to its numeric value
-     * @param b The hex character byte
-     * @return The numeric value of the hex character
-     */
-    function _hexCharToNibble(uint8 b) internal pure returns (uint8) {
-        if (b >= 48 && b <= 57) {
-            return b - 48; // '0'-'9'
-        } else if (b >= 65 && b <= 70) {
-            return b - 55; // 'A'-'F'
-        } else if (b >= 97 && b <= 102) {
-            return b - 87; // 'a'-'f'
-        } else {
-            revert InvalidHexInAddress();
-        }
-    }
-
-    /**
-     * @notice Unpacks pubkey fields from public signals
-     * @param publicSignals Array of public signals
-     * @param startIndex Starting index of pubkey fields
-     * @param numFields Number of pubkey fields
-     * @return ABI-encoded pubkey fields
-     */
-    function _unpackFields2PubKey(
-        uint256[] calldata publicSignals,
-        uint256 startIndex,
-        uint256 numFields
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        uint256[17] memory pubKeyFields;
-        for (uint256 i = 0; i < numFields; i++) {
-            pubKeyFields[i] = publicSignals[startIndex + i];
-        }
-        return abi.encode(pubKeyFields);
-    }
-
-    /**
-     * @notice Packs pubkey fields into uint256 array
-     * @param fields The pubkey fields to pack
-     * @return The packed pubkey fields
-     */
-    function _packPubKey2Fields(bytes memory fields) internal pure returns (uint256[17] memory) {
-        return abi.decode(fields, (uint256[17]));
-    }
-
-    /**
      * @notice Generates the expected command string for a given owner address
      * @param _owner The Ethereum address that should appear in the command
      * @return The expected command bytes that should be present in the verified email
@@ -584,26 +481,115 @@ contract ProveAndClaimCommandVerifier {
         return bytes(CommandUtils.computeExpectedCommand(commandParams, template, 0));
     }
 
+    function _extractOwner(bytes memory commandBytes) internal pure returns (address) {
+        // "Claim ENS name for address 0x" is 30 bytes long.
+        // It should be 28 for "Claim ENS name for address " + "0x" = 30. No, it is "Claim ENS name for address " which
+        // is 28. Address starts with 0x.
+        // Let's check the prefix "Claim ENS name for address ". Length is 28.
+        bytes memory prefix = "Claim ENS name for address ";
+        if (commandBytes.length != prefix.length + 42) revert InvalidCommandLength();
+
+        bytes memory addressBytes = new bytes(42);
+        for (uint256 i = 0; i < 42; i++) {
+            addressBytes[i] = commandBytes[prefix.length + i];
+        }
+
+        return _parseAddress(string(addressBytes));
+    }
+
+    function _parseAddress(string memory addrStr) internal pure returns (address) {
+        bytes memory addrBytes = bytes(addrStr);
+        if (addrBytes.length != 42) revert InvalidEthereumAddress();
+        if (addrBytes[0] != "0" || addrBytes[1] != "x") revert InvalidEthereumAddress();
+
+        uint160 a;
+        for (uint256 i = 0; i < 20; i++) {
+            uint8 b1 = _parseHexChar(addrBytes[2 + i * 2]);
+            uint8 b2 = _parseHexChar(addrBytes[2 + i * 2 + 1]);
+            a |= uint160(b1 * 16 + b2) << uint160(8 * (19 - i));
+        }
+        return address(a);
+    }
+
+    function _parseHexChar(bytes1 char) internal pure returns (uint8) {
+        if (char >= "0" && char <= "9") {
+            return uint8(char) - uint8(bytes1("0"));
+        }
+        if (char >= "a" && char <= "f") {
+            return 10 + uint8(char) - uint8(bytes1("a"));
+        }
+        if (char >= "A" && char <= "F") {
+            return 10 + uint8(char) - uint8(bytes1("A"));
+        }
+        revert InvalidHexCharacter();
+    }
+
     /**
-     * @notice Copies a slice of bytes into a new string
-     * @param emailBytes The source bytes
-     * @param startIndex The starting index (inclusive)
-     * @param endIndex The ending index (exclusive)
-     * @return The extracted part as a string
+     * @notice Extracts pubkey fields from public signals
+     * @param publicSignals Array of public signals
+     * @param startIndex Starting index of pubkey fields
+     * @param numFields Number of pubkey fields
+     * @return Array of pubkey fields
      */
-    function _copyBytesToString(
-        bytes memory emailBytes,
+    function _extractPubKeyFields(
+        uint256[] calldata publicSignals,
         uint256 startIndex,
-        uint256 endIndex
+        uint256 numFields
     )
         internal
         pure
-        returns (string memory)
+        returns (uint256[17] memory)
     {
-        bytes memory part = new bytes(endIndex - startIndex);
-        for (uint256 j = startIndex; j < endIndex; j++) {
-            part[j - startIndex] = emailBytes[j];
+        uint256[17] memory pubKeyFields;
+        for (uint256 i = 0; i < numFields; i++) {
+            pubKeyFields[i] = publicSignals[startIndex + i];
         }
-        return string(part);
+        return pubKeyFields;
+    }
+
+    function _extractEmailParts(bytes memory emailBytes) internal pure returns (string[] memory) {
+        bytes memory modifiedEmail = new bytes(emailBytes.length);
+        uint256 atIndex = 0;
+        for (uint256 i = 0; i < emailBytes.length; i++) {
+            if (emailBytes[i] == "@") {
+                modifiedEmail[i] = "$";
+                atIndex = i;
+            } else {
+                modifiedEmail[i] = emailBytes[i];
+            }
+        }
+        if (atIndex == 0) revert InvalidEmailAddress();
+        return _splitString(string(modifiedEmail), ".");
+    }
+
+    function _splitString(string memory str, bytes1 delimiter) internal pure returns (string[] memory) {
+        bytes memory strBytes = bytes(str);
+        uint256 count = 1;
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            if (strBytes[i] == delimiter) {
+                count++;
+            }
+        }
+
+        string[] memory parts = new string[](count);
+        uint256 lastIndex = 0;
+        uint256 partIndex = 0;
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            if (strBytes[i] == delimiter) {
+                bytes memory partBytes = new bytes(i - lastIndex);
+                for (uint256 j = 0; j < partBytes.length; j++) {
+                    partBytes[j] = strBytes[lastIndex + j];
+                }
+                parts[partIndex] = string(partBytes);
+                lastIndex = i + 1;
+                partIndex++;
+            }
+        }
+        bytes memory lastPartBytes = new bytes(strBytes.length - lastIndex);
+        for (uint256 i = 0; i < lastPartBytes.length; i++) {
+            lastPartBytes[i] = strBytes[lastIndex + i];
+        }
+        parts[partIndex] = string(lastPartBytes);
+        return parts;
     }
 }
