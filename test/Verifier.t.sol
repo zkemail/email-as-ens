@@ -78,4 +78,37 @@ contract VerifierTest is Test {
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
     }
+
+    function test_encode_returnsCorrectlyEncodedCommand() public view {
+        (ProveAndClaimCommand memory command, uint256[60] memory publicSignals) = TestFixtures.claimEnsCommand();
+
+        // Convert uint256[60] to uint256[] for the encode function
+        uint256[] memory publicSignalsArray = new uint256[](60);
+        for (uint256 i = 0; i < 60; i++) {
+            publicSignalsArray[i] = publicSignals[i];
+        }
+
+        // Encode the command using the encode function
+        bytes memory encodedCommand = _verifier.encode(publicSignalsArray, command.proof);
+
+        // Decode it back to verify it's correct
+        ProveAndClaimCommand memory decodedCommand = abi.decode(encodedCommand, (ProveAndClaimCommand));
+
+        // Verify the decoded command matches the original
+        assertEq(decodedCommand.domain, command.domain);
+        assertEq(decodedCommand.email, command.email);
+        assertEq(decodedCommand.owner, command.owner);
+        assertEq(decodedCommand.dkimSignerHash, command.dkimSignerHash);
+        assertEq(decodedCommand.nullifier, command.nullifier);
+        assertEq(decodedCommand.timestamp, command.timestamp);
+        assertEq(decodedCommand.accountSalt, command.accountSalt);
+        assertEq(decodedCommand.isCodeEmbedded, command.isCodeEmbedded);
+        assertEq(decodedCommand.miscellaneousData, command.miscellaneousData);
+        assertEq(decodedCommand.proof, command.proof);
+
+        assertEq(decodedCommand.emailParts.length, command.emailParts.length);
+        for (uint256 i = 0; i < command.emailParts.length; i++) {
+            assertEq(decodedCommand.emailParts[i], command.emailParts[i]);
+        }
+    }
 }
