@@ -53,7 +53,7 @@ contract ZkEmailRegistrar {
      * @param resolver The resolver for the node
      * @param newOwner The new owner of the node and the address to set for the node (can be changed later by the owner)
      * @dev This function is used to prove and claim an email-based ENS name with a resolver. It is used to set the
-     * owner of the node,
+     * owner of the node,bence/sol-160-encode-function-implementation
      *      the resolver for the node, and the TTL for the node. It also approves the resolver for the node.
      */
     function proveAndClaimWithResolver(
