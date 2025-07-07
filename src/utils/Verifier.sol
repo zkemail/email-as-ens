@@ -213,7 +213,7 @@ contract ProveAndClaimCommandVerifier {
      * @param publicSignals Array of public signals from the ZK proof
      * @param proof The zero-knowledge proof bytes
      * @return encodedCommand ABI-encoded ProveAndClaimCommand struct in bytes
-     * @dev This function allows off-chain encoding of proof parameters to avoid
+     * @dev This function allows off-chain encoding of proof parameters to avoid potentially
      *      expensive on-chain encoding. The backend can call this as a pure function
      *      to get the properly formatted proof data for on-chain submission.
      *
