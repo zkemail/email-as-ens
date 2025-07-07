@@ -69,6 +69,31 @@ contract ZkEmailRegistrarTest is Test {
         assertEq(ownerAfterInRegistrar, command.owner);
     }
 
+    function test_proveAndClaimWithResolver_passesForValidCommand() public {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        bytes memory expectedEnsName = abi.encodePacked(bytes(command.email), bytes(".zk.eth"));
+        bytes32 expectedNode = _nameHash(expectedEnsName, 0);
+
+        // check that the node is not owned by anyone
+        address ownerBefore = ens.owner(expectedNode);
+        address ownerBeforeInRegistrar = registrar.owner(expectedNode);
+        assertEq(ownerBefore, address(0));
+        assertEq(ownerBeforeInRegistrar, address(0));
+
+        address resolver = makeAddr("resolver");
+        _mockAndExpect(resolver, abi.encodeCall(IResolver.setAddr, (expectedNode, command.owner)), "");
+        _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, true)), "");
+        _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
+
+        registrar.proveAndClaimWithResolver(command, resolver, command.owner, 0);
+
+        // check ownership has been set in both ENS and registrar correctly
+        address ownerAfter = ens.owner(expectedNode);
+        address ownerAfterInRegistrar = registrar.owner(expectedNode);
+        assertEq(ownerAfter, address(registrar));
+        assertEq(ownerAfterInRegistrar, command.owner);
+    }
+
     function test_proveAndClaim_preventsDoubleUseOfNullifier() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         registrar.proveAndClaim(command); // passes the first time

@@ -11,6 +11,8 @@ interface IVerifier {
 interface IResolver {
     /// @dev Approve a delegate to be able to updated records on a node.
     function approve(bytes32 node, address delegate, bool approved) external;
+    /// @dev Set the address for a node.
+    function setAddr(bytes32 node, address addr) external;
 }
 
 /**
@@ -46,17 +48,40 @@ contract ZkEmailRegistrar {
     }
 
     /**
+     * @notice Proves and claims an email-based ENS name with a resolver
+     * @param command The command to prove and claim
+     * @param resolver The resolver for the node
+     * @param newOwner The new owner of the node and the address to set for the node (can be changed later by the owner)
+     * @dev This function is used to prove and claim an email-based ENS name with a resolver. It is used to set the
+     * owner of the node,
+     *      the resolver for the node, and the TTL for the node. It also approves the resolver for the node.
+     */
+    function proveAndClaimWithResolver(
+        ProveAndClaimCommand memory command,
+        address resolver,
+        address newOwner,
+        uint64 ttl
+    )
+        external
+    {
+        bytes32 node = proveAndClaim(command);
+        _setRecord(node, newOwner, resolver, ttl);
+        IResolver(resolver).setAddr(node, newOwner);
+    }
+
+    /**
      * @notice Proves and claims an email-based ENS name
      * @param command The command to prove and claim
+     * @return The node that was claimed
      */
-    function proveAndClaim(ProveAndClaimCommand memory command) external {
+    function proveAndClaim(ProveAndClaimCommand memory command) public returns (bytes32) {
         if (_isUsed[command.nullifier]) {
             revert NullifierUsed();
         } else if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
             revert InvalidCommand();
         }
         _isUsed[command.nullifier] = true;
-        _claim(command.emailParts, command.owner);
+        return _claim(command.emailParts, command.owner);
     }
 
     /**
@@ -67,16 +92,16 @@ contract ZkEmailRegistrar {
      * @param ttl The TTL for the node
      */
     function setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) public onlyOwner(node) {
-        address previousOwner = owner[node];
-        owner[node] = newOwner;
-        emit RecordSet(node, newOwner, resolver, ttl);
-
-        ENS(REGISTRY).setRecord(node, address(this), resolver, ttl);
-        IResolver(resolver).approve(node, previousOwner, false);
-        IResolver(resolver).approve(node, newOwner, true);
+        _setRecord(node, newOwner, resolver, ttl);
     }
 
-    function _claim(string[] memory domainParts, address newOwner) internal {
+    /**
+     * @notice Claims a node for an email domain
+     * @param domainParts The parts of the email domain
+     * @param newOwner The new owner of the node
+     * @return The node that was claimed
+     */
+    function _claim(string[] memory domainParts, address newOwner) internal returns (bytes32) {
         bytes32 parent = ROOT_NODE;
 
         for (uint256 i = domainParts.length; i > 0; i--) {
@@ -88,5 +113,23 @@ contract ZkEmailRegistrar {
         // parent is now the node corresponding to the full email domain
         owner[parent] = newOwner;
         emit Claimed(parent, newOwner);
+        return parent;
+    }
+
+    /**
+     * @notice Sets the record for an ENS name
+     * @param node The node to set the record for
+     * @param newOwner The new owner of the node
+     * @param resolver The resolver for the node
+     * @param ttl The TTL for the node
+     */
+    function _setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) internal {
+        address previousOwner = owner[node];
+        owner[node] = newOwner;
+        emit RecordSet(node, newOwner, resolver, ttl);
+
+        ENS(REGISTRY).setRecord(node, address(this), resolver, ttl);
+        IResolver(resolver).approve(node, previousOwner, false);
+        IResolver(resolver).approve(node, newOwner, true);
     }
 }
