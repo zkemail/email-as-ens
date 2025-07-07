@@ -54,6 +54,16 @@ contract VerifierTest is Test {
         }
     }
 
+    function test_isValid_returnsFalseForInvalidProof() public view {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (uint256[2] memory pA, uint256[2][2] memory pB, uint256[2] memory pC) =
+            abi.decode(command.proof, (uint256[2], uint256[2][2], uint256[2]));
+        pA[0] = _verifier.Q();
+        command.proof = abi.encode(pA, pB, pC);
+        bool isValid = _verifier.isValid(abi.encode(command));
+        assertFalse(isValid);
+    }
+
     function test_isValid_returnsTrueForValidCommand() public view {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         bool isValid = _verifier.isValid(abi.encode(command));
