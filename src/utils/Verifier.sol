@@ -473,10 +473,7 @@ contract ProveAndClaimCommandVerifier {
         // 42 => 0x + 40 hex chars
         if (commandBytes.length != prefix.length + 42) revert InvalidCommandLength();
 
-        bytes memory addressBytes = new bytes(42);
-        for (uint256 i = 0; i < addressBytes.length; i++) {
-            addressBytes[i] = commandBytes[prefix.length + i];
-        }
+        bytes memory addressBytes = commandBytes.slice(prefix.length, prefix.length + 42);
 
         return Strings.parseAddress(string(addressBytes));
     }
