@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title ProveAndClaimCommand
@@ -83,6 +84,7 @@ interface IGroth16Verifier {
  */
 contract ProveAndClaimCommandVerifier {
     using Bytes for bytes;
+    using Strings for string;
 
     /// @notice The order of the BN128 elliptic curve used in the ZK proofs
     /// @dev All field elements in proofs must be less than this value
@@ -128,21 +130,6 @@ contract ProveAndClaimCommandVerifier {
      * @dev The command should have the expected format and length
      */
     error InvalidCommandLength();
-
-    /**
-     * @notice Error thrown when an invalid hex character is encountered
-     * @dev Only valid hex characters (0-9, a-f, A-F) are allowed
-     */
-    error InvalidHexCharacter();
-
-    /**
-     * @notice Error thrown when no valid Ethereum address is found in the command string
-     * @dev The command should contain a valid ethereum address:
-     * - 42 characters long
-     * - start with 0x
-     * - contain only valid hex characters (0-9, a-f, A-F)
-     */
-    error InvalidEthereumAddress();
 
     /**
      * @notice Error thrown when the email doesn't contain an @ symbol
@@ -482,46 +469,16 @@ contract ProveAndClaimCommandVerifier {
     }
 
     function _extractOwner(bytes memory commandBytes) internal pure returns (address) {
-        // "Claim ENS name for address 0x" is 30 bytes long.
-        // It should be 28 for "Claim ENS name for address " + "0x" = 30. No, it is "Claim ENS name for address " which
-        // is 28. Address starts with 0x.
-        // Let's check the prefix "Claim ENS name for address ". Length is 28.
         bytes memory prefix = "Claim ENS name for address ";
+        // 42 => 0x + 40 hex chars
         if (commandBytes.length != prefix.length + 42) revert InvalidCommandLength();
 
         bytes memory addressBytes = new bytes(42);
-        for (uint256 i = 0; i < 42; i++) {
+        for (uint256 i = 0; i < addressBytes.length; i++) {
             addressBytes[i] = commandBytes[prefix.length + i];
         }
 
-        return _parseAddress(string(addressBytes));
-    }
-
-    function _parseAddress(string memory addrStr) internal pure returns (address) {
-        bytes memory addrBytes = bytes(addrStr);
-        if (addrBytes.length != 42) revert InvalidEthereumAddress();
-        if (addrBytes[0] != "0" || addrBytes[1] != "x") revert InvalidEthereumAddress();
-
-        uint160 a;
-        for (uint256 i = 0; i < 20; i++) {
-            uint8 b1 = _parseHexChar(addrBytes[2 + i * 2]);
-            uint8 b2 = _parseHexChar(addrBytes[2 + i * 2 + 1]);
-            a |= uint160(b1 * 16 + b2) << uint160(8 * (19 - i));
-        }
-        return address(a);
-    }
-
-    function _parseHexChar(bytes1 char) internal pure returns (uint8) {
-        if (char >= "0" && char <= "9") {
-            return uint8(char) - uint8(bytes1("0"));
-        }
-        if (char >= "a" && char <= "f") {
-            return 10 + uint8(char) - uint8(bytes1("a"));
-        }
-        if (char >= "A" && char <= "F") {
-            return 10 + uint8(char) - uint8(bytes1("A"));
-        }
-        revert InvalidHexCharacter();
+        return Strings.parseAddress(string(addressBytes));
     }
 
     /**
