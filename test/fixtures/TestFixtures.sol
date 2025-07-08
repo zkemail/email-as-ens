@@ -86,28 +86,28 @@ library TestFixtures {
             uint256(3_222_036_726_675_473_160_989_497_427_257_757)
         ];
 
-        // Groth16 proof component A (2 field elements)
+        // Groth16 proof component A (from proof.json)
         uint256[2] memory pA = [
-            0x03e1490fc469798ca99a36702a322ccc8227cc3595058d0aac83aea22fbb2ccf,
-            0x2551cd0add70fe3900b05e2dd03b7ba5102ddb63e1b4003ec839a537c6453cfc
+            2_636_858_690_173_726_293_466_182_200_283_800_852_807_996_135_888_175_103_547_432_491_382_624_893_796,
+            17_620_368_801_909_768_145_957_995_732_588_740_639_024_522_783_807_149_528_968_006_467_621_961_453_105
         ];
 
-        // Groth16 proof component B (2x2 field elements)
+        // Groth16 proof component B (from proof.json)
         uint256[2][2] memory pB = [
             [
-                0x25c35e8d24d948a808a1ea128831cd54ce4a3532a40ab136dc81bbf0b2635c24,
-                0x2e0054eaf867ca03c0f3668b7f17d3bf01b3d7f00bcadb774a74058f81273c97
+                6_439_910_304_238_115_285_169_624_685_558_570_908_886_805_153_587_395_017_692_558_254_037_759_799_155,
+                15_411_707_005_108_214_576_478_961_222_023_374_248_939_342_934_260_880_051_159_223_165_956_118_217_187
             ],
             [
-                0x144542d4082a8fadc1c55a24698522916f1717791bf1e1f115fb183c62a507da,
-                0x2dc6e057e138dd1b7c10c1be1f99261b826cd4fcf081ae5a90885aab3358dca4
+                16_438_776_585_631_313_398_297_469_745_858_906_423_251_954_154_623_710_942_620_263_691_993_502_245_369,
+                21_341_039_109_546_713_270_829_458_860_837_573_077_812_510_463_080_794_362_970_548_053_749_883_723_452
             ]
         ];
 
-        // Groth16 proof component C (2 field elements)
+        // Groth16 proof component C (from proof.json)
         uint256[2] memory pC = [
-            0x2ef0d8f5b88cdc952bcf26adeaa6a30176584496df21bd21fbc997432172c9e7,
-            0x24b4201c52b7eec75377b727ac0fe51049d534bac7918175096596fa351862c1
+            4_118_653_277_084_955_434_256_961_708_956_419_491_532_006_029_223_850_275_417_872_206_869_116_230_926,
+            10_867_010_972_850_261_230_871_774_922_397_704_384_361_606_393_100_516_100_059_915_656_900_075_841_558
         ];
 
         string[] memory emailParts = new string[](2);
@@ -224,7 +224,7 @@ library TestFixtures {
         return (command, expectedPubSignals);
     }
 
-    function claimWithResolverCommand()
+    function claimEnsCommandWithResolver()
         internal
         pure
         returns (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals)
@@ -251,45 +251,45 @@ library TestFixtures {
             uint256(3_222_036_726_675_473_160_989_497_427_257_757)
         ];
 
-        // Groth16 proof component A (2 field elements)
+        // Groth16 proof component A (from proof.json)
         uint256[2] memory pA = [
-            0x1f3b3846a2a0c441c2f5d75932e63571d4922659183422409f582d028e3535dc,
-            0x05421c97e5102555776e9334c2642a8b965fce38634863a62883391d4e460451
+            20_943_545_957_642_006_692_494_364_844_898_901_601_205_454_077_861_927_262_950_680_655_390_287_383_341,
+            17_860_092_024_149_067_532_564_703_509_121_210_613_423_405_372_260_424_068_184_938_094_570_052_356_092
         ];
 
-        // Groth16 proof component B (2x2 field elements)
+        // Groth16 proof component B (from proof.json)
         uint256[2][2] memory pB = [
             [
-                0x140344d5a71ac735233c1d482591605f4e1f7253573c71987585a024c0d16a53,
-                0x2424b6113b2c21c76251b326d9620b1e19bf18146740645609462bf0c9e6c10b
+                10_132_275_804_483_032_942_054_592_886_727_959_198_541_015_472_658_522_827_170_172_312_740_146_919_650,
+                15_983_896_597_582_449_765_542_066_723_775_104_097_572_338_467_060_537_481_227_026_660_188_775_176_192
             ],
             [
-                0x1e809311ea3ad342898038676a6e719aaa9d6e469d74917578b871217e2f57d4,
-                0x0874415858004128033282245552399521360052321528442301980334125804
+                11_050_849_750_802_713_466_110_201_500_246_278_548_989_477_859_118_124_906_412_314_644_384_529_997_332,
+                2_953_258_356_972_585_703_899_454_050_759_760_890_936_111_329_989_475_577_005_243_192_320_614_772_978
             ]
         ];
 
-        // Groth16 proof component C (2 field elements)
+        // Groth16 proof component C (from proof.json)
         uint256[2] memory pC = [
-            0x192d19207e77e7486e9215011749652516483519545417861962383568969854,
-            0x1131975b38270513636b13970b54359675276587396068224933943360214299
+            14_717_306_353_995_492_554_024_937_717_066_417_128_247_022_860_569_068_798_621_971_300_922_743_404_189,
+            19_957_238_458_701_593_508_603_242_355_834_583_845_375_631_379_272_997_898_684_266_101_439_550_379_577
         ];
 
         string[] memory emailParts = new string[](2);
-        emailParts[0] = "thezdev3$gmail";
+        emailParts[0] = "thezdev1$gmail";
         emailParts[1] = "com";
 
-        // Complete ProveAndClaimCommand struct with test data for "thezdev3@gmail.com"
+        // Complete ProveAndClaimCommand struct with test data for "thezdev1@gmail.com"
         command = ProveAndClaimCommand({
             domain: "gmail.com",
-            email: "thezdev3@gmail.com",
+            email: "thezdev1@gmail.com",
             emailParts: emailParts,
-            resolver: "resolver.ens",
+            resolver: "resolver.eth",
             owner: 0xafBD210c60dD651892a61804A989eEF7bD63CBA0,
             dkimSignerHash: hex"0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788",
-            nullifier: hex"0C1324707AAD13359556F612269E9623D3F15A367B167195779D2D9A74E6F7F5",
+            nullifier: hex"04DE80D5184510B6208D6456C091FF3E177F28C2DE49B7B7618B6EF147B817EF",
             timestamp: 0, // Gmail doesn't sign timestamps
-            accountSalt: hex"0AF3E4E80D263155F4D3C23B8B8A49D5276B8718E29ED4D8A41C90B598716552",
+            accountSalt: hex"11DD2E9EDE9B5BA105A03650FF6B74F3D4F19E75DD64C53C8DC8F7AB82403912",
             isCodeEmbedded: false, // Code provided by relayer, not embedded in email
             miscellaneousData: abi.encode(pubkey), // RSA public key components
             proof: abi.encode(pA, pB, pC) // Groth16 proof components
