@@ -90,7 +90,7 @@ contract ZkEmailRegistrarTest is Test {
         _mockAndExpect(address(ens), abi.encodeCall(ENS.resolver, (resolverNode)), abi.encode(resolverResolver));
         _mockAndExpect(resolverResolver, abi.encodeCall(IResolver.addr, (resolverNode)), abi.encode(resolver));
 
-        registrar.proveAndClaimWithResolver(command);
+        registrar.proveAndClaim(command);
 
         // check ownership has been set in both ENS and registrar correctly
         address ownerAfter = ens.owner(expectedNode);

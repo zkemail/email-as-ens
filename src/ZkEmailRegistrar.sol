@@ -55,17 +55,17 @@ contract ZkEmailRegistrar {
     }
 
     /**
-     * @notice Proves and claims an email-based ENS name with a resolver
+     * @notice Proves and claims an email-based ENS name
      * @param command The command to prove and claim
-     * @dev This function is used to prove and claim an email-based ENS name with a resolver. It is used to set the
-     * owner of the node, the resolver for the node, and the TTL for the node. It also approves the resolver for the
-     * node.
      */
-    function proveAndClaimWithResolver(ProveAndClaimCommand memory command) external {
-        bytes32 node = proveAndClaim(command);
-        address resolver = _resolveName(command.resolver);
-        _setRecord(node, command.owner, resolver, 0);
-        IResolver(resolver).setAddr(node, command.owner);
+    function proveAndClaim(ProveAndClaimCommand memory command) external {
+        bytes32 node = _proveAndClaim(command);
+        // if the resolver is set, set the record and approve the resolver for the node
+        if (bytes(command.resolver).length > 0) {
+            address resolver = _resolveName(command.resolver);
+            _setRecord(node, command.owner, resolver, 0);
+            IResolver(resolver).setAddr(node, command.owner);
+        }
     }
 
     /**
@@ -73,7 +73,7 @@ contract ZkEmailRegistrar {
      * @param command The command to prove and claim
      * @return The node that was claimed
      */
-    function proveAndClaim(ProveAndClaimCommand memory command) public returns (bytes32) {
+    function _proveAndClaim(ProveAndClaimCommand memory command) internal returns (bytes32) {
         if (_isUsed[command.nullifier]) {
             revert NullifierUsed();
         } else if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
