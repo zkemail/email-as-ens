@@ -327,18 +327,19 @@ contract ProveAndClaimCommandVerifier {
      * @return True if the email parts are dot separated and match the claimed email, false otherwise
      */
     function _verifyEmailParts(string[] memory emailParts, string memory email) internal pure returns (bool) {
-        bytes memory composedEmail = bytes("");
+        string memory composedEmail = "";
         for (uint256 i = 0; i < emailParts.length; i++) {
-            composedEmail = abi.encodePacked(composedEmail, bytes(emailParts[i]));
+            composedEmail = string.concat(composedEmail, emailParts[i]);
             if (i < emailParts.length - 1) {
-                composedEmail = abi.encodePacked(composedEmail, bytes("."));
+                composedEmail = string.concat(composedEmail, ".");
             }
         }
 
         bytes memory emailBytes = bytes(email);
+        bytes memory composedEmailBytes = bytes(composedEmail);
 
         // Ensure composedEmail and emailBytes have the same length
-        if (composedEmail.length != emailBytes.length) {
+        if (composedEmailBytes.length != emailBytes.length) {
             return false;
         }
 
@@ -347,10 +348,10 @@ contract ProveAndClaimCommandVerifier {
         for (uint256 i = 0; i < emailBytes.length; i++) {
             bytes1 currentByte = emailBytes[i];
             if (currentByte == "@") {
-                if (composedEmail[i] != "$") {
+                if (composedEmailBytes[i] != "$") {
                     return false;
                 }
-            } else if (currentByte != composedEmail[i]) {
+            } else if (currentByte != composedEmailBytes[i]) {
                 return false;
             }
         }
