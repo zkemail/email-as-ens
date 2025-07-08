@@ -17,6 +17,9 @@ struct ProveAndClaimCommand {
     /// @notice The complete email address (e.g., "user@gmail.com")
     /// @dev This is the email address being claimed, which will correspond to the ENS subdomain
     string email;
+    /// @notice The resolver ENS name for the ENS name
+    /// @dev This ENS name is used to resolve the ENS name to an Ethereum address
+    string resolver;
     /// @notice The parts of the email address dot separated (e.g., ["user", "gmail", "com"])
     /// @dev Used to verify the email address
     string[] emailParts;
@@ -254,6 +257,7 @@ contract ProveAndClaimCommandVerifier {
                 emailParts: _extractEmailParts(
                     _unpackFields2Bytes(publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES)
                 ),
+                resolver: string(""),
                 owner: _extractOwner(
                     // foundry's known line_length soft limit issue: https://github.com/foundry-rs/foundry/issues/4450
                     // solhint-disable-next-line max-line-length
@@ -300,7 +304,8 @@ contract ProveAndClaimCommandVerifier {
 
         uint256[] memory domainFields = _packBytes2Fields(bytes(command.domain), DOMAIN_NAME_BYTES);
         uint256[] memory emailFields = _packBytes2Fields(bytes(command.email), EMAIL_ADDRESS_BYTES);
-        uint256[] memory commandFields = _packBytes2Fields(_getExpectedCommand(command.owner), MASKED_COMMAND_BYTES);
+        uint256[] memory commandFields =
+            _packBytes2Fields(_getExpectedCommand(command.owner, command.resolver), MASKED_COMMAND_BYTES);
         uint256[PUBKEY_FIELDS] memory pubKeyFields = abi.decode(command.miscellaneousData, (uint256[17]));
 
         // domain_name
@@ -468,16 +473,26 @@ contract ProveAndClaimCommandVerifier {
      * @dev This function creates the command format: "Claim ENS name for address {ethAddr}"
      *      where {ethAddr} is replaced with the actual Ethereum address.
      */
-    function _getExpectedCommand(address _owner) internal pure returns (bytes memory) {
-        string[] memory template = new string[](6);
+    function _getExpectedCommand(address _owner, string memory _resolver) internal pure returns (bytes memory) {
+        bool hasResolver = bytes(_resolver).length != 0;
+        string[] memory template = new string[](hasResolver ? 9 : 6);
+        bytes[] memory commandParams = new bytes[](hasResolver ? 2 : 1);
+
         template[0] = "Claim";
         template[1] = "ENS";
         template[2] = "name";
         template[3] = "for";
         template[4] = "address";
         template[5] = CommandUtils.ETH_ADDR_MATCHER;
-        bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(_owner);
+
+        if (hasResolver) {
+            template[6] = "with";
+            template[7] = "resolver";
+            template[8] = CommandUtils.STRING_MATCHER;
+            commandParams[1] = abi.encode(_resolver);
+        }
+
         return bytes(CommandUtils.computeExpectedCommand(commandParams, template, 0));
     }
 
