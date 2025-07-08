@@ -3,6 +3,8 @@ pragma solidity ^0.8.30;
 
 import { ProveAndClaimCommand } from "./utils/Verifier.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 
 interface IVerifier {
     function isValid(bytes memory data) external view returns (bool);
@@ -20,6 +22,8 @@ interface IResolver {
  * @notice A contract for registering email-based ENS names
  */
 contract ZkEmailRegistrar {
+    using Bytes for bytes;
+
     bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e$d.com.zk.eth
     address public immutable VERIFIER; // ProveAndClaimCommand Verifier contract address
     address public immutable REGISTRY; // ENS registry contract address
@@ -50,23 +54,15 @@ contract ZkEmailRegistrar {
     /**
      * @notice Proves and claims an email-based ENS name with a resolver
      * @param command The command to prove and claim
-     * @param resolver The resolver for the node
-     * @param newOwner The new owner of the node and the address to set for the node (can be changed later by the owner)
      * @dev This function is used to prove and claim an email-based ENS name with a resolver. It is used to set the
-     * owner of the node,bence/sol-160-encode-function-implementation
-     *      the resolver for the node, and the TTL for the node. It also approves the resolver for the node.
+     * owner of the node, the resolver for the node, and the TTL for the node. It also approves the resolver for the
+     * node.
      */
-    function proveAndClaimWithResolver(
-        ProveAndClaimCommand memory command,
-        address resolver,
-        address newOwner,
-        uint64 ttl
-    )
-        external
-    {
+    function proveAndClaimWithResolver(ProveAndClaimCommand memory command) external {
         bytes32 node = proveAndClaim(command);
-        _setRecord(node, newOwner, resolver, ttl);
-        IResolver(resolver).setAddr(node, newOwner);
+        address resolver = _resolveName(command.resolver);
+        _setRecord(node, command.owner, resolver, 0);
+        IResolver(resolver).setAddr(node, command.owner);
     }
 
     /**
@@ -131,5 +127,42 @@ contract ZkEmailRegistrar {
         ENS(REGISTRY).setRecord(node, address(this), resolver, ttl);
         IResolver(resolver).approve(node, previousOwner, false);
         IResolver(resolver).approve(node, newOwner, true);
+    }
+
+    /**
+     * @notice Resolves an ENS name to an address
+     * @param resolverName The ens name of the resolver
+     * @return The address of the resolver
+     */
+    function _resolveName(string memory resolverName) internal view returns (address) {
+        bytes memory name = bytes(resolverName);
+        bytes32 node = _nameHash(name, 0);
+        return ENS(REGISTRY).resolver(node);
+    }
+
+    /**
+     * @notice Hashes an ENS name
+     * @param name The name to hash
+     * @param offset The offset to start hashing from
+     * @return The hash of the name
+     */
+    function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
+        uint256 atSignIndex = name.indexOf(0x40);
+        if (atSignIndex != type(uint256).max) {
+            name[atSignIndex] = bytes1("$");
+        }
+
+        uint256 len = name.length;
+
+        if (offset >= len) {
+            return bytes32(0);
+        }
+
+        uint256 labelEnd = Math.min(name.indexOf(0x2E, offset), len);
+        bytes memory label = name.slice(offset, labelEnd);
+        bytes32 labelHash = keccak256(label);
+
+        // Recursive case: hash of (parent nameHash + current labelHash)
+        return keccak256(abi.encodePacked(_nameHash(name, labelEnd + 1), labelHash));
     }
 }

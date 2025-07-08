@@ -9,6 +9,7 @@ import { IResolver, ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 
 contract PublicZkEmailRegistrar is ZkEmailRegistrar {
     constructor(bytes32 rootNode, address verifier, address ens) ZkEmailRegistrar(rootNode, verifier, ens) { }
@@ -70,9 +71,10 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_proveAndClaimWithResolver_passesForValidCommand() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.email), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
+        bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
 
         // check that the node is not owned by anyone
         address ownerBefore = ens.owner(expectedNode);
@@ -84,8 +86,9 @@ contract ZkEmailRegistrarTest is Test {
         _mockAndExpect(resolver, abi.encodeCall(IResolver.setAddr, (expectedNode, command.owner)), "");
         _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, true)), "");
         _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
+        _mockAndExpect(address(ens), abi.encodeCall(ENS.resolver, (resolverNode)), abi.encode(resolver));
 
-        registrar.proveAndClaimWithResolver(command, resolver, command.owner, 0);
+        registrar.proveAndClaimWithResolver(command);
 
         // check ownership has been set in both ENS and registrar correctly
         address ownerAfter = ens.owner(expectedNode);
