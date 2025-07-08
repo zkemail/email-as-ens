@@ -440,12 +440,7 @@ contract ProveAndClaimCommandVerifier {
             }
         }
 
-        bytes memory trimmedResult = new bytes(actualLength);
-        for (uint256 i = 0; i < actualLength; i++) {
-            trimmedResult[i] = result[i];
-        }
-
-        return trimmedResult;
+        return result.slice(0, actualLength);
     }
 
     /**
@@ -530,19 +525,13 @@ contract ProveAndClaimCommandVerifier {
         uint256 partIndex = 0;
         for (uint256 i = 0; i < strBytes.length; i++) {
             if (strBytes[i] == delimiter) {
-                bytes memory partBytes = new bytes(i - lastIndex);
-                for (uint256 j = 0; j < partBytes.length; j++) {
-                    partBytes[j] = strBytes[lastIndex + j];
-                }
+                bytes memory partBytes = strBytes.slice(lastIndex, i);
                 parts[partIndex] = string(partBytes);
                 lastIndex = i + 1;
                 partIndex++;
             }
         }
-        bytes memory lastPartBytes = new bytes(strBytes.length - lastIndex);
-        for (uint256 i = 0; i < lastPartBytes.length; i++) {
-            lastPartBytes[i] = strBytes[lastIndex + i];
-        }
+        bytes memory lastPartBytes = strBytes.slice(lastIndex, strBytes.length);
         parts[partIndex] = string(lastPartBytes);
         return parts;
     }
