@@ -83,10 +83,12 @@ contract ZkEmailRegistrarTest is Test {
         assertEq(ownerBeforeInRegistrar, address(0));
 
         address resolver = makeAddr("resolver");
+        address resolverResolver = makeAddr("resolverResolver");
         _mockAndExpect(resolver, abi.encodeCall(IResolver.setAddr, (expectedNode, command.owner)), "");
         _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, true)), "");
         _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
-        _mockAndExpect(address(ens), abi.encodeCall(ENS.resolver, (resolverNode)), abi.encode(resolver));
+        _mockAndExpect(address(ens), abi.encodeCall(ENS.resolver, (resolverNode)), abi.encode(resolverResolver));
+        _mockAndExpect(resolverResolver, abi.encodeCall(IResolver.addr, (resolverNode)), abi.encode(resolver));
 
         registrar.proveAndClaimWithResolver(command);
 

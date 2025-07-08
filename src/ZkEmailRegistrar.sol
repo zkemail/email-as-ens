@@ -15,6 +15,8 @@ interface IResolver {
     function approve(bytes32 node, address delegate, bool approved) external;
     /// @dev Set the address for a node.
     function setAddr(bytes32 node, address addr) external;
+    /// @dev Get the address for a node.
+    function addr(bytes32 node) external view returns (address);
 }
 
 /**
@@ -37,6 +39,7 @@ contract ZkEmailRegistrar {
     error InvalidCommand();
     error NullifierUsed();
     error NotOwner();
+    error ResolverNotFound();
 
     modifier onlyOwner(bytes32 node) {
         if (owner[node] != msg.sender) {
@@ -137,7 +140,13 @@ contract ZkEmailRegistrar {
     function _resolveName(string memory resolverName) internal view returns (address) {
         bytes memory name = bytes(resolverName);
         bytes32 node = _nameHash(name, 0);
-        return ENS(REGISTRY).resolver(node);
+        address resolver = ENS(REGISTRY).resolver(node);
+
+        if (resolver == address(0)) {
+            revert ResolverNotFound();
+        }
+
+        return IResolver(resolver).addr(node);
     }
 
     /**
@@ -147,11 +156,6 @@ contract ZkEmailRegistrar {
      * @return The hash of the name
      */
     function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
-        uint256 atSignIndex = name.indexOf(0x40);
-        if (atSignIndex != type(uint256).max) {
-            name[atSignIndex] = bytes1("$");
-        }
-
         uint256 len = name.length;
 
         if (offset >= len) {
