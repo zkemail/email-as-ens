@@ -69,9 +69,19 @@ contract ZkEmailRegistrar {
     }
 
     /**
+     * @notice Sets the record for an ENS name (only callable by the owner of the node)
+     * @param node The node to set the record for
+     * @param newOwner The new owner of the node
+     * @param resolver The resolver for the node
+     * @param ttl The TTL for the node
+     */
+    function setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) public onlyOwner(node) {
+        _setRecord(node, newOwner, resolver, ttl);
+    }
+
+    /**
      * @notice Proves and claims an email-based ENS name
      * @param command The command to prove and claim
-     * @return The node that was claimed
      */
     function _proveAndClaim(ProveAndClaimCommand memory command) internal returns (bytes32) {
         if (_isUsed[command.nullifier]) {
@@ -81,17 +91,6 @@ contract ZkEmailRegistrar {
         }
         _isUsed[command.nullifier] = true;
         return _claim(command.emailParts, command.owner);
-    }
-
-    /**
-     * @notice Sets the record for an ENS name (only callable by the owner of the node)
-     * @param node The node to set the record for
-     * @param newOwner The new owner of the node
-     * @param resolver The resolver for the node
-     * @param ttl The TTL for the node
-     */
-    function setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) public onlyOwner(node) {
-        _setRecord(node, newOwner, resolver, ttl);
     }
 
     /**
