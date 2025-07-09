@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { CircuitUtils } from "./CircuitUtils.sol";
 
 /**
  * @title ProveAndClaimCommand
@@ -85,6 +86,7 @@ interface IGroth16Verifier {
 contract ProveAndClaimCommandVerifier {
     using Bytes for bytes;
     using Strings for string;
+    using CircuitUtils for bytes;
 
     /// @notice The order of the BN128 elliptic curve used in the ZK proofs
     /// @dev All field elements in proofs must be less than this value
@@ -233,18 +235,26 @@ contract ProveAndClaimCommandVerifier {
         return abi.encode(
             ProveAndClaimCommand({
                 domain: string(
-                    _unpackFields2Bytes(publicSignals, DOMAIN_NAME_OFFSET, DOMAIN_NAME_FIELDS, DOMAIN_NAME_BYTES)
+                    CircuitUtils.unpackFields2Bytes(
+                        publicSignals, DOMAIN_NAME_OFFSET, DOMAIN_NAME_FIELDS, DOMAIN_NAME_BYTES
+                    )
                 ),
                 email: string(
-                    _unpackFields2Bytes(publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES)
+                    CircuitUtils.unpackFields2Bytes(
+                        publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES
+                    )
                 ),
                 emailParts: _extractEmailParts(
-                    _unpackFields2Bytes(publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES)
+                    CircuitUtils.unpackFields2Bytes(
+                        publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES
+                    )
                 ),
                 owner: _extractOwner(
                     // foundry's known line_length soft limit issue: https://github.com/foundry-rs/foundry/issues/4450
                     // solhint-disable-next-line max-line-length
-                    _unpackFields2Bytes(publicSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_FIELDS, MASKED_COMMAND_BYTES)
+                    CircuitUtils.unpackFields2Bytes(
+                        publicSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_FIELDS, MASKED_COMMAND_BYTES
+                    )
                 ),
                 dkimSignerHash: bytes32(publicSignals[PUBLIC_KEY_HASH_OFFSET]),
                 nullifier: bytes32(publicSignals[EMAIL_NULLIFIER_OFFSET]),
@@ -285,9 +295,10 @@ contract ProveAndClaimCommandVerifier {
     function _buildPubSignals(ProveAndClaimCommand memory command) internal pure returns (uint256[60] memory) {
         uint256[60] memory pubSignals;
 
-        uint256[] memory domainFields = _packBytes2Fields(bytes(command.domain), DOMAIN_NAME_BYTES);
-        uint256[] memory emailFields = _packBytes2Fields(bytes(command.email), EMAIL_ADDRESS_BYTES);
-        uint256[] memory commandFields = _packBytes2Fields(_getExpectedCommand(command.owner), MASKED_COMMAND_BYTES);
+        uint256[] memory domainFields = CircuitUtils.packBytes2Fields(bytes(command.domain), DOMAIN_NAME_BYTES);
+        uint256[] memory emailFields = CircuitUtils.packBytes2Fields(bytes(command.email), EMAIL_ADDRESS_BYTES);
+        uint256[] memory commandFields =
+            CircuitUtils.packBytes2Fields(bytes(_getExpectedCommand(command.owner)), MASKED_COMMAND_BYTES);
         uint256[PUBKEY_FIELDS] memory pubKeyFields = abi.decode(command.miscellaneousData, (uint256[17]));
 
         // domain_name
@@ -360,98 +371,13 @@ contract ProveAndClaimCommandVerifier {
     }
 
     /**
-     * @notice Packs byte arrays into field elements for ZK circuit compatibility
-     * @param _bytes The byte array to pack into field elements
-     * @param _paddedSize The target size after padding (must be larger than or equal to _bytes.length)
-     * @return An array of field elements containing the packed byte data
-     * @dev This function packs bytes into field elements by:
-     *      1. Determining how many field elements are needed (31 bytes per field element)
-     *      2. Packing bytes in little-endian order within each field element
-     *      3. Padding with zeros if the input is shorter than _paddedSize
-     *      4. Ensuring the resulting field elements are compatible with ZK circuits
-     *
-     *      Each field element can contain up to 31 bytes to ensure the result stays below
-     *      the BN128 curve order. Bytes are packed as: byte0 + (byte1 << 8) + (byte2 << 16) + ...
-     */
-    function _packBytes2Fields(bytes memory _bytes, uint256 _paddedSize) internal pure returns (uint256[] memory) {
-        uint256 remain = _paddedSize % 31;
-        uint256 numFields = (_paddedSize - remain) / 31;
-        if (remain > 0) {
-            numFields += 1;
-        }
-        uint256[] memory fields = new uint256[](numFields);
-        uint256 idx = 0;
-        uint256 byteVal = 0;
-        for (uint256 i = 0; i < numFields; i++) {
-            for (uint256 j = 0; j < 31; j++) {
-                idx = i * 31 + j;
-                if (idx >= _paddedSize) {
-                    break;
-                }
-                if (idx >= _bytes.length) {
-                    byteVal = 0;
-                } else {
-                    byteVal = uint256(uint8(_bytes[idx]));
-                }
-                if (j == 0) {
-                    fields[i] = byteVal;
-                } else {
-                    fields[i] += (byteVal << (8 * j));
-                }
-            }
-        }
-        return fields;
-    }
-
-    /**
-     * @notice Unpacks field elements back to bytes
-     * @param publicSignals Array of public signals
-     * @param startIndex Starting index in publicSignals
-     * @param numFields Number of fields to unpack
-     * @param paddedSize Original padded size of the bytes
-     * @return The unpacked bytes
-     */
-    function _unpackFields2Bytes(
-        uint256[] calldata publicSignals,
-        uint256 startIndex,
-        uint256 numFields,
-        uint256 paddedSize
-    )
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory result = new bytes(paddedSize);
-        uint256 resultIndex = 0;
-
-        for (uint256 i = 0; i < numFields; i++) {
-            uint256 field = publicSignals[startIndex + i];
-            for (uint256 j = 0; j < 31 && resultIndex < paddedSize; j++) {
-                result[resultIndex] = bytes1(uint8(field & 0xFF));
-                field = field >> 8;
-                resultIndex++;
-            }
-        }
-
-        // Trim trailing zeros
-        uint256 actualLength = 0;
-        for (uint256 i = 0; i < result.length; i++) {
-            if (result[i] != 0) {
-                actualLength = i + 1;
-            }
-        }
-
-        return result.slice(0, actualLength);
-    }
-
-    /**
      * @notice Generates the expected command string for a given owner address
      * @param _owner The Ethereum address that should appear in the command
      * @return The expected command bytes that should be present in the verified email
      * @dev This function creates the command format: "Claim ENS name for address {ethAddr}"
      *      where {ethAddr} is replaced with the actual Ethereum address.
      */
-    function _getExpectedCommand(address _owner) internal pure returns (bytes memory) {
+    function _getExpectedCommand(address _owner) internal pure returns (string memory) {
         string[] memory template = new string[](6);
         template[0] = "Claim";
         template[1] = "ENS";
@@ -461,7 +387,7 @@ contract ProveAndClaimCommandVerifier {
         template[5] = CommandUtils.ETH_ADDR_MATCHER;
         bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(_owner);
-        return bytes(CommandUtils.computeExpectedCommand(commandParams, template, 0));
+        return CommandUtils.computeExpectedCommand(commandParams, template, 0);
     }
 
     function _extractOwner(bytes memory commandBytes) internal pure returns (address) {
