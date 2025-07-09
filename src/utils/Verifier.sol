@@ -250,8 +250,6 @@ contract ProveAndClaimCommandVerifier {
                     )
                 ),
                 owner: _extractOwner(
-                    // foundry's known line_length soft limit issue: https://github.com/foundry-rs/foundry/issues/4450
-                    // solhint-disable-next-line max-line-length
                     CircuitUtils.unpackFields2Bytes(
                         publicSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_FIELDS, MASKED_COMMAND_BYTES
                     )
