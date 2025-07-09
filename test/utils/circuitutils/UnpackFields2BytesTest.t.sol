@@ -165,9 +165,10 @@ contract UnpackFields2BytesTest is Test {
                 actualLength = i + 1;
             }
         }
-        assembly {
-            mstore(result, actualLength)
+        bytes memory trimmedResult = new bytes(actualLength);
+        for (uint256 i = 0; i < actualLength; i++) {
+            trimmedResult[i] = result[i];
         }
-        return result;
+        return trimmedResult;
     }
 }
