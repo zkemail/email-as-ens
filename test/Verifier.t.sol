@@ -107,4 +107,27 @@ contract VerifierTest is Test {
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
     }
+
+    function test_encode_correctlyEncodesAndDecodesCommandWithResolver() public view {
+        (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) =
+            TestFixtures.claimEnsCommandWithResolver();
+
+        uint256[] memory publicSignals = new uint256[](60);
+        for (uint256 i = 0; i < 60; i++) {
+            publicSignals[i] = expectedPubSignals[i];
+        }
+
+        bytes memory encodedData = _verifier.encode(publicSignals, command.proof);
+        ProveAndClaimCommand memory decodedCommand = abi.decode(encodedData, (ProveAndClaimCommand));
+
+        assertEq(decodedCommand.resolver, command.resolver);
+        assertEq(decodedCommand.owner, command.owner);
+        assertEq(decodedCommand.domain, command.domain);
+        assertEq(decodedCommand.email, command.email);
+        assertEq(decodedCommand.dkimSignerHash, command.dkimSignerHash);
+        assertEq(decodedCommand.nullifier, command.nullifier);
+        assertEq(decodedCommand.timestamp, command.timestamp);
+        assertEq(decodedCommand.accountSalt, command.accountSalt);
+        assertEq(decodedCommand.isCodeEmbedded, command.isCodeEmbedded);
+    }
 }

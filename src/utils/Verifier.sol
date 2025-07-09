@@ -246,6 +246,9 @@ contract ProveAndClaimCommandVerifier {
     {
         if (publicSignals.length != 60) revert InvalidPublicSignalsLength();
 
+        bytes memory commandBytes =
+            _unpackFields2Bytes(publicSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_FIELDS, MASKED_COMMAND_BYTES);
+
         return abi.encode(
             ProveAndClaimCommand({
                 domain: string(
@@ -257,12 +260,8 @@ contract ProveAndClaimCommandVerifier {
                 emailParts: _extractEmailParts(
                     _unpackFields2Bytes(publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES)
                 ),
-                resolver: string(""),
-                owner: _extractOwner(
-                    // foundry's known line_length soft limit issue: https://github.com/foundry-rs/foundry/issues/4450
-                    // solhint-disable-next-line max-line-length
-                    _unpackFields2Bytes(publicSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_FIELDS, MASKED_COMMAND_BYTES)
-                ),
+                resolver: _extractResolver(commandBytes),
+                owner: _extractOwner(commandBytes),
                 dkimSignerHash: bytes32(publicSignals[PUBLIC_KEY_HASH_OFFSET]),
                 nullifier: bytes32(publicSignals[EMAIL_NULLIFIER_OFFSET]),
                 timestamp: publicSignals[TIMESTAMP_OFFSET],
@@ -504,6 +503,32 @@ contract ProveAndClaimCommandVerifier {
         }
 
         return _parseAddress(string(addressBytes));
+    }
+
+    function _extractResolver(bytes memory commandBytes) internal pure returns (string memory) {
+        bytes memory prefix = "Claim ENS name for address ";
+        bytes memory infix = " with resolver ";
+
+        uint256 ownerPartEnd = prefix.length + 42;
+        if (commandBytes.length <= ownerPartEnd + infix.length) {
+            return "";
+        }
+
+        // Check if " with resolver " is present after the address
+        for (uint256 i = 0; i < infix.length; i++) {
+            if (commandBytes[ownerPartEnd + i] != infix[i]) {
+                return ""; // Infix not found, so no resolver
+            }
+        }
+
+        uint256 resolverStartIndex = ownerPartEnd + infix.length;
+        uint256 resolverLen = commandBytes.length - resolverStartIndex;
+        bytes memory resolverBytes = new bytes(resolverLen);
+        for (uint256 i = 0; i < resolverLen; i++) {
+            resolverBytes[i] = commandBytes[resolverStartIndex + i];
+        }
+
+        return string(resolverBytes);
     }
 
     function _parseAddress(string memory addrStr) internal pure returns (address) {
