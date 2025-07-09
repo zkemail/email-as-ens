@@ -347,6 +347,17 @@ contract ProveAndClaimCommandVerifier {
         return true;
     }
 
+    function _getTemplate() internal pure returns (string[] memory) {
+        string[] memory template = new string[](6);
+        template[0] = "Claim";
+        template[1] = "ENS";
+        template[2] = "name";
+        template[3] = "for";
+        template[4] = "address";
+        template[5] = CommandUtils.ETH_ADDR_MATCHER;
+        return template;
+    }
+
     /**
      * @notice Generates the expected command string for a given owner address
      * @param _owner The Ethereum address that should appear in the command
@@ -355,16 +366,9 @@ contract ProveAndClaimCommandVerifier {
      *      where {ethAddr} is replaced with the actual Ethereum address.
      */
     function _getExpectedCommand(address _owner) internal pure returns (string memory) {
-        string[] memory template = new string[](6);
-        template[0] = "Claim";
-        template[1] = "ENS";
-        template[2] = "name";
-        template[3] = "for";
-        template[4] = "address";
-        template[5] = CommandUtils.ETH_ADDR_MATCHER;
         bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(_owner);
-        return CommandUtils.computeExpectedCommand(commandParams, template, 0);
+        return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
 
     function _extractOwner(bytes memory commandBytes) internal pure returns (address) {
