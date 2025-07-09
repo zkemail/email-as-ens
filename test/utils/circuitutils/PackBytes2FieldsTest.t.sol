@@ -3,6 +3,8 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { CircuitUtils } from "../../../src/utils/CircuitUtils.sol";
+import { TestFixtures } from "../../fixtures/TestFixtures.sol";
+import { ProveAndClaimCommand } from "../../../src/utils/Verifier.sol";
 
 contract PackBytes2FieldsTest is Test {
     function test_emptyBytes() public pure {
@@ -55,20 +57,6 @@ contract PackBytes2FieldsTest is Test {
         assertEq(fields[0], expected);
     }
 
-    function test_realisticString() public pure {
-        bytes memory data = "gmail.com";
-        uint256[] memory fields = CircuitUtils.packBytes2Fields(data, 255);
-        assertEq(fields.length, 9);
-        uint256 expected = 0;
-        for (uint256 i = 0; i < data.length; i++) {
-            expected += uint256(uint8(data[i])) << (8 * i);
-        }
-        assertEq(fields[0], expected);
-        for (uint256 i = 1; i < 9; i++) {
-            assertEq(fields[i], 0);
-        }
-    }
-
     function test_exactFieldBoundaries() public pure {
         bytes memory data = new bytes(62);
         for (uint256 i = 0; i < 62; i++) {
@@ -88,17 +76,6 @@ contract PackBytes2FieldsTest is Test {
         assertEq(fields[1], expectedSecond);
     }
 
-    function test_paddedSizeSmallerThanData() public pure {
-        bytes memory data = "This is a longer string that should be truncated";
-        uint256[] memory fields = CircuitUtils.packBytes2Fields(data, 10);
-        assertEq(fields.length, 1);
-        uint256 expected = 0;
-        for (uint256 i = 0; i < 10; i++) {
-            expected += uint256(uint8(data[i])) << (8 * i);
-        }
-        assertEq(fields[0], expected);
-    }
-
     function test_allZeros() public pure {
         bytes memory data = new bytes(31);
         uint256[] memory fields = CircuitUtils.packBytes2Fields(data, 31);
@@ -116,6 +93,31 @@ contract PackBytes2FieldsTest is Test {
         uint256 expected = 0;
         for (uint256 i = 0; i < 31; i++) {
             expected += 0xFF << (8 * i);
+        }
+        assertEq(fields[0], expected);
+    }
+
+    function test_realisticString() public pure {
+        bytes memory data = "gmail.com";
+        uint256[] memory fields = CircuitUtils.packBytes2Fields(data, 255);
+        assertEq(fields.length, 9);
+        uint256 expected = 0;
+        for (uint256 i = 0; i < data.length; i++) {
+            expected += uint256(uint8(data[i])) << (8 * i);
+        }
+        assertEq(fields[0], expected);
+        for (uint256 i = 1; i < 9; i++) {
+            assertEq(fields[i], 0);
+        }
+    }
+
+    function test_paddedSizeSmallerThanData() public pure {
+        bytes memory data = "This is a longer string that should be truncated";
+        uint256[] memory fields = CircuitUtils.packBytes2Fields(data, 10);
+        assertEq(fields.length, 1);
+        uint256 expected = 0;
+        for (uint256 i = 0; i < 10; i++) {
+            expected += uint256(uint8(data[i])) << (8 * i);
         }
         assertEq(fields[0], expected);
     }
