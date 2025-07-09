@@ -3,8 +3,6 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { CircuitUtils } from "../../../src/utils/CircuitUtils.sol";
-import { TestFixtures } from "../../fixtures/TestFixtures.sol";
-import { ProveAndClaimCommand } from "../../../src/utils/Verifier.sol";
 
 contract PackBytes2FieldsTest is Test {
     function test_emptyBytes() public pure {

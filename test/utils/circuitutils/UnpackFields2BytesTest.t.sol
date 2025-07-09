@@ -3,8 +3,6 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { CircuitUtils } from "../../../src/utils/CircuitUtils.sol";
-import { TestFixtures } from "../../fixtures/TestFixtures.sol";
-import { ProveAndClaimCommand } from "../../../src/utils/Verifier.sol";
 
 // Wrapper contract to handle calldata arrays
 contract UnpackWrapper {
@@ -23,7 +21,7 @@ contract UnpackWrapper {
 }
 
 contract UnpackFields2BytesTest is Test {
-    UnpackWrapper _wrapper;
+    UnpackWrapper private _wrapper;
 
     function setUp() public {
         _wrapper = new UnpackWrapper();
