@@ -497,13 +497,7 @@ contract ProveAndClaimCommandVerifier {
     }
 
     function _extractOwner(bytes memory commandBytes) internal pure returns (address) {
-        // "Claim ENS name for address 0x" is 30 bytes long.
-        // It should be 28 for "Claim ENS name for address " + "0x" = 30. No, it is "Claim ENS name for address " which
-        // is 28. Address starts with 0x.
-        // Let's check the prefix "Claim ENS name for address ". Length is 28.
         bytes memory prefix = "Claim ENS name for address ";
-        if (commandBytes.length != prefix.length + 42) revert InvalidCommandLength();
-
         bytes memory addressBytes = new bytes(42);
         for (uint256 i = 0; i < 42; i++) {
             addressBytes[i] = commandBytes[prefix.length + i];

@@ -8,6 +8,7 @@ import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 
 interface IVerifier {
     function isValid(bytes memory data) external view returns (bool);
+    function encode(uint256[] memory publicSignals, bytes memory proof) external pure returns (bytes memory);
 }
 
 interface IResolver {
@@ -55,10 +56,16 @@ contract ZkEmailRegistrar {
     }
 
     /**
-     * @notice Proves and claims an email-based ENS name
-     * @param command The command to prove and claim
+     * @notice Proves and claims an email-based ENS name, optionally setting a resolver.
+     * @param data The ABI-encoded ProveAndClaimCommand struct.
+     * @dev This is the main entrypoint for the registrar, typically called by a relayer.
+     *      The `data` parameter is constructed off-chain by calling `encode()` with the
+     *      ZK proof's public signals and the proof itself. This function verifies the proof,
+     *      claims the corresponding ENS name for the owner, and if a resolver is provided
+     *      in the command, it sets the resolver records.
      */
-    function proveAndClaim(ProveAndClaimCommand memory command) external {
+    function entrypoint(bytes memory data) external {
+        ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
         bytes32 node = _proveAndClaim(command);
         // if the resolver is set, set the record and approve the resolver for the node
         if (bytes(command.resolver).length > 0) {
@@ -66,6 +73,20 @@ contract ZkEmailRegistrar {
             _setRecord(node, command.owner, resolver, 0);
             IResolver(resolver).setAddr(node, command.owner);
         }
+    }
+
+    /**
+     * @notice Encodes public signals and a ZK proof into the `ProveAndClaimCommand` format.
+     * @param publicSignals The public signals from the ZK proof.
+     * @param proof The ZK proof bytes (e.g., from a Groth16 prover).
+     * @return The ABI-encoded `ProveAndClaimCommand` struct.
+     * @dev This function is a convenience wrapper around the verifier's `encode` function.
+     *      It allows off-chain services (like a relayer) to construct the data payload
+     *      required by the `entrypoint` function without coupling to the verifier's internal
+     *      encoding logic.
+     */
+    function encode(uint256[] memory publicSignals, bytes memory proof) external view returns (bytes memory) {
+        return IVerifier(VERIFIER).encode(publicSignals, proof);
     }
 
     /**
