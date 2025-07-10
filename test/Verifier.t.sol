@@ -5,7 +5,6 @@ import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "./fixtures/TestFixtures.sol";
 import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/utils/Verifier.sol";
 import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
-import { console } from "forge-std/console.sol";
 
 /**
  * @title PublicProveAndClaimCommandVerifier
@@ -106,28 +105,5 @@ contract VerifierTest is Test {
         command.emailParts[0] = "bob@example";
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
-    }
-
-    function test_encode_correctlyEncodesAndDecodesCommandWithResolver() public view {
-        (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) =
-            TestFixtures.claimEnsCommandWithResolver();
-
-        uint256[] memory publicSignals = new uint256[](60);
-        for (uint256 i = 0; i < 60; i++) {
-            publicSignals[i] = expectedPubSignals[i];
-        }
-
-        bytes memory encodedData = _verifier.encode(publicSignals, command.proof);
-        ProveAndClaimCommand memory decodedCommand = abi.decode(encodedData, (ProveAndClaimCommand));
-
-        assertEq(decodedCommand.resolver, command.resolver);
-        assertEq(decodedCommand.owner, command.owner);
-        assertEq(decodedCommand.domain, command.domain);
-        assertEq(decodedCommand.email, command.email);
-        assertEq(decodedCommand.dkimSignerHash, command.dkimSignerHash);
-        assertEq(decodedCommand.nullifier, command.nullifier);
-        assertEq(decodedCommand.timestamp, command.timestamp);
-        assertEq(decodedCommand.accountSalt, command.accountSalt);
-        assertEq(decodedCommand.isCodeEmbedded, command.isCodeEmbedded);
     }
 }
