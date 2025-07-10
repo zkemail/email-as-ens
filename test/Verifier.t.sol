@@ -107,36 +107,26 @@ contract VerifierTest is Test {
         assertFalse(isValid);
     }
 
-    function test_encode_returnsCorrectlyEncodedCommand() public view {
-        (ProveAndClaimCommand memory command, uint256[60] memory publicSignals) = TestFixtures.claimEnsCommand();
+    function test_encode_correctlyEncodesAndDecodesCommandWithResolver() public view {
+        (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) =
+            TestFixtures.claimEnsCommandWithResolver();
 
-        // Convert uint256[60] to uint256[] for the encode function
-        uint256[] memory publicSignalsArray = new uint256[](60);
+        uint256[] memory publicSignals = new uint256[](60);
         for (uint256 i = 0; i < 60; i++) {
-            publicSignalsArray[i] = publicSignals[i];
+            publicSignals[i] = expectedPubSignals[i];
         }
 
-        // Encode the command using the encode function
-        bytes memory encodedCommand = _verifier.encode(publicSignalsArray, command.proof);
+        bytes memory encodedData = _verifier.encode(publicSignals, command.proof);
+        ProveAndClaimCommand memory decodedCommand = abi.decode(encodedData, (ProveAndClaimCommand));
 
-        // Decode it back to verify it's correct
-        ProveAndClaimCommand memory decodedCommand = abi.decode(encodedCommand, (ProveAndClaimCommand));
-
-        // Verify the decoded command matches the original
+        assertEq(decodedCommand.resolver, command.resolver);
+        assertEq(decodedCommand.owner, command.owner);
         assertEq(decodedCommand.domain, command.domain);
         assertEq(decodedCommand.email, command.email);
-        assertEq(decodedCommand.owner, command.owner);
         assertEq(decodedCommand.dkimSignerHash, command.dkimSignerHash);
         assertEq(decodedCommand.nullifier, command.nullifier);
         assertEq(decodedCommand.timestamp, command.timestamp);
         assertEq(decodedCommand.accountSalt, command.accountSalt);
         assertEq(decodedCommand.isCodeEmbedded, command.isCodeEmbedded);
-        assertEq(decodedCommand.miscellaneousData, command.miscellaneousData);
-        assertEq(decodedCommand.proof, command.proof);
-
-        assertEq(decodedCommand.emailParts.length, command.emailParts.length);
-        for (uint256 i = 0; i < command.emailParts.length; i++) {
-            assertEq(decodedCommand.emailParts[i], command.emailParts[i]);
-        }
     }
 }

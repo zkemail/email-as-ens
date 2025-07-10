@@ -281,7 +281,7 @@ contract ProveAndClaimCommandVerifier {
         return ProveAndClaimCommand({
             domain: decodedFields.domainName,
             email: decodedFields.emailAddress,
-            resolver: "", // _extractResolver(decodedFields.maskedCommand),
+            resolver: _extractResolver(decodedFields.maskedCommand),
             emailParts: _extractEmailParts(decodedFields.emailAddress),
             owner: _extractOwner(decodedFields.maskedCommand),
             dkimSignerHash: decodedFields.publicKeyHash,
@@ -402,20 +402,37 @@ contract ProveAndClaimCommandVerifier {
     function _extractOwner(string memory command) private pure returns (address) {
         bytes memory commandBytes = bytes(command);
         bytes memory prefix = "Claim ENS name for address ";
-        // 42 => 0x + 40 hex chars
-        if (commandBytes.length != prefix.length + 42) revert InvalidCommandLength();
-
-        bytes memory addressBytes = commandBytes.slice(prefix.length, prefix.length + 42);
+        bytes memory addressBytes = new bytes(42);
+        for (uint256 i = 0; i < 42; i++) {
+            addressBytes[i] = commandBytes[prefix.length + i];
+        }
 
         return Strings.parseAddress(string(addressBytes));
     }
 
     function _extractResolver(string memory command) private pure returns (string memory) {
         bytes memory commandBytes = bytes(command);
-        bytes memory prefix = "with resolver ";
-        if (commandBytes.length != prefix.length + 42) revert InvalidCommandLength();
+        bytes memory prefix = "Claim ENS name for address ";
+        bytes memory infix = " with resolver ";
 
-        bytes memory resolverBytes = commandBytes.slice(prefix.length, prefix.length + 42);
+        uint256 ownerPartEnd = prefix.length + 42;
+        if (commandBytes.length <= ownerPartEnd + infix.length) {
+            return "";
+        }
+
+        // Check if " with resolver " is present after the address
+        for (uint256 i = 0; i < infix.length; i++) {
+            if (commandBytes[ownerPartEnd + i] != infix[i]) {
+                return ""; // Infix not found, so no resolver
+            }
+        }
+
+        uint256 resolverStartIndex = ownerPartEnd + infix.length;
+        uint256 resolverLen = commandBytes.length - resolverStartIndex;
+        bytes memory resolverBytes = new bytes(resolverLen);
+        for (uint256 i = 0; i < resolverLen; i++) {
+            resolverBytes[i] = commandBytes[resolverStartIndex + i];
+        }
 
         return string(resolverBytes);
     }
