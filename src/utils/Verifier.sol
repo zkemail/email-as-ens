@@ -20,6 +20,9 @@ struct ProveAndClaimCommand {
     /// @notice The complete email address (e.g., "user@gmail.com")
     /// @dev This is the email address being claimed, which will correspond to the ENS subdomain
     string email;
+    /// @notice The resolver ENS name for the ENS name
+    /// @dev This ENS name is used to resolve the ENS name to an Ethereum address
+    string resolver;
     /// @notice The parts of the email address dot separated (e.g., ["user", "gmail", "com"])
     /// @dev Used to verify the email address
     string[] emailParts;
@@ -256,7 +259,7 @@ contract ProveAndClaimCommandVerifier {
                 publicKeyHash: command.dkimSignerHash,
                 emailNullifier: command.nullifier,
                 timestamp: command.timestamp,
-                maskedCommand: _getExpectedCommand(command.owner),
+                maskedCommand: _getExpectedCommand(command.owner, command.resolver),
                 accountSalt: command.accountSalt,
                 isCodeExist: command.isCodeEmbedded,
                 pubKey: command.miscellaneousData,
@@ -278,6 +281,7 @@ contract ProveAndClaimCommandVerifier {
         return ProveAndClaimCommand({
             domain: decodedFields.domainName,
             email: decodedFields.emailAddress,
+            resolver: "", // _extractResolver(decodedFields.maskedCommand),
             emailParts: _extractEmailParts(decodedFields.emailAddress),
             owner: _extractOwner(decodedFields.maskedCommand),
             dkimSignerHash: decodedFields.publicKeyHash,
@@ -365,17 +369,6 @@ contract ProveAndClaimCommandVerifier {
         return decodedFields;
     }
 
-    function _getTemplate() private pure returns (string[] memory) {
-        string[] memory template = new string[](6);
-        template[0] = "Claim";
-        template[1] = "ENS";
-        template[2] = "name";
-        template[3] = "for";
-        template[4] = "address";
-        template[5] = CommandUtils.ETH_ADDR_MATCHER;
-        return template;
-    }
-
     /**
      * @notice Generates the expected command string for a given owner address
      * @param _owner The Ethereum address that should appear in the command
@@ -383,10 +376,27 @@ contract ProveAndClaimCommandVerifier {
      * @dev This function creates the command format: "Claim ENS name for address {ethAddr}"
      *      where {ethAddr} is replaced with the actual Ethereum address.
      */
-    function _getExpectedCommand(address _owner) private pure returns (string memory) {
-        bytes[] memory commandParams = new bytes[](1);
+    function _getExpectedCommand(address _owner, string memory _resolver) private pure returns (string memory) {
+        bool hasResolver = bytes(_resolver).length != 0;
+        string[] memory template = new string[](hasResolver ? 9 : 6);
+        bytes[] memory commandParams = new bytes[](hasResolver ? 2 : 1);
+
+        template[0] = "Claim";
+        template[1] = "ENS";
+        template[2] = "name";
+        template[3] = "for";
+        template[4] = "address";
+        template[5] = CommandUtils.ETH_ADDR_MATCHER;
         commandParams[0] = abi.encode(_owner);
-        return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
+
+        if (hasResolver) {
+            template[6] = "with";
+            template[7] = "resolver";
+            template[8] = CommandUtils.STRING_MATCHER;
+            commandParams[1] = abi.encode(_resolver);
+        }
+
+        return CommandUtils.computeExpectedCommand(commandParams, template, 0);
     }
 
     function _extractOwner(string memory command) private pure returns (address) {
@@ -398,6 +408,16 @@ contract ProveAndClaimCommandVerifier {
         bytes memory addressBytes = commandBytes.slice(prefix.length, prefix.length + 42);
 
         return Strings.parseAddress(string(addressBytes));
+    }
+
+    function _extractResolver(string memory command) private pure returns (string memory) {
+        bytes memory commandBytes = bytes(command);
+        bytes memory prefix = "with resolver ";
+        if (commandBytes.length != prefix.length + 42) revert InvalidCommandLength();
+
+        bytes memory resolverBytes = commandBytes.slice(prefix.length, prefix.length + 42);
+
+        return string(resolverBytes);
     }
 
     function _extractEmailParts(string memory email) private pure returns (string[] memory) {
