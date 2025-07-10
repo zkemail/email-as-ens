@@ -50,6 +50,18 @@ struct ProveAndClaimCommand {
     bytes proof;
 }
 
+struct DecodedFields {
+    string domainName;
+    bytes32 publicKeyHash;
+    bytes32 emailNullifier;
+    uint256 timestamp;
+    string maskedCommand;
+    bytes32 accountSalt;
+    bool isCodeExist;
+    bytes pubKey;
+    string emailAddress;
+}
+
 /**
  * @title ProveAndClaimCommandVerifier
  * @notice Verifies zero-knowledge proofs for email-based ENS name claiming
@@ -72,31 +84,27 @@ contract ProveAndClaimCommandVerifier {
     uint256 public constant Q =
         21_888_242_871_839_275_222_246_405_745_257_275_088_696_311_157_297_823_662_689_037_894_645_226_208_583;
 
-    // publicSignals[0-8] -> 9 fields -> domain_name
+    // #1: domain_name CEIL(255 bytes / 31 bytes per field) = 9 fields -> idx 0-8
     uint256 public constant DOMAIN_NAME_OFFSET = 0;
-    uint256 public constant DOMAIN_NAME_FIELDS = 9;
-    uint256 public constant DOMAIN_NAME_BYTES = 255;
-    // publicSignals[9] -> 1 field -> public_key_hash
+    uint256 public constant DOMAIN_NAME_SIZE = 255;
+    // #2: public_key_hash 32 bytes -> 1 field -> idx 9
     uint256 public constant PUBLIC_KEY_HASH_OFFSET = 9;
-    // publicSignals[10] -> 1 field -> email_nullifier
+    // #3: email_nullifier 32 bytes -> 1 field -> idx 10
     uint256 public constant EMAIL_NULLIFIER_OFFSET = 10;
-    // publicSignals[11] -> 1 field -> timestamp
+    // #4: timestamp 32 bytes -> 1 field -> idx 11
     uint256 public constant TIMESTAMP_OFFSET = 11;
-    // publicSignals[12-31] -> 20 fields -> masked_command
+    // #5: masked_command CEIL(605 bytes / 31 bytes per field) = 20 fields -> idx 12-31
     uint256 public constant MASKED_COMMAND_OFFSET = 12;
-    uint256 public constant MASKED_COMMAND_FIELDS = 20;
-    uint256 public constant MASKED_COMMAND_BYTES = 605;
-    // publicSignals[32] -> 1 field -> account_salt
+    uint256 public constant MASKED_COMMAND_SIZE = 605;
+    // #6: account_salt 32 bytes -> 1 field -> idx 32
     uint256 public constant ACCOUNT_SALT_OFFSET = 32;
-    // publicSignals[33] -> 1 field -> is_code_exist
+    // #7: is_code_exist 1 byte -> 1 field -> idx 33
     uint256 public constant IS_CODE_EXIST_OFFSET = 33;
-    // publicSignals[34-50] -> 17 fields -> pubkey
+    // #8: pubkey -> 17 fields -> idx 34-50
     uint256 public constant PUBKEY_OFFSET = 34;
-    uint256 public constant PUBKEY_FIELDS = 17;
-    // publicSignals[51-59] -> 9 fields -> email_address
+    // #9: email_address CEIL(256 bytes / 31 bytes per field) = 9 fields -> idx 51-59
     uint256 public constant EMAIL_ADDRESS_OFFSET = 51;
-    uint256 public constant EMAIL_ADDRESS_FIELDS = 9;
-    uint256 public constant EMAIL_ADDRESS_BYTES = 256;
+    uint256 public constant EMAIL_ADDRESS_SIZE = 256;
 
     address public immutable GORTH16_VERIFIER;
 
@@ -104,7 +112,7 @@ contract ProveAndClaimCommandVerifier {
      * @notice Error thrown when the public signals array length is not exactly 60
      * @dev The ZK circuit expects exactly 60 public signals for verification
      */
-    error InvalidPublicSignalsLength();
+    error InvalidPubSignalsLength();
 
     /**
      * @notice Error thrown when the command length is invalid
@@ -178,14 +186,14 @@ contract ProveAndClaimCommandVerifier {
 
     /**
      * @notice Unpacks the public signals and proof into a ProveAndClaimCommand struct and encodes it into bytes
-     * @param publicSignals Array of public signals from the ZK proof
+     * @param pubSignals Array of public signals from the ZK proof
      * @param proof The zero-knowledge proof bytes
      * @return encodedCommand ABI-encoded ProveAndClaimCommand struct in bytes
      * @dev This function allows off-chain encoding of proof parameters to avoid potentially
      *      expensive on-chain encoding. The backend can call this as a pure function
      *      to get the properly formatted proof data for on-chain submission.
      *
-     *      The publicSignals array should contain 60 elements in the same order
+     *      The pubSignals array should contain 60 elements in the same order
      *      as defined in _buildPubSignals:
      *       -------------------------------------------------------------------------------------
      *      | Range | #fields | Field name      | Description                                     |
@@ -202,52 +210,20 @@ contract ProveAndClaimCommandVerifier {
      *       -------------------------------------------------------------------------------------
      */
     function encode(
-        uint256[] calldata publicSignals,
+        uint256[] calldata pubSignals,
         bytes calldata proof
     )
         public
         pure
         returns (bytes memory encodedCommand)
     {
-        if (publicSignals.length != 60) revert InvalidPublicSignalsLength();
-
-        return abi.encode(
-            ProveAndClaimCommand({
-                domain: string(
-                    CircuitUtils.unpackFields2Bytes(
-                        publicSignals, DOMAIN_NAME_OFFSET, DOMAIN_NAME_FIELDS, DOMAIN_NAME_BYTES
-                    )
-                ),
-                email: string(
-                    CircuitUtils.unpackFields2Bytes(
-                        publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES
-                    )
-                ),
-                emailParts: _extractEmailParts(
-                    CircuitUtils.unpackFields2Bytes(
-                        publicSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_FIELDS, EMAIL_ADDRESS_BYTES
-                    )
-                ),
-                owner: _extractOwner(
-                    CircuitUtils.unpackFields2Bytes(
-                        publicSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_FIELDS, MASKED_COMMAND_BYTES
-                    )
-                ),
-                dkimSignerHash: bytes32(publicSignals[PUBLIC_KEY_HASH_OFFSET]),
-                nullifier: bytes32(publicSignals[EMAIL_NULLIFIER_OFFSET]),
-                timestamp: publicSignals[TIMESTAMP_OFFSET],
-                accountSalt: bytes32(publicSignals[ACCOUNT_SALT_OFFSET]),
-                isCodeEmbedded: publicSignals[IS_CODE_EXIST_OFFSET] == 1,
-                miscellaneousData: abi.encode(_extractPubKeyFields(publicSignals, PUBKEY_OFFSET, PUBKEY_FIELDS)),
-                proof: proof
-            })
-        );
+        return abi.encode(_buildProveAndClaimCommand(pubSignals, proof));
     }
 
     /**
      * @notice Builds the public signals required for proof verification
      * @param command The ProveAndClaimCommand struct containing the necessary data
-     * @return An array of 60 uint256 values representing the public signals
+     * @return pubSignals An array of 60 uint256 values representing the public signals
      * @dev The public signals are structured as follows (in order, totaling 60 fields):
      *       -------------------------------------------------------------------------------------
      *      | Range | #fields | Field name      | Description                                     |
@@ -269,43 +245,49 @@ contract ProveAndClaimCommandVerifier {
      *      The expected command format is: "Claim ENS name for address {ethAddr}"
      *      where {ethAddr} is replaced with the actual Ethereum address from the command.
      */
-    function _buildPubSignals(ProveAndClaimCommand memory command) internal pure returns (uint256[60] memory) {
-        uint256[60] memory pubSignals;
+    function _buildPubSignals(ProveAndClaimCommand memory command)
+        internal
+        pure
+        returns (uint256[60] memory pubSignals)
+    {
+        pubSignals = _packPubSignals(
+            DecodedFields({
+                domainName: command.domain,
+                publicKeyHash: command.dkimSignerHash,
+                emailNullifier: command.nullifier,
+                timestamp: command.timestamp,
+                maskedCommand: _getExpectedCommand(command.owner),
+                accountSalt: command.accountSalt,
+                isCodeExist: command.isCodeEmbedded,
+                pubKey: command.miscellaneousData,
+                emailAddress: command.email
+            })
+        );
+    }
 
-        uint256[] memory domainFields = CircuitUtils.packBytes2Fields(bytes(command.domain), DOMAIN_NAME_BYTES);
-        uint256[] memory emailFields = CircuitUtils.packBytes2Fields(bytes(command.email), EMAIL_ADDRESS_BYTES);
-        uint256[] memory commandFields =
-            CircuitUtils.packBytes2Fields(bytes(_getExpectedCommand(command.owner)), MASKED_COMMAND_BYTES);
-        uint256[PUBKEY_FIELDS] memory pubKeyFields = abi.decode(command.miscellaneousData, (uint256[17]));
+    function _buildProveAndClaimCommand(
+        uint256[] calldata pubSignals,
+        bytes memory proof
+    )
+        internal
+        pure
+        returns (ProveAndClaimCommand memory command)
+    {
+        DecodedFields memory decodedFields = _unpackPubSignals(pubSignals);
 
-        // domain_name
-        for (uint256 i = 0; i < DOMAIN_NAME_FIELDS; i++) {
-            pubSignals[i] = domainFields[i];
-        }
-        // public_key_hash
-        pubSignals[PUBLIC_KEY_HASH_OFFSET] = uint256(command.dkimSignerHash);
-        // email_nullifier
-        pubSignals[EMAIL_NULLIFIER_OFFSET] = uint256(command.nullifier);
-        // timestamp
-        pubSignals[TIMESTAMP_OFFSET] = uint256(command.timestamp);
-        // masked_command
-        for (uint256 i = 0; i < MASKED_COMMAND_FIELDS; i++) {
-            pubSignals[MASKED_COMMAND_OFFSET + i] = commandFields[i];
-        }
-        // account_salt
-        pubSignals[ACCOUNT_SALT_OFFSET] = uint256(command.accountSalt);
-        // is_code_exist
-        pubSignals[IS_CODE_EXIST_OFFSET] = command.isCodeEmbedded ? 1 : 0;
-        // pubkey
-        for (uint256 i = 0; i < PUBKEY_FIELDS; i++) {
-            pubSignals[PUBKEY_OFFSET + i] = pubKeyFields[i];
-        }
-        // email_address
-        for (uint256 i = 0; i < EMAIL_ADDRESS_FIELDS; i++) {
-            pubSignals[EMAIL_ADDRESS_OFFSET + i] = emailFields[i];
-        }
-
-        return pubSignals;
+        return ProveAndClaimCommand({
+            domain: decodedFields.domainName,
+            email: decodedFields.emailAddress,
+            emailParts: _extractEmailParts(decodedFields.emailAddress),
+            owner: _extractOwner(decodedFields.maskedCommand),
+            dkimSignerHash: decodedFields.publicKeyHash,
+            nullifier: decodedFields.emailNullifier,
+            timestamp: decodedFields.timestamp,
+            accountSalt: decodedFields.accountSalt,
+            isCodeEmbedded: decodedFields.isCodeExist,
+            miscellaneousData: decodedFields.pubKey,
+            proof: proof
+        });
     }
 
     /**
@@ -347,7 +329,43 @@ contract ProveAndClaimCommandVerifier {
         return true;
     }
 
-    function _getTemplate() internal pure returns (string[] memory) {
+    function _packPubSignals(DecodedFields memory decodedFields) private pure returns (uint256[60] memory pubSignals) {
+        uint256[][] memory fields = new uint256[][](9);
+        fields[0] = CircuitUtils.packString(decodedFields.domainName, DOMAIN_NAME_SIZE);
+        fields[1] = CircuitUtils.packBytes32(decodedFields.publicKeyHash);
+        fields[2] = CircuitUtils.packBytes32(decodedFields.emailNullifier);
+        fields[3] = CircuitUtils.packUint256(decodedFields.timestamp);
+        fields[4] = CircuitUtils.packString(decodedFields.maskedCommand, MASKED_COMMAND_SIZE);
+        fields[5] = CircuitUtils.packBytes32(decodedFields.accountSalt);
+        fields[6] = CircuitUtils.packBool(decodedFields.isCodeExist);
+        fields[7] = CircuitUtils.packPubKey(decodedFields.pubKey);
+        fields[8] = CircuitUtils.packString(decodedFields.emailAddress, EMAIL_ADDRESS_SIZE);
+        pubSignals = _concatFields(fields);
+
+        return pubSignals;
+    }
+
+    function _unpackPubSignals(uint256[] calldata pubSignals)
+        private
+        pure
+        returns (DecodedFields memory decodedFields)
+    {
+        if (pubSignals.length != 60) revert InvalidPubSignalsLength();
+
+        decodedFields.domainName = CircuitUtils.unpackString(pubSignals, DOMAIN_NAME_OFFSET, DOMAIN_NAME_SIZE);
+        decodedFields.publicKeyHash = CircuitUtils.unpackBytes32(pubSignals, PUBLIC_KEY_HASH_OFFSET);
+        decodedFields.emailNullifier = CircuitUtils.unpackBytes32(pubSignals, EMAIL_NULLIFIER_OFFSET);
+        decodedFields.timestamp = CircuitUtils.unpackUint256(pubSignals, TIMESTAMP_OFFSET);
+        decodedFields.maskedCommand = CircuitUtils.unpackString(pubSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_SIZE);
+        decodedFields.accountSalt = CircuitUtils.unpackBytes32(pubSignals, ACCOUNT_SALT_OFFSET);
+        decodedFields.isCodeExist = CircuitUtils.unpackBool(pubSignals, IS_CODE_EXIST_OFFSET);
+        decodedFields.pubKey = CircuitUtils.unpackPubKey(pubSignals, PUBKEY_OFFSET);
+        decodedFields.emailAddress = CircuitUtils.unpackString(pubSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_SIZE);
+
+        return decodedFields;
+    }
+
+    function _getTemplate() private pure returns (string[] memory) {
         string[] memory template = new string[](6);
         template[0] = "Claim";
         template[1] = "ENS";
@@ -365,13 +383,14 @@ contract ProveAndClaimCommandVerifier {
      * @dev This function creates the command format: "Claim ENS name for address {ethAddr}"
      *      where {ethAddr} is replaced with the actual Ethereum address.
      */
-    function _getExpectedCommand(address _owner) internal pure returns (string memory) {
+    function _getExpectedCommand(address _owner) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(_owner);
         return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
 
-    function _extractOwner(bytes memory commandBytes) internal pure returns (address) {
+    function _extractOwner(string memory command) private pure returns (address) {
+        bytes memory commandBytes = bytes(command);
         bytes memory prefix = "Claim ENS name for address ";
         // 42 => 0x + 40 hex chars
         if (commandBytes.length != prefix.length + 42) revert InvalidCommandLength();
@@ -381,30 +400,8 @@ contract ProveAndClaimCommandVerifier {
         return Strings.parseAddress(string(addressBytes));
     }
 
-    /**
-     * @notice Extracts pubkey fields from public signals
-     * @param publicSignals Array of public signals
-     * @param startIndex Starting index of pubkey fields
-     * @param numFields Number of pubkey fields
-     * @return Array of pubkey fields
-     */
-    function _extractPubKeyFields(
-        uint256[] calldata publicSignals,
-        uint256 startIndex,
-        uint256 numFields
-    )
-        internal
-        pure
-        returns (uint256[17] memory)
-    {
-        uint256[17] memory pubKeyFields;
-        for (uint256 i = 0; i < numFields; i++) {
-            pubKeyFields[i] = publicSignals[startIndex + i];
-        }
-        return pubKeyFields;
-    }
-
-    function _extractEmailParts(bytes memory emailBytes) internal pure returns (string[] memory) {
+    function _extractEmailParts(string memory email) private pure returns (string[] memory) {
+        bytes memory emailBytes = bytes(email);
         bytes memory modifiedEmail = new bytes(emailBytes.length);
         uint256 atIndex = 0;
         for (uint256 i = 0; i < emailBytes.length; i++) {
@@ -419,7 +416,7 @@ contract ProveAndClaimCommandVerifier {
         return _splitString(string(modifiedEmail), ".");
     }
 
-    function _splitString(string memory str, bytes1 delimiter) internal pure returns (string[] memory) {
+    function _splitString(string memory str, bytes1 delimiter) private pure returns (string[] memory) {
         bytes memory strBytes = bytes(str);
         uint256 count = 1;
         for (uint256 i = 0; i < strBytes.length; i++) {
@@ -442,5 +439,18 @@ contract ProveAndClaimCommandVerifier {
         bytes memory lastPartBytes = strBytes.slice(lastIndex, strBytes.length);
         parts[partIndex] = string(lastPartBytes);
         return parts;
+    }
+
+    function _concatFields(uint256[][] memory inputs) private pure returns (uint256[60] memory out) {
+        uint256 k = 0;
+        for (uint256 i = 0; i < inputs.length; i++) {
+            uint256[] memory arr = inputs[i];
+            for (uint256 j = 0; j < arr.length; j++) {
+                if (k >= 60) revert InvalidPubSignalsLength();
+                out[k++] = arr[j];
+            }
+        }
+        if (k != 60) revert InvalidPubSignalsLength();
+        return out;
     }
 }
