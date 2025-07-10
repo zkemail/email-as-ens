@@ -31,9 +31,7 @@ contract ClaimWithFixtureCommandScript is Script {
         // Get the registrar contract instance
         ZkEmailRegistrar registrar = ZkEmailRegistrar(zkEmailRegistrarAddress);
 
-        console.log("Calling proveAndClaim...");
-
-        try registrar.proveAndClaim(command) {
+        try registrar.entrypoint(abi.encode(command)) {
             console.log("Successfully claimed ENS name!");
             bytes32 node = 0xe732be81ce46c5f5caddad0003bac9aa8fe88e5c22eaf2576470f380b975df38;
             try registrar.setRecord(node, command.owner, PUBLIC_RESOLVER, 0) {

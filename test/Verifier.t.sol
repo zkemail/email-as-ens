@@ -54,8 +54,36 @@ contract VerifierTest is Test {
         }
     }
 
+    function test_buildPublicSignals_correctlyBuildsSignalsFromCommandWithResolver() public {
+        (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) =
+            TestFixtures.claimEnsCommandWithResolver();
+
+        PublicProveAndClaimCommandVerifier verifier = new PublicProveAndClaimCommandVerifier();
+        uint256[60] memory publicSignals = verifier.buildPubSignals(command);
+
+        for (uint8 i = 0; i < 60; i++) {
+            assertEq(publicSignals[i], expectedPubSignals[i]);
+        }
+    }
+
+    function test_isValid_returnsFalseForInvalidProof() public view {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (uint256[2] memory pA, uint256[2][2] memory pB, uint256[2] memory pC) =
+            abi.decode(command.proof, (uint256[2], uint256[2][2], uint256[2]));
+        pA[0] = _verifier.Q();
+        command.proof = abi.encode(pA, pB, pC);
+        bool isValid = _verifier.isValid(abi.encode(command));
+        assertFalse(isValid);
+    }
+
     function test_isValid_returnsTrueForValidCommand() public view {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        bool isValid = _verifier.isValid(abi.encode(command));
+        assertTrue(isValid);
+    }
+
+    function test_isValid_returnsTrueForValidCommandWithResolver() public view {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         bool isValid = _verifier.isValid(abi.encode(command));
         assertTrue(isValid);
     }

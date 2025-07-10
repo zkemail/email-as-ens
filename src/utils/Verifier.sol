@@ -17,6 +17,9 @@ struct ProveAndClaimCommand {
     /// @notice The complete email address (e.g., "user@gmail.com")
     /// @dev This is the email address being claimed, which will correspond to the ENS subdomain
     string email;
+    /// @notice The resolver ENS name for the ENS name
+    /// @dev This ENS name is used to resolve the ENS name to an Ethereum address
+    string resolver;
     /// @notice The parts of the email address dot separated (e.g., ["user", "gmail", "com"])
     /// @dev Used to verify the email address
     string[] emailParts;
@@ -147,6 +150,40 @@ contract ProveAndClaimCommandVerifier {
     }
 
     /**
+     * @notice Unpacks the public signals and proof into a ProveAndClaimCommand struct and encodes it into bytes
+     * @param publicSignals Array of public signals from the ZK proof
+     * @param proof The zero-knowledge proof bytes
+     * @return encodedCommand ABI-encoded ProveAndClaimCommand struct in bytes
+     * @dev This function allows off-chain encoding of proof parameters to avoid
+     *      expensive on-chain encoding. The backend can call this as a pure function
+     *      to get the properly formatted proof data for on-chain submission.
+     *
+     *      The publicSignals array should contain 60 elements in the same order
+     *      as defined in _buildPubSignals:
+     *       -------------------------------------------------------------------------------------
+     *      | Range | #fields | Field name      | Description                                     |
+     *      |-------------------------------------------------------------------------------------|
+     *      | 0-8   | 9       | domain_name     | packed representation of the email domain       |
+     *      | 9     | 1       | public_key_hash | hash of the DKIM RSA public key                 |
+     *      | 10    | 1       | email_nullifier | unique identifier preventing replay attacks     |
+     *      | 11    | 1       | timestamp       | email timestamp, 0 if not supported             |
+     *      | 12-31 | 20      | masked_command  | packed representation of the expected command   |
+     *      | 32    | 1       | account_salt    | additional randomness for security              |
+     *      | 33    | 1       | is_code_exist   | boolean indicating embedded verification code   |
+     *      | 34-50 | 17      | pubkey          | decomposed RSA public key components            |
+     *      | 51-59 | 9       | email_address   | packed representation of the full email address |
+     *       -------------------------------------------------------------------------------------
+     */
+    function encode(
+        uint256[] calldata publicSignals,
+        bytes calldata proof
+    )
+        public
+        pure
+        returns (bytes memory encodedCommand)
+    { }
+
+    /**
      * @notice Verifies that the email parts are dot separated and match the claimed email
      * @param emailParts The parts of the email address dot separated
      * @param email The complete email address
@@ -209,7 +246,8 @@ contract ProveAndClaimCommandVerifier {
 
         uint256[] memory domainFields = _packBytes2Fields(bytes(command.domain), DOMAIN_BYTES);
         uint256[] memory emailFields = _packBytes2Fields(bytes(command.email), EMAIL_BYTES);
-        uint256[] memory commandFields = _packBytes2Fields(_getExpectedCommand(command.owner), COMMAND_BYTES);
+        uint256[] memory commandFields =
+            _packBytes2Fields(_getExpectedCommand(command.owner, command.resolver), COMMAND_BYTES);
         uint256[PUBKEY_FIELDS] memory pubKeyFields = abi.decode(command.miscellaneousData, (uint256[17]));
 
         // domain_name
@@ -293,16 +331,26 @@ contract ProveAndClaimCommandVerifier {
      * @dev This function creates the command format: "Claim ENS name for address {ethAddr}"
      *      where {ethAddr} is replaced with the actual Ethereum address.
      */
-    function _getExpectedCommand(address _owner) internal pure returns (bytes memory) {
-        string[] memory template = new string[](6);
+    function _getExpectedCommand(address _owner, string memory _resolver) internal pure returns (bytes memory) {
+        bool hasResolver = bytes(_resolver).length != 0;
+        string[] memory template = new string[](hasResolver ? 9 : 6);
+        bytes[] memory commandParams = new bytes[](hasResolver ? 2 : 1);
+
         template[0] = "Claim";
         template[1] = "ENS";
         template[2] = "name";
         template[3] = "for";
         template[4] = "address";
         template[5] = CommandUtils.ETH_ADDR_MATCHER;
-        bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(_owner);
+
+        if (hasResolver) {
+            template[6] = "with";
+            template[7] = "resolver";
+            template[8] = CommandUtils.STRING_MATCHER;
+            commandParams[1] = abi.encode(_resolver);
+        }
+
         return bytes(CommandUtils.computeExpectedCommand(commandParams, template, 0));
     }
 }
