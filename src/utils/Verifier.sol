@@ -112,24 +112,6 @@ contract ProveAndClaimCommandVerifier {
     address public immutable GORTH16_VERIFIER;
 
     /**
-     * @notice Error thrown when the public signals array length is not exactly 60
-     * @dev The ZK circuit expects exactly 60 public signals for verification
-     */
-    error InvalidPubSignalsLength();
-
-    /**
-     * @notice Error thrown when the command length is invalid
-     * @dev The command should have the expected format and length
-     */
-    error InvalidCommandLength();
-
-    /**
-     * @notice Error thrown when the email doesn't contain an @ symbol
-     * @dev Valid email addresses must contain exactly one @ symbol
-     */
-    error InvalidEmailAddress();
-
-    /**
      * @notice Initializes the verifier with a Groth16 verifier contract
      * @param _groth16Verifier The address of the deployed Groth16Verifier contract
      * @dev The Groth16 verifier must be compatible with the specific circuit used for email verification.
@@ -282,7 +264,7 @@ contract ProveAndClaimCommandVerifier {
             domain: decodedFields.domainName,
             email: decodedFields.emailAddress,
             resolver: _extractResolver(decodedFields.maskedCommand),
-            emailParts: _extractEmailParts(decodedFields.emailAddress),
+            emailParts: CircuitUtils.extractEmailParts(decodedFields.emailAddress),
             owner: _extractOwner(decodedFields.maskedCommand),
             dkimSignerHash: decodedFields.publicKeyHash,
             nullifier: decodedFields.emailNullifier,
@@ -344,7 +326,7 @@ contract ProveAndClaimCommandVerifier {
         fields[6] = CircuitUtils.packBool(decodedFields.isCodeExist);
         fields[7] = CircuitUtils.packPubKey(decodedFields.pubKey);
         fields[8] = CircuitUtils.packString(decodedFields.emailAddress, EMAIL_ADDRESS_SIZE);
-        pubSignals = _concatFields(fields);
+        pubSignals = CircuitUtils.concatFields(fields);
 
         return pubSignals;
     }
@@ -354,7 +336,7 @@ contract ProveAndClaimCommandVerifier {
         pure
         returns (DecodedFields memory decodedFields)
     {
-        if (pubSignals.length != 60) revert InvalidPubSignalsLength();
+        if (pubSignals.length != 60) revert CircuitUtils.InvalidPubSignalsLength();
 
         decodedFields.domainName = CircuitUtils.unpackString(pubSignals, DOMAIN_NAME_OFFSET, DOMAIN_NAME_SIZE);
         decodedFields.publicKeyHash = CircuitUtils.unpackBytes32(pubSignals, PUBLIC_KEY_HASH_OFFSET);
@@ -435,59 +417,5 @@ contract ProveAndClaimCommandVerifier {
         }
 
         return string(resolverBytes);
-    }
-
-    function _extractEmailParts(string memory email) private pure returns (string[] memory) {
-        bytes memory emailBytes = bytes(email);
-        bytes memory modifiedEmail = new bytes(emailBytes.length);
-        uint256 atIndex = 0;
-        for (uint256 i = 0; i < emailBytes.length; i++) {
-            if (emailBytes[i] == "@") {
-                modifiedEmail[i] = "$";
-                atIndex = i;
-            } else {
-                modifiedEmail[i] = emailBytes[i];
-            }
-        }
-        if (atIndex == 0) revert InvalidEmailAddress();
-        return _splitString(string(modifiedEmail), ".");
-    }
-
-    function _splitString(string memory str, bytes1 delimiter) private pure returns (string[] memory) {
-        bytes memory strBytes = bytes(str);
-        uint256 count = 1;
-        for (uint256 i = 0; i < strBytes.length; i++) {
-            if (strBytes[i] == delimiter) {
-                count++;
-            }
-        }
-
-        string[] memory parts = new string[](count);
-        uint256 lastIndex = 0;
-        uint256 partIndex = 0;
-        for (uint256 i = 0; i < strBytes.length; i++) {
-            if (strBytes[i] == delimiter) {
-                bytes memory partBytes = strBytes.slice(lastIndex, i);
-                parts[partIndex] = string(partBytes);
-                lastIndex = i + 1;
-                partIndex++;
-            }
-        }
-        bytes memory lastPartBytes = strBytes.slice(lastIndex, strBytes.length);
-        parts[partIndex] = string(lastPartBytes);
-        return parts;
-    }
-
-    function _concatFields(uint256[][] memory inputs) private pure returns (uint256[60] memory out) {
-        uint256 k = 0;
-        for (uint256 i = 0; i < inputs.length; i++) {
-            uint256[] memory arr = inputs[i];
-            for (uint256 j = 0; j < arr.length; j++) {
-                if (k >= 60) revert InvalidPubSignalsLength();
-                out[k++] = arr[j];
-            }
-        }
-        if (k != 60) revert InvalidPubSignalsLength();
-        return out;
     }
 }

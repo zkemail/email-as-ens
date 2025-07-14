@@ -13,6 +13,24 @@ library CircuitUtils {
     using Bytes for bytes;
 
     /**
+     * @notice Error thrown when the public signals array length is not exactly 60
+     * @dev The ZK circuit expects exactly 60 public signals for verification
+     */
+    error InvalidPubSignalsLength();
+
+    /**
+     * @notice Error thrown when the command length is invalid
+     * @dev The command should have the expected format and length
+     */
+    error InvalidCommandLength();
+
+    /**
+     * @notice Error thrown when the email doesn't contain an @ symbol
+     * @dev Valid email addresses must contain exactly one @ symbol
+     */
+    error InvalidEmailAddress();
+
+    /**
      * @notice Packs byte arrays into field elements for ZK circuit compatibility
      * @param _bytes The byte array to pack into field elements
      * @param _paddedSize The target size after padding (must be larger than or equal to _bytes.length)
@@ -177,5 +195,59 @@ library CircuitUtils {
         }
         pubKeyBytes = abi.encode(pubKeyChunks);
         return pubKeyBytes;
+    }
+
+    function extractEmailParts(string memory email) internal pure returns (string[] memory) {
+        bytes memory emailBytes = bytes(email);
+        bytes memory modifiedEmail = new bytes(emailBytes.length);
+        uint256 atIndex = 0;
+        for (uint256 i = 0; i < emailBytes.length; i++) {
+            if (emailBytes[i] == "@") {
+                modifiedEmail[i] = "$";
+                atIndex = i;
+            } else {
+                modifiedEmail[i] = emailBytes[i];
+            }
+        }
+        if (atIndex == 0) revert InvalidEmailAddress();
+        return _splitString(string(modifiedEmail), ".");
+    }
+
+    function concatFields(uint256[][] memory inputs) internal pure returns (uint256[60] memory out) {
+        uint256 k = 0;
+        for (uint256 i = 0; i < inputs.length; i++) {
+            uint256[] memory arr = inputs[i];
+            for (uint256 j = 0; j < arr.length; j++) {
+                if (k >= 60) revert InvalidPubSignalsLength();
+                out[k++] = arr[j];
+            }
+        }
+        if (k != 60) revert InvalidPubSignalsLength();
+        return out;
+    }
+
+    function _splitString(string memory str, bytes1 delimiter) private pure returns (string[] memory) {
+        bytes memory strBytes = bytes(str);
+        uint256 count = 1;
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            if (strBytes[i] == delimiter) {
+                count++;
+            }
+        }
+
+        string[] memory parts = new string[](count);
+        uint256 lastIndex = 0;
+        uint256 partIndex = 0;
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            if (strBytes[i] == delimiter) {
+                bytes memory partBytes = strBytes.slice(lastIndex, i);
+                parts[partIndex] = string(partBytes);
+                lastIndex = i + 1;
+                partIndex++;
+            }
+        }
+        bytes memory lastPartBytes = strBytes.slice(lastIndex, strBytes.length);
+        parts[partIndex] = string(lastPartBytes);
+        return parts;
     }
 }
