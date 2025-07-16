@@ -8,6 +8,17 @@ import { CircuitUtils } from "./CircuitUtils.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
 
 /**
+ * @notice Enum representing the indices of command parameters in the command template
+ * @dev Used to specify which parameter to extract from the command string
+ * @param OWNER = 0
+ * @param RESOLVER = 1
+ */
+enum CommandParamIndex {
+    OWNER,
+    RESOLVER
+}
+
+/**
  * @title ProveAndClaimCommand
  * @notice A struct representing a zero-knowledge proof command for claiming ENS names via email verification
  * @dev This struct contains all the necessary data for proving email ownership and claiming corresponding ENS names.
@@ -109,13 +120,14 @@ contract ProveAndClaimCommandVerifier {
     uint256 public constant EMAIL_ADDRESS_OFFSET = 51;
     uint256 public constant EMAIL_ADDRESS_SIZE = 256;
 
+    /// @notice The address of the deployed Groth16Verifier contract
+    /// @dev The Groth16 verifier must be compatible with the specific circuit used for email verification.
+    ///      This address is immutable to prevent unauthorized changes to the verification logic.
     address public immutable GORTH16_VERIFIER;
 
     /**
      * @notice Initializes the verifier with a Groth16 verifier contract
      * @param _groth16Verifier The address of the deployed Groth16Verifier contract
-     * @dev The Groth16 verifier must be compatible with the specific circuit used for email verification.
-     *      This address is immutable to prevent unauthorized changes to the verification logic.
      */
     constructor(address _groth16Verifier) {
         GORTH16_VERIFIER = _groth16Verifier;
@@ -136,7 +148,6 @@ contract ProveAndClaimCommandVerifier {
      *      - The proof components are not valid field elements
      *      - The zk proof verification fails
      *      - Any step in the verification process encounters an error (note to reviewer: how to make sure?)
-     *
      */
     function isValid(bytes memory data) external view returns (bool) {
         // decode the data into a ProveAndClaimCommand struct
@@ -241,7 +252,7 @@ contract ProveAndClaimCommandVerifier {
                 publicKeyHash: command.dkimSignerHash,
                 emailNullifier: command.nullifier,
                 timestamp: command.timestamp,
-                maskedCommand: _getExpectedCommand(command.owner, command.resolver),
+                maskedCommand: _getMaskedCommand(command),
                 accountSalt: command.accountSalt,
                 isCodeExist: command.isCodeEmbedded,
                 pubKey: command.miscellaneousData,
@@ -250,6 +261,12 @@ contract ProveAndClaimCommandVerifier {
         );
     }
 
+    /**
+     * @notice Reconstructs a ProveAndClaimCommand struct from public signals and proof bytes.
+     * @param pubSignals The array of public signals as output by the ZK circuit.
+     * @param proof The zero-knowledge proof bytes.
+     * @return command The reconstructed ProveAndClaimCommand struct, ready for encoding or verification.
+     */
     function _buildProveAndClaimCommand(
         uint256[] calldata pubSignals,
         bytes memory proof
@@ -263,10 +280,16 @@ contract ProveAndClaimCommandVerifier {
         return ProveAndClaimCommand({
             domain: decodedFields.domainName,
             email: decodedFields.emailAddress,
-            resolver: _extractResolver(decodedFields.maskedCommand),
+            resolver: CircuitUtils.extractCommandParamByIndex(
+                _getTemplate(true), decodedFields.maskedCommand, uint256(CommandParamIndex.RESOLVER)
+            ),
             emailParts: CircuitUtils.extractEmailParts(decodedFields.emailAddress),
-            owner: _extractOwner(decodedFields.maskedCommand),
             dkimSignerHash: decodedFields.publicKeyHash,
+            owner: Strings.parseAddress(
+                CircuitUtils.extractCommandParamByIndex(
+                    _getTemplate(true), decodedFields.maskedCommand, uint256(CommandParamIndex.OWNER)
+                )
+            ),
             nullifier: decodedFields.emailNullifier,
             timestamp: decodedFields.timestamp,
             accountSalt: decodedFields.accountSalt,
@@ -315,6 +338,11 @@ contract ProveAndClaimCommandVerifier {
         return true;
     }
 
+    /**
+     * @notice Packs the decoded fields into the public signals array
+     * @param decodedFields The decoded fields struct
+     * @return pubSignals The packed public signals array
+     */
     function _packPubSignals(DecodedFields memory decodedFields) private pure returns (uint256[60] memory pubSignals) {
         uint256[][] memory fields = new uint256[][](9);
         fields[0] = CircuitUtils.packString(decodedFields.domainName, DOMAIN_NAME_SIZE);
@@ -331,6 +359,11 @@ contract ProveAndClaimCommandVerifier {
         return pubSignals;
     }
 
+    /**
+     * @notice Unpacks the public signals array into a DecodedFields struct
+     * @param pubSignals The array of public signals
+     * @return decodedFields The decoded fields struct
+     */
     function _unpackPubSignals(uint256[] calldata pubSignals)
         private
         pure
@@ -352,16 +385,12 @@ contract ProveAndClaimCommandVerifier {
     }
 
     /**
-     * @notice Generates the expected command string for a given owner address
-     * @param _owner The Ethereum address that should appear in the command
-     * @return The expected command bytes that should be present in the verified email
-     * @dev This function creates the command format: "Claim ENS name for address {ethAddr}"
-     *      where {ethAddr} is replaced with the actual Ethereum address.
+     * @notice Returns the command template for the expected command string
+     * @param hasResolver Whether the resolver is included in the command
+     * @return template The command template as a string array
      */
-    function _getExpectedCommand(address _owner, string memory _resolver) private pure returns (string memory) {
-        bool hasResolver = bytes(_resolver).length != 0;
-        string[] memory template = new string[](hasResolver ? 9 : 6);
-        bytes[] memory commandParams = new bytes[](hasResolver ? 2 : 1);
+    function _getTemplate(bool hasResolver) private pure returns (string[] memory template) {
+        template = new string[](hasResolver ? 9 : 6);
 
         template[0] = "Claim";
         template[1] = "ENS";
@@ -369,53 +398,31 @@ contract ProveAndClaimCommandVerifier {
         template[3] = "for";
         template[4] = "address";
         template[5] = CommandUtils.ETH_ADDR_MATCHER;
-        commandParams[0] = abi.encode(_owner);
-
         if (hasResolver) {
             template[6] = "with";
             template[7] = "resolver";
             template[8] = CommandUtils.STRING_MATCHER;
-            commandParams[1] = abi.encode(_resolver);
         }
+
+        return template;
+    }
+
+    /**
+     * @notice Generates the expected command string for a given owner address
+     * @param command The ProveAndClaimCommand struct containing the necessary data
+     * @return The expected command string that should be present in the verified email
+     */
+    function _getMaskedCommand(ProveAndClaimCommand memory command) private pure returns (string memory) {
+        bool hasResolver = bytes(command.resolver).length != 0;
+
+        bytes[] memory commandParams = new bytes[](hasResolver ? 2 : 1);
+        commandParams[0] = abi.encode(command.owner);
+        if (hasResolver) {
+            commandParams[1] = abi.encode(command.resolver);
+        }
+
+        string[] memory template = _getTemplate(hasResolver);
 
         return CommandUtils.computeExpectedCommand(commandParams, template, 0);
-    }
-
-    function _extractOwner(string memory command) private pure returns (address) {
-        bytes memory commandBytes = bytes(command);
-        bytes memory prefix = "Claim ENS name for address ";
-        bytes memory addressBytes = new bytes(42);
-        for (uint256 i = 0; i < 42; i++) {
-            addressBytes[i] = commandBytes[prefix.length + i];
-        }
-
-        return Strings.parseAddress(string(addressBytes));
-    }
-
-    function _extractResolver(string memory command) private pure returns (string memory) {
-        bytes memory commandBytes = bytes(command);
-        bytes memory prefix = "Claim ENS name for address ";
-        bytes memory infix = " with resolver ";
-
-        uint256 ownerPartEnd = prefix.length + 42;
-        if (commandBytes.length <= ownerPartEnd + infix.length) {
-            return "";
-        }
-
-        // Check if " with resolver " is present after the address
-        for (uint256 i = 0; i < infix.length; i++) {
-            if (commandBytes[ownerPartEnd + i] != infix[i]) {
-                return ""; // Infix not found, so no resolver
-            }
-        }
-
-        uint256 resolverStartIndex = ownerPartEnd + infix.length;
-        uint256 resolverLen = commandBytes.length - resolverStartIndex;
-        bytes memory resolverBytes = new bytes(resolverLen);
-        for (uint256 i = 0; i < resolverLen; i++) {
-            resolverBytes[i] = commandBytes[resolverStartIndex + i];
-        }
-
-        return string(resolverBytes);
     }
 }

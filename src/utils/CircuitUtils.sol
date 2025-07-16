@@ -2,6 +2,8 @@
 pragma solidity ^0.8.30;
 
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 
 /**
  * @title CircuitUtils
@@ -11,6 +13,7 @@ import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
  */
 library CircuitUtils {
     using Bytes for bytes;
+    using Strings for string;
 
     /**
      * @notice Error thrown when the public signals array length is not exactly 60
@@ -74,29 +77,55 @@ library CircuitUtils {
         return fields;
     }
 
+    /**
+     * @notice Packs a string into field elements for ZK circuit compatibility
+     * @param _string The string to pack
+     * @param paddedSize The target size after padding
+     * @return fields The packed field elements
+     */
     function packString(string memory _string, uint256 paddedSize) internal pure returns (uint256[] memory fields) {
         fields = packBytes2Fields(bytes(_string), paddedSize);
         return fields;
     }
 
+    /**
+     * @notice Packs a bytes32 value into a single field element
+     * @param _bytes32 The bytes32 value to pack
+     * @return fields The packed field element
+     */
     function packBytes32(bytes32 _bytes32) internal pure returns (uint256[] memory fields) {
         fields = new uint256[](1);
         fields[0] = uint256(_bytes32);
         return fields;
     }
 
+    /**
+     * @notice Packs a boolean value into a single field element
+     * @param b The boolean value to pack
+     * @return fields The packed field element
+     */
     function packBool(bool b) internal pure returns (uint256[] memory fields) {
         fields = new uint256[](1);
         fields[0] = b ? 1 : 0;
         return fields;
     }
 
+    /**
+     * @notice Packs a uint256 value into a single field element
+     * @param _uint256 The uint256 value to pack
+     * @return fields The packed field element
+     */
     function packUint256(uint256 _uint256) internal pure returns (uint256[] memory fields) {
         fields = new uint256[](1);
         fields[0] = _uint256;
         return fields;
     }
 
+    /**
+     * @notice Packs a public key (as bytes) into field elements
+     * @param pubKeyBytes The public key bytes (encoded as uint256[17])
+     * @return fields The packed field elements
+     */
     function packPubKey(bytes memory pubKeyBytes) internal pure returns (uint256[] memory fields) {
         uint256[17] memory pubKeyChunks = abi.decode(pubKeyBytes, (uint256[17]));
         fields = new uint256[](17);
@@ -151,6 +180,13 @@ library CircuitUtils {
         return result.slice(0, actualLength);
     }
 
+    /**
+     * @notice Unpacks field elements to a string
+     * @param pubSignals Array of public signals
+     * @param startIndex Starting index in pubSignals
+     * @param paddedSize Original padded size of the string
+     * @return The unpacked string
+     */
     function unpackString(
         uint256[] calldata pubSignals,
         uint256 startIndex,
@@ -163,14 +199,32 @@ library CircuitUtils {
         return string(unpackFields2Bytes(pubSignals, startIndex, paddedSize));
     }
 
+    /**
+     * @notice Unpacks a bytes32 value from public signals
+     * @param pubSignals Array of public signals
+     * @param startIndex Starting index in pubSignals
+     * @return The unpacked bytes32 value
+     */
     function unpackBytes32(uint256[] calldata pubSignals, uint256 startIndex) internal pure returns (bytes32) {
         return bytes32(pubSignals[startIndex]);
     }
 
+    /**
+     * @notice Unpacks a uint256 value from public signals
+     * @param pubSignals Array of public signals
+     * @param startIndex Starting index in pubSignals
+     * @return The unpacked uint256 value
+     */
     function unpackUint256(uint256[] calldata pubSignals, uint256 startIndex) internal pure returns (uint256) {
         return pubSignals[startIndex];
     }
 
+    /**
+     * @notice Unpacks a boolean value from public signals
+     * @param pubSignals Array of public signals
+     * @param startIndex Starting index in pubSignals
+     * @return The unpacked boolean value
+     */
     function unpackBool(uint256[] calldata pubSignals, uint256 startIndex) internal pure returns (bool) {
         return pubSignals[startIndex] == 1;
     }
@@ -197,6 +251,11 @@ library CircuitUtils {
         return pubKeyBytes;
     }
 
+    /**
+     * @notice Extracts the parts of an email address, replacing '@' with '$' and splitting by '.'
+     * @param email The email address to process
+     * @return The parts of the email address as a string array
+     */
     function extractEmailParts(string memory email) internal pure returns (string[] memory) {
         bytes memory emailBytes = bytes(email);
         bytes memory modifiedEmail = new bytes(emailBytes.length);
@@ -213,6 +272,11 @@ library CircuitUtils {
         return _splitString(string(modifiedEmail), ".");
     }
 
+    /**
+     * @notice Concatenates multiple arrays of field elements into a single array of length 60
+     * @param inputs The arrays of field elements to concatenate
+     * @return out The concatenated array of length 60
+     */
     function concatFields(uint256[][] memory inputs) internal pure returns (uint256[60] memory out) {
         uint256 k = 0;
         for (uint256 i = 0; i < inputs.length; i++) {
@@ -226,6 +290,105 @@ library CircuitUtils {
         return out;
     }
 
+    /// @notice Extracts a parameter from a command string based on the template and parameter index.
+    /// @param template The command template as an array of strings.
+    /// @param command The command string to extract from.
+    /// @param paramIndex The zero-based index of the parameter to extract.
+    /// @return The extracted parameter as a string, or an empty string if not found.
+    function extractCommandParamByIndex(
+        string[] memory template,
+        string memory command,
+        uint256 paramIndex
+    )
+        internal
+        pure
+        returns (string memory)
+    {
+        uint256 wordIndex = _getParamWordIndex(template, paramIndex);
+        if (wordIndex == type(uint256).max) {
+            return "";
+        }
+
+        return _getWordByIndex(command, wordIndex);
+    }
+
+    /**
+     * @notice Checks if the given template string is a matcher (parameter placeholder).
+     * @param templateString The template string to check.
+     * @return True if the string is a matcher, false otherwise.
+     */
+    function _isMatcher(string memory templateString) private pure returns (bool) {
+        return Strings.equal(templateString, CommandUtils.STRING_MATCHER)
+            || Strings.equal(templateString, CommandUtils.UINT_MATCHER)
+            || Strings.equal(templateString, CommandUtils.INT_MATCHER)
+            || Strings.equal(templateString, CommandUtils.DECIMALS_MATCHER)
+            || Strings.equal(templateString, CommandUtils.ETH_ADDR_MATCHER);
+    }
+
+    /**
+     * @notice Finds the index in the template corresponding to the Nth matcher (zero-based).
+     * @param template The command template as an array of strings.
+     * @param paramIndex The zero-based index of the parameter to find.
+     * @return paramTemplateIndex The zero-based index in the template array, or uint256 max if not found.
+     */
+    function _getParamWordIndex(
+        string[] memory template,
+        uint256 paramIndex
+    )
+        private
+        pure
+        returns (uint256 paramTemplateIndex)
+    {
+        paramTemplateIndex = 0;
+        for (uint256 i = 0; i < template.length; i++) {
+            if (_isMatcher(template[i])) {
+                if (paramTemplateIndex == paramIndex) {
+                    return i;
+                }
+                paramTemplateIndex++;
+            }
+        }
+
+        // return uint max if param not found
+        return type(uint256).max;
+    }
+
+    /**
+     * @notice Returns the word at the specified index in a space-delimited string.
+     * @param input The input string with space delimiters.
+     * @param wordIndex The zero-based index of the word to find.
+     * @return word The word at the specified index, or an empty string if not found.
+     */
+    function _getWordByIndex(string memory input, uint256 wordIndex) private pure returns (string memory word) {
+        bytes memory inputBytes = bytes(input);
+        bytes1 space = bytes1(" ");
+        uint256 wordStart = 0;
+        uint256 wordCount = 0;
+        uint256 i = 0;
+        while (i <= inputBytes.length) {
+            if (i == inputBytes.length || inputBytes[i] == space) {
+                if (wordCount == wordIndex) {
+                    uint256 len = i - wordStart;
+                    bytes memory wordBytes = new bytes(len);
+                    for (uint256 j = 0; j < len; j++) {
+                        wordBytes[j] = inputBytes[wordStart + j];
+                    }
+                    return string(wordBytes);
+                }
+                wordCount++;
+                wordStart = i + 1;
+            }
+            i++;
+        }
+        return "";
+    }
+
+    /**
+     * @notice Splits a string by a delimiter into an array of strings
+     * @param str The string to split
+     * @param delimiter The delimiter to split by
+     * @return The array of split strings
+     */
     function _splitString(string memory str, bytes1 delimiter) private pure returns (string[] memory) {
         bytes memory strBytes = bytes(str);
         uint256 count = 1;
