@@ -268,7 +268,14 @@ library CircuitUtils {
                 modifiedEmail[i] = emailBytes[i];
             }
         }
+        // no @ symbol
         if (atIndex == 0) revert InvalidEmailAddress();
+        // multiple @ symbols
+        if (atIndex != Bytes.indexOf(emailBytes, "@")) revert InvalidEmailAddress();
+        // @ at start
+        if (atIndex == 0) revert InvalidEmailAddress();
+        // @ at end
+        if (atIndex == emailBytes.length - 1) revert InvalidEmailAddress();
         return _splitString(string(modifiedEmail), ".");
     }
 
