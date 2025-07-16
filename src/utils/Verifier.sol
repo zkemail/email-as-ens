@@ -167,7 +167,7 @@ contract ProveAndClaimCommandVerifier {
             return false;
         }
 
-        if (!_verifyEmailParts(command.emailParts, command.email)) {
+        if (!CircuitUtils.verifyEmailParts(command.emailParts, command.email)) {
             return false;
         }
 
@@ -297,45 +297,6 @@ contract ProveAndClaimCommandVerifier {
             miscellaneousData: decodedFields.pubKey,
             proof: proof
         });
-    }
-
-    /**
-     * @notice Verifies that the email parts are dot separated and match the claimed email
-     * @param emailParts The parts of the email address dot separated
-     * @param email The complete email address
-     * @return True if the email parts are dot separated and match the claimed email, false otherwise
-     */
-    function _verifyEmailParts(string[] memory emailParts, string memory email) internal pure returns (bool) {
-        string memory composedEmail = "";
-        for (uint256 i = 0; i < emailParts.length; i++) {
-            composedEmail = string.concat(composedEmail, emailParts[i]);
-            if (i < emailParts.length - 1) {
-                composedEmail = string.concat(composedEmail, ".");
-            }
-        }
-
-        bytes memory emailBytes = bytes(email);
-        bytes memory composedEmailBytes = bytes(composedEmail);
-
-        // Ensure composedEmail and emailBytes have the same length
-        if (composedEmailBytes.length != emailBytes.length) {
-            return false;
-        }
-
-        // check if the email parts are dot separated and match the claimed email
-        // note since @ sign is not in dns encoding valid char set, we are arbitrarily replacing it with a $
-        for (uint256 i = 0; i < emailBytes.length; i++) {
-            bytes1 currentByte = emailBytes[i];
-            if (currentByte == "@") {
-                if (composedEmailBytes[i] != "$") {
-                    return false;
-                }
-            } else if (currentByte != composedEmailBytes[i]) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
