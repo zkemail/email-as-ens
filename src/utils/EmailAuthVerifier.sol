@@ -71,6 +71,12 @@ abstract contract EmailAuthVerifier {
     uint256 public constant EMAIL_ADDRESS_OFFSET = 51;
     uint256 public constant EMAIL_ADDRESS_SIZE = 256;
 
+    /**
+     * @notice Verifies the validity of an EmailAuthProof
+     * @param emailProof The EmailAuthProof struct containing the proof and decoded fields
+     * @param groth16Verifier The address of the Groth16Verifier contract
+     * @return isValid True if the proof is valid, false otherwise
+     */
     function _isValidEmailProof(
         EmailAuthProof memory emailProof,
         address groth16Verifier
