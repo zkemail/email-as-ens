@@ -21,6 +21,28 @@ struct DecodedFields {
     string emailAddress;
 }
 
+/**
+ * @title EmailAuthVerifier
+ * @notice This abstract contract provides the core logic for verifying EmailAuth circuit  proofs.
+ * @dev It defines the public signals' structure and offers internal functions to pack, unpack, and verify them
+ * against a Groth16 proof. The public signals are laid out in a fixed 60-element array, with each segment
+ * corresponding to a specific piece of data extracted from the email.
+ *
+ * The public signals array (`pubSignals`) is structured as follows:
+ *       ----------------------------------------------------------------------------------------------------------
+ *      | Range   | #Fields | Field Name          | Description                                                    |
+ *      |---------|---------|---------------------|----------------------------------------------------------------|
+ *      | 0-8     | 9       | domainName          | Packed string of the sender's domain name.                     |
+ *      | 9       | 1       | publicKeyHash       | The hash of the DKIM RSA public key.                           |
+ *      | 10      | 1       | emailNullifier      | A unique identifier to prevent replay attacks.                 |
+ *      | 11      | 1       | timestamp           | The email's timestamp. Defaults to 0 if not available.         |
+ *      | 12-31   | 20      | maskedCommand       | The packed string of the command extracted from the email.     |
+ *      | 32      | 1       | accountSalt         | An optional salt for added security.                           |
+ *      | 33      | 1       | isCodeExist         | A boolean flag indicating if a verification code is present.   |
+ *      | 34-50   | 17      | miscellaneousData   | Auxiliary data, typically the decomposed DKIM public key.      |
+ *      | 51-59   | 9       | emailAddress        | The packed string of the sender's full email address.          |
+ *       ----------------------------------------------------------------------------------------------------------
+ */
 abstract contract EmailAuthVerifier {
     /// @notice The order of the BN128 elliptic curve used in the ZK proofs
     /// @dev All field elements in proofs must be less than this value
@@ -80,9 +102,10 @@ abstract contract EmailAuthVerifier {
     }
 
     /**
-     * @notice Unpacks the public signals array into a DecodedFields struct
-     * @param pubSignals The array of public signals
-     * @return decodedFields The decoded fields struct
+     * @notice Unpacks the public signals and proof into a DecodedFields struct
+     * @param pubSignals Array of public signals from the ZK proof
+     * @return decodedFields The decoded fields struct, with each field extracted from the
+     * pubSignals
      */
     function _unpackPubSignals(uint256[] calldata pubSignals)
         internal
