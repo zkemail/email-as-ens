@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { ProveAndClaimCommand } from "../../src/utils/Verifier.sol";
+import { ProveAndClaimCommand } from "../../src/utils/ProveAndClaimVerifier.sol";
 import { DecodedFields, EmailAuthProof } from "../../src/utils/EmailAuthVerifier.sol";
 
 /**

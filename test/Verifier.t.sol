@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "./fixtures/TestFixtures.sol";
-import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/utils/Verifier.sol";
+import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/utils/ProveAndClaimVerifier.sol";
 import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
 
 /**
@@ -18,7 +18,7 @@ contract PublicProveAndClaimCommandVerifier is ProveAndClaimCommandVerifier {
     constructor() ProveAndClaimCommandVerifier(address(0)) { }
 
     function buildPubSignals(ProveAndClaimCommand memory command) public pure returns (uint256[60] memory) {
-        return _buildPubSignals(command);
+        return _packPubSignals(command.proof.fields);
     }
 }
 
