@@ -230,25 +230,25 @@ library CircuitUtils {
     }
 
     /**
-     * @notice Extracts pubkey fields from public signals
+     * @notice Extracts miscellaneous data from public signals
      * @param pubSignals Array of public signals
-     * @param startIndex Starting index of pubkey fields
-     * @return pubKeyBytes The pubkey bytes
+     * @param startIndex Starting index of miscellaneous data
+     * @return miscellaneousData The miscellaneous data
      */
-    function unpackPubKey(
+    function unpackMiscellaneousData(
         uint256[] calldata pubSignals,
         uint256 startIndex
     )
         internal
         pure
-        returns (bytes memory pubKeyBytes)
+        returns (bytes memory miscellaneousData)
     {
         uint256[17] memory pubKeyChunks;
         for (uint256 i = 0; i < pubKeyChunks.length; i++) {
             pubKeyChunks[i] = pubSignals[startIndex + i];
         }
-        pubKeyBytes = abi.encode(pubKeyChunks);
-        return pubKeyBytes;
+        miscellaneousData = abi.encode(pubKeyChunks);
+        return miscellaneousData;
     }
 
     /**
@@ -303,7 +303,7 @@ library CircuitUtils {
         }
 
         // check if the email parts are dot separated and match the claimed email
-        // note since @ sign is not in dns encoding valid char set, we are arbitrarily replacing it with a $
+        // note since @ sign is not in ens encoding valid char set, we are arbitrarily replacing it with a $
         for (uint256 i = 0; i < emailBytes.length; i++) {
             bytes1 currentByte = emailBytes[i];
             if (currentByte == "@") {

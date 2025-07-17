@@ -105,12 +105,16 @@ contract ZkEmailRegistrar {
      * @param command The command to prove and claim
      */
     function _proveAndClaim(ProveAndClaimCommand memory command) internal returns (bytes32) {
-        if (_isUsed[command.nullifier]) {
+        bytes32 emailNullifier = command.proof.fields.emailNullifier;
+        if (_isUsed[emailNullifier]) {
             revert NullifierUsed();
-        } else if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
+        }
+        _isUsed[emailNullifier] = true;
+
+        if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
             revert InvalidCommand();
         }
-        _isUsed[command.nullifier] = true;
+
         return _claim(command.emailParts, command.owner);
     }
 
