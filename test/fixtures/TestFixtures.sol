@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { ProveAndClaimCommand } from "../../src/utils/Verifier.sol";
+import { ProveAndClaimCommand } from "../../src/utils/ProveAndClaimVerifier.sol";
+import { DecodedFields, EmailAuthProof } from "../../src/utils/EmailAuthVerifier.sol";
 
 /**
  * @title TestFixtures
@@ -114,21 +115,27 @@ library TestFixtures {
         emailParts[0] = "thezdev3$gmail";
         emailParts[1] = "com";
 
+        DecodedFields memory fields = DecodedFields({
+            domainName: "gmail.com",
+            publicKeyHash: hex"0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788",
+            emailNullifier: hex"0A11F2664AE4F7E3A9C3BA43394B01347FD5B76FC0A7FDB09D91324DA1F6ADA4",
+            timestamp: 0,
+            maskedCommand: "Claim ENS name for address 0xafBD210c60dD651892a61804A989eEF7bD63CBA0",
+            accountSalt: hex"0E49D406A4D84DA7DB65C161EB11D06E8C52F1C0EDD91BC557E4F23FF01D7F66",
+            isCodeExist: false,
+            miscellaneousData: abi.encode(pubkey),
+            emailAddress: "thezdev3@gmail.com"
+        });
+
+        EmailAuthProof memory proof = EmailAuthProof({ fields: fields, proof: abi.encode(pA, pB, pC) });
+
         // Complete ProveAndClaimCommand struct with test data for "thezdev3@gmail.com"
         command = ProveAndClaimCommand({
-            domain: "gmail.com",
-            email: "thezdev3@gmail.com",
             emailParts: emailParts,
             resolver: "",
             owner: 0xafBD210c60dD651892a61804A989eEF7bD63CBA0,
-            dkimSignerHash: hex"0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788",
-            nullifier: hex"0A11F2664AE4F7E3A9C3BA43394B01347FD5B76FC0A7FDB09D91324DA1F6ADA4",
-            timestamp: 0, // Gmail doesn't sign timestamps
-            accountSalt: hex"0E49D406A4D84DA7DB65C161EB11D06E8C52F1C0EDD91BC557E4F23FF01D7F66",
-            isCodeEmbedded: false, // Code provided by relayer, not embedded in email
-            miscellaneousData: abi.encode(pubkey), // RSA public key components
-            proof: abi.encode(pA, pB, pC) // Groth16 proof components
-         });
+            proof: proof
+        });
 
         // Expected public signals array (60 elements) for proof verification
         // Field elements below represent ASCII text (reversed) encoded as BN128 field elements.
@@ -279,21 +286,28 @@ library TestFixtures {
         emailParts[0] = "thezdev1$gmail";
         emailParts[1] = "com";
 
+        DecodedFields memory fields = DecodedFields({
+            domainName: "gmail.com",
+            publicKeyHash: hex"0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788",
+            emailNullifier: hex"04DE80D5184510B6208D6456C091FF3E177F28C2DE49B7B7618B6EF147B817EF",
+            timestamp: 0,
+            maskedCommand: "Claim ENS name for address 0xafBD210c60dD651892a61804A989eEF7bD63CBA0"
+                " with resolver resolver.eth",
+            accountSalt: hex"11DD2E9EDE9B5BA105A03650FF6B74F3D4F19E75DD64C53C8DC8F7AB82403912",
+            isCodeExist: false,
+            miscellaneousData: abi.encode(pubkey),
+            emailAddress: "thezdev1@gmail.com"
+        });
+
+        EmailAuthProof memory proof = EmailAuthProof({ fields: fields, proof: abi.encode(pA, pB, pC) });
+
         // Complete ProveAndClaimCommand struct with test data for "thezdev1@gmail.com"
         command = ProveAndClaimCommand({
-            domain: "gmail.com",
-            email: "thezdev1@gmail.com",
             emailParts: emailParts,
             resolver: "resolver.eth",
             owner: 0xafBD210c60dD651892a61804A989eEF7bD63CBA0,
-            dkimSignerHash: hex"0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788",
-            nullifier: hex"04DE80D5184510B6208D6456C091FF3E177F28C2DE49B7B7618B6EF147B817EF",
-            timestamp: 0, // Gmail doesn't sign timestamps
-            accountSalt: hex"11DD2E9EDE9B5BA105A03650FF6B74F3D4F19E75DD64C53C8DC8F7AB82403912",
-            isCodeEmbedded: false, // Code provided by relayer, not embedded in email
-            miscellaneousData: abi.encode(pubkey), // RSA public key components
-            proof: abi.encode(pA, pB, pC) // Groth16 proof components
-         });
+            proof: proof
+        });
 
         expectedPubSignals = [
             2_018_721_414_038_404_820_327,

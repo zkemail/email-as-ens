@@ -5,7 +5,7 @@ pragma solidity ^0.8.30;
 import { Script, console } from "forge-std/Script.sol";
 import { ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
 import { TestFixtures } from "../test/fixtures/TestFixtures.sol";
-import { ProveAndClaimCommand } from "../src/utils/Verifier.sol";
+import { ProveAndClaimCommand } from "../src/utils/ProveAndClaimVerifier.sol";
 
 /**
  * @title ClaimWithFixtureCommand Script
