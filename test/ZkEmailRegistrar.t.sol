@@ -52,7 +52,7 @@ contract ZkEmailRegistrarTest is Test {
 
     function test_proveAndClaim_passesForValidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.email), bytes(".zk.eth"));
+        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
 
         // check that the node is not owned by anyone
@@ -72,7 +72,7 @@ contract ZkEmailRegistrarTest is Test {
 
     function test_proveAndClaimWithResolver_passesForValidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.email), bytes(".zk.eth"));
+        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
         bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
 
@@ -114,7 +114,7 @@ contract ZkEmailRegistrarTest is Test {
 
     function test_setRecord_setsRecordCorrectlyIfOwner() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.email), bytes(".zk.eth"));
+        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
         registrar.entrypoint(abi.encode(command));
 
@@ -138,7 +138,7 @@ contract ZkEmailRegistrarTest is Test {
 
     function test_proveAndClaim_revertsForInvalidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        command.email = "bob@example.com";
+        command.proof.fields.emailAddress = "bob@example.com";
         vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.InvalidCommand.selector));
         registrar.entrypoint(abi.encode(command));
     }

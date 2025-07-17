@@ -5,7 +5,6 @@ import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUt
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CircuitUtils } from "./CircuitUtils.sol";
-import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
 import { EmailAuthVerifier, DecodedFields, EmailAuthProof } from "./EmailAuthVerifier.sol";
 
 /**

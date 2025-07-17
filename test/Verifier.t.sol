@@ -69,9 +69,9 @@ contract VerifierTest is Test {
     function test_isValid_returnsFalseForInvalidProof() public view {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         (uint256[2] memory pA, uint256[2][2] memory pB, uint256[2] memory pC) =
-            abi.decode(command.proof, (uint256[2], uint256[2][2], uint256[2]));
+            abi.decode(command.proof.proof, (uint256[2], uint256[2][2], uint256[2]));
         pA[0] = _verifier.Q();
-        command.proof = abi.encode(pA, pB, pC);
+        command.proof.proof = abi.encode(pA, pB, pC);
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
     }
@@ -93,7 +93,7 @@ contract VerifierTest is Test {
         string[] memory emailParts = new string[](2);
         emailParts[0] = "bob@example";
         emailParts[1] = "com";
-        command.email = "bob@example.com";
+        command.proof.fields.emailAddress = "bob@example.com";
         command.emailParts = emailParts;
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
@@ -116,17 +116,21 @@ contract VerifierTest is Test {
             publicSignals[i] = expectedPubSignals[i];
         }
 
-        bytes memory encodedData = _verifier.encode(publicSignals, command.proof);
+        bytes memory encodedData = _verifier.encode(publicSignals, command.proof.proof);
         ProveAndClaimCommand memory decodedCommand = abi.decode(encodedData, (ProveAndClaimCommand));
 
         assertEq(decodedCommand.resolver, command.resolver);
         assertEq(decodedCommand.owner, command.owner);
-        assertEq(decodedCommand.domain, command.domain);
-        assertEq(decodedCommand.email, command.email);
-        assertEq(decodedCommand.dkimSignerHash, command.dkimSignerHash);
-        assertEq(decodedCommand.nullifier, command.nullifier);
-        assertEq(decodedCommand.timestamp, command.timestamp);
-        assertEq(decodedCommand.accountSalt, command.accountSalt);
-        assertEq(decodedCommand.isCodeEmbedded, command.isCodeEmbedded);
+        for (uint256 i = 0; i < decodedCommand.emailParts.length; i++) {
+            assertEq(decodedCommand.emailParts[i], command.emailParts[i]);
+        }
+
+        assertEq(decodedCommand.proof.fields.domainName, command.proof.fields.domainName);
+        assertEq(decodedCommand.proof.fields.emailAddress, command.proof.fields.emailAddress);
+        assertEq(decodedCommand.proof.fields.publicKeyHash, command.proof.fields.publicKeyHash);
+        assertEq(decodedCommand.proof.fields.emailNullifier, command.proof.fields.emailNullifier);
+        assertEq(decodedCommand.proof.fields.timestamp, command.proof.fields.timestamp);
+        assertEq(decodedCommand.proof.fields.accountSalt, command.proof.fields.accountSalt);
+        assertEq(decodedCommand.proof.fields.isCodeExist, command.proof.fields.isCodeExist);
     }
 }
