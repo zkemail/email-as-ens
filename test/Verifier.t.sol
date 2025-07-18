@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "./fixtures/TestFixtures.sol";
-import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/utils/Verifier.sol";
+import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/utils/ProveAndClaimVerifier.sol";
 import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
 
 /**
@@ -18,7 +18,7 @@ contract PublicProveAndClaimCommandVerifier is ProveAndClaimCommandVerifier {
     constructor() ProveAndClaimCommandVerifier(address(0)) { }
 
     function buildPubSignals(ProveAndClaimCommand memory command) public pure returns (uint256[60] memory) {
-        return _buildPubSignals(command);
+        return _packPubSignals(command.proof.fields);
     }
 }
 
@@ -44,7 +44,7 @@ contract VerifierTest is Test {
     function test_buildPublicSignals_correctlyBuildsSignalsFromCommand() public {
         ProveAndClaimCommand memory command;
         uint256[60] memory expectedPubSignals;
-        (command, expectedPubSignals) = TestFixtures.claimEnsCommand();
+        (command, expectedPubSignals) = TestFixtures.claimEnsCommandWithResolver();
 
         PublicProveAndClaimCommandVerifier verifier = new PublicProveAndClaimCommandVerifier();
         uint256[60] memory publicSignals = verifier.buildPubSignals(command);
@@ -67,19 +67,13 @@ contract VerifierTest is Test {
     }
 
     function test_isValid_returnsFalseForInvalidProof() public view {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         (uint256[2] memory pA, uint256[2][2] memory pB, uint256[2] memory pC) =
-            abi.decode(command.proof, (uint256[2], uint256[2][2], uint256[2]));
+            abi.decode(command.proof.proof, (uint256[2], uint256[2][2], uint256[2]));
         pA[0] = _verifier.Q();
-        command.proof = abi.encode(pA, pB, pC);
+        command.proof.proof = abi.encode(pA, pB, pC);
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
-    }
-
-    function test_isValid_returnsTrueForValidCommand() public view {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bool isValid = _verifier.isValid(abi.encode(command));
-        assertTrue(isValid);
     }
 
     function test_isValid_returnsTrueForValidCommandWithResolver() public view {
@@ -89,21 +83,48 @@ contract VerifierTest is Test {
     }
 
     function test_isValid_returnsFalseForInvalidCommand() public view {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         string[] memory emailParts = new string[](2);
         emailParts[0] = "bob@example";
         emailParts[1] = "com";
-        command.email = "bob@example.com";
+        command.proof.fields.emailAddress = "bob@example.com";
         command.emailParts = emailParts;
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
     }
 
     function test_isValid_returnsFalseForInvalidEmailParts() public view {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         command.emailParts = new string[](1);
         command.emailParts[0] = "bob@example";
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
+    }
+
+    function test_encode_correctlyEncodesAndDecodesCommandWithResolver() public view {
+        (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) =
+            TestFixtures.claimEnsCommandWithResolver();
+
+        uint256[] memory publicSignals = new uint256[](60);
+        for (uint256 i = 0; i < 60; i++) {
+            publicSignals[i] = expectedPubSignals[i];
+        }
+
+        bytes memory encodedData = _verifier.encode(publicSignals, command.proof.proof);
+        ProveAndClaimCommand memory decodedCommand = abi.decode(encodedData, (ProveAndClaimCommand));
+
+        assertEq(decodedCommand.resolver, command.resolver);
+        assertEq(decodedCommand.owner, command.owner);
+        for (uint256 i = 0; i < decodedCommand.emailParts.length; i++) {
+            assertEq(decodedCommand.emailParts[i], command.emailParts[i]);
+        }
+
+        assertEq(decodedCommand.proof.fields.domainName, command.proof.fields.domainName);
+        assertEq(decodedCommand.proof.fields.emailAddress, command.proof.fields.emailAddress);
+        assertEq(decodedCommand.proof.fields.publicKeyHash, command.proof.fields.publicKeyHash);
+        assertEq(decodedCommand.proof.fields.emailNullifier, command.proof.fields.emailNullifier);
+        assertEq(decodedCommand.proof.fields.timestamp, command.proof.fields.timestamp);
+        assertEq(decodedCommand.proof.fields.accountSalt, command.proof.fields.accountSalt);
+        assertEq(decodedCommand.proof.fields.isCodeExist, command.proof.fields.isCodeExist);
     }
 }
