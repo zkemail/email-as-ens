@@ -44,7 +44,7 @@ contract VerifierTest is Test {
     function test_buildPublicSignals_correctlyBuildsSignalsFromCommand() public {
         ProveAndClaimCommand memory command;
         uint256[60] memory expectedPubSignals;
-        (command, expectedPubSignals) = TestFixtures.claimEnsCommand();
+        (command, expectedPubSignals) = TestFixtures.claimEnsCommandWithResolver();
 
         PublicProveAndClaimCommandVerifier verifier = new PublicProveAndClaimCommandVerifier();
         uint256[60] memory publicSignals = verifier.buildPubSignals(command);
@@ -67,19 +67,13 @@ contract VerifierTest is Test {
     }
 
     function test_isValid_returnsFalseForInvalidProof() public view {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         (uint256[2] memory pA, uint256[2][2] memory pB, uint256[2] memory pC) =
             abi.decode(command.proof.proof, (uint256[2], uint256[2][2], uint256[2]));
         pA[0] = _verifier.Q();
         command.proof.proof = abi.encode(pA, pB, pC);
         bool isValid = _verifier.isValid(abi.encode(command));
         assertFalse(isValid);
-    }
-
-    function test_isValid_returnsTrueForValidCommand() public view {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bool isValid = _verifier.isValid(abi.encode(command));
-        assertTrue(isValid);
     }
 
     function test_isValid_returnsTrueForValidCommandWithResolver() public view {
@@ -89,7 +83,7 @@ contract VerifierTest is Test {
     }
 
     function test_isValid_returnsFalseForInvalidCommand() public view {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         string[] memory emailParts = new string[](2);
         emailParts[0] = "bob@example";
         emailParts[1] = "com";
@@ -100,7 +94,7 @@ contract VerifierTest is Test {
     }
 
     function test_isValid_returnsFalseForInvalidEmailParts() public view {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         command.emailParts = new string[](1);
         command.emailParts[0] = "bob@example";
         bool isValid = _verifier.isValid(abi.encode(command));

@@ -50,26 +50,6 @@ contract ZkEmailRegistrarTest is Test {
         ens.setSubnodeOwner(ETH_NODE, keccak256(bytes("zk")), address(registrar));
     }
 
-    function test_proveAndClaim_passesForValidCommand() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
-        bytes32 expectedNode = _nameHash(expectedEnsName, 0);
-
-        // check that the node is not owned by anyone
-        address ownerBefore = ens.owner(expectedNode);
-        address ownerBeforeInRegistrar = registrar.owner(expectedNode);
-        assertEq(ownerBefore, address(0));
-        assertEq(ownerBeforeInRegistrar, address(0));
-
-        registrar.entrypoint(abi.encode(command));
-
-        // check ownership has been set in both ENS and registrar correctly
-        address ownerAfter = ens.owner(expectedNode);
-        address ownerAfterInRegistrar = registrar.owner(expectedNode);
-        assertEq(ownerAfter, address(registrar));
-        assertEq(ownerAfterInRegistrar, command.owner);
-    }
-
     function test_proveAndClaimWithResolver_passesForValidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
@@ -99,9 +79,22 @@ contract ZkEmailRegistrarTest is Test {
         assertEq(ownerAfterInRegistrar, command.owner);
     }
 
-    function test_proveAndClaim_preventsDoubleUseOfNullifier() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+    function test_proveAndClaimWithResolver_preventsDoubleUseOfNullifier() public {
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
+        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
+        bytes32 expectedNode = _nameHash(expectedEnsName, 0);
+        bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
+
+        address resolver = makeAddr("resolver");
+        address resolverResolver = makeAddr("resolverResolver");
+        _mockAndExpect(resolver, abi.encodeCall(IResolver.setAddr, (expectedNode, command.owner)), "");
+        _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, true)), "");
+        _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
+        _mockAndExpect(address(ens), abi.encodeCall(ENS.resolver, (resolverNode)), abi.encode(resolverResolver));
+        _mockAndExpect(resolverResolver, abi.encodeCall(IResolver.addr, (resolverNode)), abi.encode(resolver));
+
         registrar.entrypoint(abi.encode(command)); // passes the first time
+
         vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.NullifierUsed.selector));
         registrar.entrypoint(abi.encode(command)); // fails the second time
     }
@@ -113,21 +106,31 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_setRecord_setsRecordCorrectlyIfOwner() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
+        bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
+
+        address initialResolver = makeAddr("initialResolver");
+        address resolverResolver = makeAddr("resolverResolver");
+        _mockAndExpect(initialResolver, abi.encodeCall(IResolver.setAddr, (expectedNode, command.owner)), "");
+        _mockAndExpect(initialResolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, true)), "");
+        _mockAndExpect(initialResolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
+        _mockAndExpect(address(ens), abi.encodeCall(ENS.resolver, (resolverNode)), abi.encode(resolverResolver));
+        _mockAndExpect(resolverResolver, abi.encodeCall(IResolver.addr, (resolverNode)), abi.encode(initialResolver));
+
         registrar.entrypoint(abi.encode(command));
 
         address resolverBefore = ens.resolver(expectedNode);
-        assertEq(resolverBefore, address(0));
+        assertEq(resolverBefore, initialResolver);
 
-        address resolver = makeAddr("resolver");
+        address newResolver = makeAddr("newResolver");
         address newOwner = makeAddr("newOwner");
 
-        _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
-        _mockAndExpect(resolver, abi.encodeCall(IResolver.approve, (expectedNode, newOwner, true)), "");
+        _mockAndExpect(newResolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
+        _mockAndExpect(newResolver, abi.encodeCall(IResolver.approve, (expectedNode, newOwner, true)), "");
         vm.prank(command.owner);
-        registrar.setRecord(expectedNode, newOwner, resolver, 0);
+        registrar.setRecord(expectedNode, newOwner, newResolver, 0);
 
         // check that the record has been set correctly
         address ownerAfter = ens.owner(expectedNode); // should still be registrar
@@ -137,7 +140,7 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_proveAndClaim_revertsForInvalidCommand() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         command.proof.fields.emailAddress = "bob@example.com";
         vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.InvalidCommand.selector));
         registrar.entrypoint(abi.encode(command));

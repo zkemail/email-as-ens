@@ -91,12 +91,12 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
 
         return ProveAndClaimCommand({
             resolver: CircuitUtils.extractCommandParamByIndex(
-                _getTemplate(true), decodedFields.maskedCommand, uint256(CommandParamIndex.RESOLVER)
+                _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.RESOLVER)
             ),
             emailParts: CircuitUtils.extractEmailParts(decodedFields.emailAddress),
             owner: Strings.parseAddress(
                 CircuitUtils.extractCommandParamByIndex(
-                    _getTemplate(true), decodedFields.maskedCommand, uint256(CommandParamIndex.OWNER)
+                    _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.OWNER)
                 )
             ),
             proof: EmailAuthProof({ fields: decodedFields, proof: proof })
@@ -105,11 +105,10 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
 
     /**
      * @notice Returns the command template for the expected command string
-     * @param hasResolver Whether the resolver is included in the command
      * @return template The command template as a string array
      */
-    function _getTemplate(bool hasResolver) private pure returns (string[] memory template) {
-        template = new string[](hasResolver ? 9 : 6);
+    function _getTemplate() private pure returns (string[] memory template) {
+        template = new string[](9);
 
         template[0] = "Claim";
         template[1] = "ENS";
@@ -117,11 +116,9 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         template[3] = "for";
         template[4] = "address";
         template[5] = CommandUtils.ETH_ADDR_MATCHER;
-        if (hasResolver) {
-            template[6] = "with";
-            template[7] = "resolver";
-            template[8] = CommandUtils.STRING_MATCHER;
-        }
+        template[6] = "with";
+        template[7] = "resolver";
+        template[8] = CommandUtils.STRING_MATCHER;
 
         return template;
     }
@@ -132,16 +129,10 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
      * @return The expected command string that should be present in the verified email
      */
     function _getMaskedCommand(ProveAndClaimCommand memory command) private pure returns (string memory) {
-        bool hasResolver = bytes(command.resolver).length != 0;
-
-        bytes[] memory commandParams = new bytes[](hasResolver ? 2 : 1);
+        bytes[] memory commandParams = new bytes[](2);
         commandParams[0] = abi.encode(command.owner);
-        if (hasResolver) {
-            commandParams[1] = abi.encode(command.resolver);
-        }
+        commandParams[1] = abi.encode(command.resolver);
 
-        string[] memory template = _getTemplate(hasResolver);
-
-        return CommandUtils.computeExpectedCommand(commandParams, template, 0);
+        return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
 }
