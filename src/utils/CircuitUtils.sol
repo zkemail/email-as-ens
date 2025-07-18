@@ -319,11 +319,11 @@ library CircuitUtils {
     }
 
     /**
-     * @notice Concatenates multiple arrays of field elements into a single array of length 60
-     * @param inputs The arrays of field elements to concatenate
-     * @return out The concatenated array of length 60
+     * @notice Flattens multiple arrays of field elements into a single array of length 60
+     * @param inputs The arrays of field elements to flatten
+     * @return out The flattened array of length 60
      */
-    function concatFields(uint256[][] memory inputs) internal pure returns (uint256[60] memory out) {
+    function flattenFields(uint256[][] memory inputs) internal pure returns (uint256[60] memory out) {
         uint256 k = 0;
         for (uint256 i = 0; i < inputs.length; i++) {
             uint256[] memory arr = inputs[i];

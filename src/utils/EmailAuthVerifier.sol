@@ -153,7 +153,7 @@ abstract contract EmailAuthVerifier {
         fields[6] = CircuitUtils.packBool(decodedFields.isCodeExist);
         fields[7] = CircuitUtils.packPubKey(decodedFields.miscellaneousData);
         fields[8] = CircuitUtils.packString(decodedFields.emailAddress, EMAIL_ADDRESS_SIZE);
-        pubSignals = CircuitUtils.concatFields(fields);
+        pubSignals = CircuitUtils.flattenFields(fields);
 
         return pubSignals;
     }

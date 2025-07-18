@@ -4,17 +4,17 @@ pragma solidity ^0.8.30;
 import { Test } from "forge-std/Test.sol";
 import { CircuitUtils } from "../../../src/utils/CircuitUtils.sol";
 
-contract ConcatFieldsHelper {
-    function callConcatFields(uint256[][] memory inputs) external pure returns (uint256[60] memory) {
-        return CircuitUtils.concatFields(inputs);
+contract FlattenFieldsHelper {
+    function callFlattenFields(uint256[][] memory inputs) external pure returns (uint256[60] memory) {
+        return CircuitUtils.flattenFields(inputs);
     }
 }
 
-contract ConcatFieldsTest is Test {
-    ConcatFieldsHelper private _helper;
+contract FlattenFieldsTest is Test {
+    FlattenFieldsHelper private _helper;
 
     function setUp() public {
-        _helper = new ConcatFieldsHelper();
+        _helper = new FlattenFieldsHelper();
     }
 
     function test_expectRevert_tooManyElements() public {
@@ -28,7 +28,7 @@ contract ConcatFieldsTest is Test {
             inputs[1][i] = i + 31;
         }
         vm.expectRevert(CircuitUtils.InvalidPubSignalsLength.selector);
-        _helper.callConcatFields(inputs);
+        _helper.callFlattenFields(inputs);
     }
 
     function test_expectRevert_tooFewElements() public {
@@ -42,13 +42,13 @@ contract ConcatFieldsTest is Test {
             inputs[1][i] = i + 31;
         }
         vm.expectRevert(CircuitUtils.InvalidPubSignalsLength.selector);
-        _helper.callConcatFields(inputs);
+        _helper.callFlattenFields(inputs);
     }
 
     function test_zeroArrays() public {
         uint256[][] memory inputs = new uint256[][](0);
         vm.expectRevert(CircuitUtils.InvalidPubSignalsLength.selector);
-        _helper.callConcatFields(inputs);
+        _helper.callFlattenFields(inputs);
     }
 
     function test_singleArray() public view {
@@ -57,7 +57,7 @@ contract ConcatFieldsTest is Test {
         for (uint256 i = 0; i < 60; i++) {
             inputs[0][i] = i + 1;
         }
-        uint256[60] memory result = _helper.callConcatFields(inputs);
+        uint256[60] memory result = _helper.callFlattenFields(inputs);
         for (uint256 i = 0; i < 60; i++) {
             assertEq(result[i], i + 1);
         }
@@ -73,7 +73,7 @@ contract ConcatFieldsTest is Test {
             inputs[1][i] = i + 21;
             inputs[2][i] = i + 41;
         }
-        uint256[60] memory result = _helper.callConcatFields(inputs);
+        uint256[60] memory result = _helper.callFlattenFields(inputs);
         for (uint256 i = 0; i < 20; i++) {
             assertEq(result[i], i + 1);
             assertEq(result[i + 20], i + 21);
@@ -87,7 +87,7 @@ contract ConcatFieldsTest is Test {
             inputs[i] = new uint256[](1);
             inputs[i][0] = i + 1;
         }
-        uint256[60] memory result = _helper.callConcatFields(inputs);
+        uint256[60] memory result = _helper.callFlattenFields(inputs);
         for (uint256 i = 0; i < 60; i++) {
             assertEq(result[i], i + 1);
         }
