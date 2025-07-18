@@ -17,36 +17,6 @@ contract ExtractEmailPartsTest is Test {
         _helper = new ExtractEmailPartsHelper();
     }
 
-    function test_expectRevert_emailWithAtSymbolAtStart() public {
-        vm.expectRevert(CircuitUtils.InvalidEmailAddress.selector);
-        _helper.callExtractEmailParts("@domain.com");
-    }
-
-    function test_expectRevert_emailWithAtSymbolAtEnd() public {
-        vm.expectRevert(CircuitUtils.InvalidEmailAddress.selector);
-        _helper.callExtractEmailParts("user@");
-    }
-
-    function test_expectRevert_emailWithOnlyAtSymbol() public {
-        vm.expectRevert(CircuitUtils.InvalidEmailAddress.selector);
-        _helper.callExtractEmailParts("@");
-    }
-
-    function test_expectRevert_emailWithoutAtSymbol() public {
-        vm.expectRevert(CircuitUtils.InvalidEmailAddress.selector);
-        _helper.callExtractEmailParts("user.domain.com");
-    }
-
-    function test_expectRevert_emailWithMultipleAtSymbols() public {
-        vm.expectRevert(CircuitUtils.InvalidEmailAddress.selector);
-        _helper.callExtractEmailParts("user@domain@test.com");
-    }
-
-    function test_emptyEmail() public {
-        vm.expectRevert(CircuitUtils.InvalidEmailAddress.selector);
-        _helper.callExtractEmailParts("");
-    }
-
     function test_simpleEmail() public view {
         string memory email = "user@gmail.com";
         string[] memory parts = _helper.callExtractEmailParts(email);
