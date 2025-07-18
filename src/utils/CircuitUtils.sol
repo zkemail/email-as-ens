@@ -355,7 +355,7 @@ library CircuitUtils {
             return "";
         }
 
-        return _getWordByIndex(command, wordIndex);
+        return _splitString(command, " ")[wordIndex];
     }
 
     /**
@@ -397,36 +397,6 @@ library CircuitUtils {
 
         // return uint max if param not found
         return type(uint256).max;
-    }
-
-    /**
-     * @notice Returns the word at the specified index in a space-delimited string.
-     * @param input The input string with space delimiters.
-     * @param wordIndex The zero-based index of the word to find.
-     * @return word The word at the specified index, or an empty string if not found.
-     */
-    function _getWordByIndex(string memory input, uint256 wordIndex) private pure returns (string memory word) {
-        bytes memory inputBytes = bytes(input);
-        bytes1 space = bytes1(" ");
-        uint256 wordStart = 0;
-        uint256 wordCount = 0;
-        uint256 i = 0;
-        while (i <= inputBytes.length) {
-            if (i == inputBytes.length || inputBytes[i] == space) {
-                if (wordCount == wordIndex) {
-                    uint256 len = i - wordStart;
-                    bytes memory wordBytes = new bytes(len);
-                    for (uint256 j = 0; j < len; j++) {
-                        wordBytes[j] = inputBytes[wordStart + j];
-                    }
-                    return string(wordBytes);
-                }
-                wordCount++;
-                wordStart = i + 1;
-            }
-            i++;
-        }
-        return "";
     }
 
     /**
