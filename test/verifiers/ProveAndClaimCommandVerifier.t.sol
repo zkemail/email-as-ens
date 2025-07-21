@@ -2,9 +2,11 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { TestFixtures } from "./fixtures/TestFixtures.sol";
-import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/verifiers/ProveAndClaimCommandVerifier.sol";
-import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
+import { TestFixtures } from "../fixtures/TestFixtures.sol";
+import {
+    ProveAndClaimCommand, ProveAndClaimCommandVerifier
+} from "../../src/verifiers/ProveAndClaimCommandVerifier.sol";
+import { Groth16Verifier } from "../fixtures/Groth16Verifier.sol";
 
 /**
  * @title PublicProveAndClaimCommandVerifier
@@ -23,11 +25,11 @@ contract PublicProveAndClaimCommandVerifier is ProveAndClaimCommandVerifier {
 }
 
 /**
- * @title VerifierTest
+ * @title ProveAndClaimCommandVerifierTest
  * @author ZK Email Team
  * @notice Test suite for the ProveAndClaimCommandVerifier contract
  */
-contract VerifierTest is Test {
+contract ProveAndClaimCommandVerifierTest is Test {
     /// @notice The verifier instance used for testing
     /// @dev Initialized with a real Groth16Verifier contract for complete integration testing
     ProveAndClaimCommandVerifier internal _verifier;
