@@ -3,18 +3,13 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { CircuitUtils } from "../../../src/utils/CircuitUtils.sol";
-
-contract FlattenFieldsHelper {
-    function callFlattenFields(uint256[][] memory inputs) external pure returns (uint256[60] memory) {
-        return CircuitUtils.flattenFields(inputs);
-    }
-}
+import { CircuitUtilsHelper } from "./_CircuitUtilsHelper.sol";
 
 contract FlattenFieldsTest is Test {
-    FlattenFieldsHelper private _helper;
+    CircuitUtilsHelper private _helper;
 
     function setUp() public {
-        _helper = new FlattenFieldsHelper();
+        _helper = new CircuitUtilsHelper();
     }
 
     function test_expectRevert_tooManyElements() public {

@@ -2,19 +2,13 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { CircuitUtils } from "../../../src/utils/CircuitUtils.sol";
-
-contract ExtractEmailPartsHelper {
-    function callExtractEmailParts(string memory email) external view returns (string[] memory) {
-        return CircuitUtils.extractEmailParts(email);
-    }
-}
+import { CircuitUtilsHelper } from "./_CircuitUtilsHelper.sol";
 
 contract ExtractEmailPartsTest is Test {
-    ExtractEmailPartsHelper private _helper;
+    CircuitUtilsHelper private _helper;
 
     function setUp() public {
-        _helper = new ExtractEmailPartsHelper();
+        _helper = new CircuitUtilsHelper();
     }
 
     function test_simpleEmail() public view {
