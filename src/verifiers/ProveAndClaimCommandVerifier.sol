@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { CircuitUtils } from "./CircuitUtils.sol";
+import { CircuitUtils } from "../utils/CircuitUtils.sol";
 import { EmailAuthVerifier, DecodedFields, EmailAuthProof } from "./EmailAuthVerifier.sol";
 
 /**
