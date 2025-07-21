@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { ProveAndClaimCommand } from "./utils/ProveAndClaimCommandVerifier.sol";
+import { ProveAndClaimCommand } from "./verifiers/ProveAndClaimCommandVerifier.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
