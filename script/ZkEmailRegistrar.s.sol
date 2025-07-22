@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Script, console } from "forge-std/Script.sol";
 import { ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
-import { ProveAndClaimCommandVerifier } from "../src/utils/Verifier.sol";
+import { ProveAndClaimCommandVerifier } from "../src/verifiers/ProveAndClaimCommandVerifier.sol";
 import { Groth16Verifier } from "../test/fixtures/Groth16Verifier.sol";
 
 contract ZkEmailRegistrarScript is Script {

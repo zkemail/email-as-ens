@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { ProveAndClaimCommand } from "./utils/Verifier.sol";
+import { ProveAndClaimCommand } from "./verifiers/ProveAndClaimCommandVerifier.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
@@ -67,12 +67,10 @@ contract ZkEmailRegistrar {
     function entrypoint(bytes memory data) external {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
         bytes32 node = _proveAndClaim(command);
-        // if the resolver is set, set the record and approve the resolver for the node
-        if (bytes(command.resolver).length > 0) {
-            address resolver = _resolveName(command.resolver);
-            _setRecord(node, command.owner, resolver, 0);
-            IResolver(resolver).setAddr(node, command.owner);
-        }
+        // set the record and approve the resolver for the node
+        address resolver = _resolveName(command.resolver);
+        _setRecord(node, command.owner, resolver, 0);
+        IResolver(resolver).setAddr(node, command.owner);
     }
 
     /**
@@ -105,12 +103,16 @@ contract ZkEmailRegistrar {
      * @param command The command to prove and claim
      */
     function _proveAndClaim(ProveAndClaimCommand memory command) internal returns (bytes32) {
-        if (_isUsed[command.nullifier]) {
+        bytes32 emailNullifier = command.proof.fields.emailNullifier;
+        if (_isUsed[emailNullifier]) {
             revert NullifierUsed();
-        } else if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
+        }
+        _isUsed[emailNullifier] = true;
+
+        if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
             revert InvalidCommand();
         }
-        _isUsed[command.nullifier] = true;
+
         return _claim(command.emailParts, command.owner);
     }
 
