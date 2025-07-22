@@ -2,8 +2,9 @@
 pragma solidity ^0.8.30;
 
 import {
-    ProveAndClaimCommand, ProveAndClaimCommandVerifier
-} from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
+    ProveAndClaimCommand,
+    ProveAndClaimCommandVerifier
+} from "../../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 
 contract ProveAndClaimCommandVerifierHelper is ProveAndClaimCommandVerifier {
     constructor() ProveAndClaimCommandVerifier(address(0)) { }

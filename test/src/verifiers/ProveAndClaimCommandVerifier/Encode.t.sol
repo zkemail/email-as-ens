@@ -2,11 +2,12 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { TestFixtures } from "../../fixtures/TestFixtures.sol";
-import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";
+import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
+import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
 import {
-    ProveAndClaimCommand, ProveAndClaimCommandVerifier
-} from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
+    ProveAndClaimCommand,
+    ProveAndClaimCommandVerifier
+} from "../../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 
 contract EncodeTest is Test {
     ProveAndClaimCommandVerifier internal _verifier;

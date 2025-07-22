@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { CircuitUtils } from "../../../src/utils/CircuitUtils.sol";
+import { CircuitUtils } from "../../../../src/utils/CircuitUtils.sol";
 
 contract CircuitUtilsHelper {
     function callExtractCommandParamByIndex(

@@ -2,12 +2,12 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { TestFixtures } from "../fixtures/TestFixtures.sol";
+import { TestFixtures } from "../../fixtures/TestFixtures.sol";
 import {
     ProveAndClaimCommand, ProveAndClaimCommandVerifier
-} from "../../src/verifiers/ProveAndClaimCommandVerifier.sol";
-import { Groth16Verifier } from "../fixtures/Groth16Verifier.sol";
-import { IResolver, ZkEmailRegistrar } from "../../src/ZkEmailRegistrar.sol";
+} from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
+import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";
+import { IResolver, ZkEmailRegistrar } from "../../../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";

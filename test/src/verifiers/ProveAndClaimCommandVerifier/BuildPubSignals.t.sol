@@ -2,8 +2,8 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { TestFixtures } from "../../fixtures/TestFixtures.sol";
-import { ProveAndClaimCommand } from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
+import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
+import { ProveAndClaimCommand } from "../../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 import { ProveAndClaimCommandVerifierHelper } from "./_ProveAndClaimCommandVerifierHelper.sol";
 
 contract BuildPubSignalsTest is Test {

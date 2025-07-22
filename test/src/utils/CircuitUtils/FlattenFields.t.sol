@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { CircuitUtils } from "../../../src/utils/CircuitUtils.sol";
+import { CircuitUtils } from "../../../../src/utils/CircuitUtils.sol";
 import { CircuitUtilsHelper } from "./_CircuitUtilsHelper.sol";
 
 contract FlattenFieldsTest is Test {
