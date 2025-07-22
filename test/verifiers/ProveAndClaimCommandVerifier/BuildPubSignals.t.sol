@@ -14,18 +14,6 @@ contract BuildPubSignalsTest is Test {
     }
 
     function test_correctlyBuildsSignalsFromCommand() public view {
-        ProveAndClaimCommand memory command;
-        uint256[60] memory expectedPubSignals;
-        (command, expectedPubSignals) = TestFixtures.claimEnsCommandWithResolver();
-
-        uint256[60] memory publicSignals = _verifier.buildPubSignals(command);
-
-        for (uint8 i = 0; i < 60; i++) {
-            assertEq(publicSignals[i], expectedPubSignals[i]);
-        }
-    }
-
-    function test_correctlyBuildsSignalsFromCommandWithResolver() public view {
         (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) =
             TestFixtures.claimEnsCommandWithResolver();
 
