@@ -67,12 +67,10 @@ contract ZkEmailRegistrar {
     function entrypoint(bytes memory data) external {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
         bytes32 node = _proveAndClaim(command);
-        // if the resolver is set, set the record and approve the resolver for the node
-        if (bytes(command.resolver).length > 0) {
-            address resolver = _resolveName(command.resolver);
-            _setRecord(node, command.owner, resolver, 0);
-            IResolver(resolver).setAddr(node, command.owner);
-        }
+        // set the record and approve the resolver for the node
+        address resolver = _resolveName(command.resolver);
+        _setRecord(node, command.owner, resolver, 0);
+        IResolver(resolver).setAddr(node, command.owner);
     }
 
     /**
