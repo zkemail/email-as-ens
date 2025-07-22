@@ -2,22 +2,17 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { TestFixtures } from "./fixtures/TestFixtures.sol";
-import { ProveAndClaimCommand, ProveAndClaimCommandVerifier } from "../src/verifiers/ProveAndClaimCommandVerifier.sol";
-import { Groth16Verifier } from "./fixtures/Groth16Verifier.sol";
-import { IResolver, ZkEmailRegistrar } from "../src/ZkEmailRegistrar.sol";
+import { TestFixtures } from "../fixtures/TestFixtures.sol";
+import {
+    ProveAndClaimCommand, ProveAndClaimCommandVerifier
+} from "../../src/verifiers/ProveAndClaimCommandVerifier.sol";
+import { Groth16Verifier } from "../fixtures/Groth16Verifier.sol";
+import { IResolver, ZkEmailRegistrar } from "../../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
-
-contract PublicZkEmailRegistrar is ZkEmailRegistrar {
-    constructor(bytes32 rootNode, address verifier, address ens) ZkEmailRegistrar(rootNode, verifier, ens) { }
-
-    function claim(string[] memory domainParts, address owner) public {
-        _claim(domainParts, owner);
-    }
-}
+import { ZkEmailRegistrarHelper } from "./_ZkEmailRegistrarHelper.sol";
 
 contract ZkEmailRegistrarTest is Test {
     using Bytes for bytes;
@@ -32,7 +27,7 @@ contract ZkEmailRegistrarTest is Test {
     address public owner = makeAddr("owner");
 
     ProveAndClaimCommandVerifier public verifier;
-    PublicZkEmailRegistrar public registrar;
+    ZkEmailRegistrarHelper public registrar;
     ENSRegistry public ens;
 
     function setUp() public {
@@ -44,7 +39,7 @@ contract ZkEmailRegistrarTest is Test {
         ens.setSubnodeOwner(ROOT_NODE, keccak256(bytes("eth")), owner);
         vm.stopPrank();
 
-        registrar = new PublicZkEmailRegistrar(ZKEMAIL_NODE, address(verifier), address(ens));
+        registrar = new ZkEmailRegistrarHelper(ZKEMAIL_NODE, address(verifier), address(ens));
 
         vm.prank(owner);
         ens.setSubnodeOwner(ETH_NODE, keccak256(bytes("zk")), address(registrar));
