@@ -15,7 +15,7 @@ contract EncodeTest is Test {
         _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()));
     }
 
-    function test_correctlyEncodesAndDecodesCommandWithResolver() public view {
+    function test_correctlyEncodesAndDecodesCommand() public view {
         (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) =
             TestFixtures.claimEnsCommandWithResolver();
 

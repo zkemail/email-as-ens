@@ -45,7 +45,7 @@ contract ZkEmailRegistrarTest is Test {
         ens.setSubnodeOwner(ETH_NODE, keccak256(bytes("zk")), address(registrar));
     }
 
-    function test_proveAndClaimWithResolver_passesForValidCommand() public {
+    function test_proveAndClaim_passesForValidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
@@ -74,7 +74,7 @@ contract ZkEmailRegistrarTest is Test {
         assertEq(ownerAfterInRegistrar, command.owner);
     }
 
-    function test_proveAndClaimWithResolver_preventsDoubleUseOfNullifier() public {
+    function test_proveAndClaim_preventsDoubleUseOfNullifier() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);

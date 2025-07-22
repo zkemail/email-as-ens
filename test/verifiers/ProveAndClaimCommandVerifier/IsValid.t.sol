@@ -25,7 +25,7 @@ contract IsValidTest is Test {
         assertFalse(isValid);
     }
 
-    function test_returnsTrueForValidCommandWithResolver() public view {
+    function test_returnsTrueForValidCommand() public view {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
         bool isValid = _verifier.isValid(abi.encode(command));
         assertTrue(isValid);
