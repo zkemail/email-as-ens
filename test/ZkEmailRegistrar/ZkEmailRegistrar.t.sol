@@ -46,7 +46,7 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_proveAndClaim_passesForValidCommand() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
         bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
@@ -75,7 +75,7 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_proveAndClaim_preventsDoubleUseOfNullifier() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
         bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
@@ -101,7 +101,7 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_setRecord_setsRecordCorrectlyIfOwner() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = _nameHash(expectedEnsName, 0);
         bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
@@ -135,7 +135,7 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_proveAndClaim_revertsForInvalidCommand() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         command.proof.fields.emailAddress = "bob@example.com";
         vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.InvalidCommand.selector));
         registrar.entrypoint(abi.encode(command));

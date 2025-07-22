@@ -22,7 +22,7 @@ contract ClaimWithFixtureCommandScript is Script {
         console.log("ZkEmailRegistrar address:", zkEmailRegistrarAddress);
 
         // Get the sample fixture command
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommandWithResolver();
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
 
         vm.startBroadcast(deployerPrivateKey);
 

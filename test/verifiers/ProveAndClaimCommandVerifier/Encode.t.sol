@@ -16,8 +16,7 @@ contract EncodeTest is Test {
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
-        (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) =
-            TestFixtures.claimEnsCommandWithResolver();
+        (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) = TestFixtures.claimEnsCommand();
 
         uint256[] memory publicSignals = new uint256[](60);
         for (uint256 i = 0; i < 60; i++) {
