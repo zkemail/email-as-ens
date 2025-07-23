@@ -26,7 +26,7 @@ contract BuildPubSignalsTest is Test {
         _assertPubSignals(publicSignals, expectedPubSignals);
     }
 
-    function _assertPubSignals(uint256[60] memory publicSignals, uint256[60] memory expectedPubSignals) internal {
+    function _assertPubSignals(uint256[60] memory publicSignals, uint256[60] memory expectedPubSignals) internal pure {
         for (uint8 i = 0; i < 60; i++) {
             assertEq(publicSignals[i], expectedPubSignals[i]);
         }
