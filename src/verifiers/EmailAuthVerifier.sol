@@ -108,6 +108,31 @@ abstract contract EmailAuthVerifier {
     }
 
     /**
+     * @notice Packs the decoded fields into the public signals array
+     * @param decodedFields The decoded fields struct
+     * @return pubSignals The packed public signals array
+     */
+    function _packPubSignals(DecodedFields memory decodedFields)
+        internal
+        pure
+        returns (uint256[60] memory pubSignals)
+    {
+        uint256[][] memory fields = new uint256[][](9);
+        fields[0] = CircuitUtils.packString(decodedFields.domainName, DOMAIN_NAME_SIZE);
+        fields[1] = CircuitUtils.packBytes32(decodedFields.publicKeyHash);
+        fields[2] = CircuitUtils.packBytes32(decodedFields.emailNullifier);
+        fields[3] = CircuitUtils.packUint256(decodedFields.timestamp);
+        fields[4] = CircuitUtils.packString(decodedFields.maskedCommand, MASKED_COMMAND_SIZE);
+        fields[5] = CircuitUtils.packBytes32(decodedFields.accountSalt);
+        fields[6] = CircuitUtils.packBool(decodedFields.isCodeExist);
+        fields[7] = CircuitUtils.packPubKey(decodedFields.miscellaneousData);
+        fields[8] = CircuitUtils.packString(decodedFields.emailAddress, EMAIL_ADDRESS_SIZE);
+        pubSignals = CircuitUtils.flattenFields(fields);
+
+        return pubSignals;
+    }
+
+    /**
      * @notice Unpacks the public signals and proof into a DecodedFields struct
      * @param pubSignals Array of public signals from the ZK proof
      * @return decodedFields The decoded fields struct, with each field extracted from the
@@ -131,30 +156,5 @@ abstract contract EmailAuthVerifier {
         decodedFields.emailAddress = CircuitUtils.unpackString(pubSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_SIZE);
 
         return decodedFields;
-    }
-
-    /**
-     * @notice Packs the decoded fields into the public signals array
-     * @param decodedFields The decoded fields struct
-     * @return pubSignals The packed public signals array
-     */
-    function _packPubSignals(DecodedFields memory decodedFields)
-        internal
-        pure
-        returns (uint256[60] memory pubSignals)
-    {
-        uint256[][] memory fields = new uint256[][](9);
-        fields[0] = CircuitUtils.packString(decodedFields.domainName, DOMAIN_NAME_SIZE);
-        fields[1] = CircuitUtils.packBytes32(decodedFields.publicKeyHash);
-        fields[2] = CircuitUtils.packBytes32(decodedFields.emailNullifier);
-        fields[3] = CircuitUtils.packUint256(decodedFields.timestamp);
-        fields[4] = CircuitUtils.packString(decodedFields.maskedCommand, MASKED_COMMAND_SIZE);
-        fields[5] = CircuitUtils.packBytes32(decodedFields.accountSalt);
-        fields[6] = CircuitUtils.packBool(decodedFields.isCodeExist);
-        fields[7] = CircuitUtils.packPubKey(decodedFields.miscellaneousData);
-        fields[8] = CircuitUtils.packString(decodedFields.emailAddress, EMAIL_ADDRESS_SIZE);
-        pubSignals = CircuitUtils.flattenFields(fields);
-
-        return pubSignals;
     }
 }
