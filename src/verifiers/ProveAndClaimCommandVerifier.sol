@@ -66,7 +66,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         uint256[] calldata pubSignals,
         bytes calldata proof
     )
-        public
+        external
         pure
         returns (bytes memory encodedCommand)
     {
@@ -83,7 +83,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         uint256[] calldata pubSignals,
         bytes memory proof
     )
-        internal
+        private
         pure
         returns (ProveAndClaimCommand memory command)
     {
