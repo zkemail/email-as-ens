@@ -7,7 +7,7 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 
 interface IVerifier {
-    function isValid(bytes memory data) external view returns (bool);
+    function verify(bytes memory data) external view returns (bool);
     function encode(uint256[] memory publicSignals, bytes memory proof) external pure returns (bytes memory);
 }
 
@@ -109,7 +109,7 @@ contract ZkEmailRegistrar {
         }
         _isUsed[emailNullifier] = true;
 
-        if (!IVerifier(VERIFIER).isValid(abi.encode(command))) {
+        if (!IVerifier(VERIFIER).verify(abi.encode(command))) {
             revert InvalidCommand();
         }
 

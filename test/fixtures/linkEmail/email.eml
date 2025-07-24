@@ -1,0 +1,139 @@
+Delivered-To: thezdev3@gmail.com
+Received: by 2002:a98:b790:0:b0:232:19cd:61db with SMTP id b16csp1945013eiz;
+        Tue, 15 Jul 2025 06:20:28 -0700 (PDT)
+X-Received: by 2002:a05:6902:461c:b0:e84:bb1:5c21 with SMTP id 3f1490d57ef6-e8bba637597mr747923276.7.1752585627767;
+        Tue, 15 Jul 2025 06:20:27 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1752585627; cv=none;
+        d=google.com; s=arc-20240605;
+        b=V31Us1SFKeR26DdNYffZq17pDeaOcW6FQ1aOu5tMSbsA5RnfygUWHmsi7fjk1dCmux
+         xo15MBedJw2WRDP7xM7mW78id6Iy017arurSeQqEcXZrlaCIF7oQdRkLfocnv8NaufpC
+         Do9Kzn5W6cu40BV2+BaJlk85A98FfLiRscRkD6u7zUEN5bGKi+n5mCloDq+9LHg1pRnw
+         kLaRBWlhQkXpjO/ak7lAZjbVcQC5cr6PqcbEUo5/qr7MUo7ll+rNSslUBvtqRgvnr++b
+         +lVSY80Ot2ffGCU/diWGAxJ86gUe7AzvuM2Z/XmRR0apdd6sOxcxfBpjBWtmda2zxgH4
+         YWCA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=to:subject:message-id:date:from:in-reply-to:references:mime-version
+         :dkim-signature;
+        bh=1fzRfdy9CanLFGSq+sM8ZuDF5vLLblg4ZPWILT0n7rs=;
+        fh=/qiwGR45XQumqWrlQuDs2ghqcboNcQvmN39w9/S4Ax4=;
+        b=Wu8gZmGlFPJJFGn3IGEHJ2pohmDq2ZqtlMhG9S7YsY5NchscAUg25iPMWriV6+WfGX
+         /qELOimquG7SV5NF9ANMf1pPRcrqxCVikQblepGiKPE1wubkrWC1Zuq8cop3BqPgVYXz
+         dwS3A2cYR1jc55JOzJTa2pQ1NQieYNTUruKS+xe6jde4m3x21Gyh0p51JBa+sWFEa7wU
+         F1hsMTl3/N8It9gIKywUiSUVrvii+N+AgFwFGEtInqJJi9xqOa9Q7Qn6oaVtbFpIrHfd
+         yoKhWQ6/4F2Kh+nXoJneokAERsvV+z5/d7ai+XY5VZ341AoFrfQLqRILrjHsSRHx5Li7
+         skFw==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20230601 header.b=Ls1rl4d0;
+       spf=pass (google.com: domain of thezdev1@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=thezdev1@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=pass header.i=@gmail.com
+Return-Path: <thezdev1@gmail.com>
+Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])
+        by mx.google.com with SMTPS id 3f1490d57ef6-e8b7ae60692sor5399048276.1.2025.07.15.06.20.27
+        for <thezdev3@gmail.com>
+        (Google Transport Security);
+        Tue, 15 Jul 2025 06:20:27 -0700 (PDT)
+Received-SPF: pass (google.com: domain of thezdev1@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@gmail.com header.s=20230601 header.b=Ls1rl4d0;
+       spf=pass (google.com: domain of thezdev1@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=thezdev1@gmail.com;
+       dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com;
+       dara=pass header.i=@gmail.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20230601; t=1752585627; x=1753190427; dara=google.com;
+        h=to:subject:message-id:date:from:in-reply-to:references:mime-version
+         :from:to:cc:subject:date:message-id:reply-to;
+        bh=1fzRfdy9CanLFGSq+sM8ZuDF5vLLblg4ZPWILT0n7rs=;
+        b=Ls1rl4d0VMxyw4ngmNKHtgu4hNwQm/XHdYS6hUQdBhS0EMFJ+C28X0sPPttndxvCdF
+         lk3V7BY1lXW/JEHbXF5It7zmoSGJsBXXW5JsnlWtJK9c5/BsQV+rmL89IHqWEspbFl8J
+         X7gUB4csr71W400g22cb/bVvvSlyU+cenMBqc8lKW03xnw6o7er1PV5ecx/HssEP2olJ
+         glcrSTjdhXZb4odInc3CuQrWFHyLgUQurJfXWAUTiTP7viXaGkc5UFkgrDOiSbFo8XNu
+         rVpGUxgXWsgM6XybzpUgxdshE1lDAGdW7hjeZ0G0CJPm0tRKuVcUONnCtysWKYNtkTZD
+         NJLw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1752585627; x=1753190427;
+        h=to:subject:message-id:date:from:in-reply-to:references:mime-version
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
+        bh=1fzRfdy9CanLFGSq+sM8ZuDF5vLLblg4ZPWILT0n7rs=;
+        b=tpEap36Uua6KBNn05mtCJcIctgXOIUMsdwByswcviCtTJ7VCxBxWItYIdw5Kd2ScUE
+         xO6m128Cf41fvCmtqf2OA6I1sop8GCugeZUx2fjAZyNsT2HekMP90DPvoYh1H+Zp0IS4
+         TGaZxAoS7DDh6wzFBwWLghXZcizE47Y4zdBEgXalY/C28ko9BDCJ3nxKDkb5VWSYZ+gH
+         2VRrzpEVJLBVnP1P+VOFx5mGdAQR51dd9AsDdQ4gqvpyOU2kttpy2tiOjQLVPUTki1Vk
+         Cwqzvd+RKkQ43VnkD3vofyr/K80ADnTNdmeILybcgbNEXSbjXJn9AuBQWK9yg96tD2ok
+         HwTg==
+X-Gm-Message-State: AOJu0Yy6dSAjiccwzqMsu197NvXqDK5hQeK8BZ01v425PN36LcSp1cAe
+	TVibHq+Wc9B2JaDxKA5bF10jEZ9cSTP/8pu54EJdJSWHlfQaNlOHR82p0vnuErJQc+AbHYxIJJV
+	Sl4btfEQoN5O48oW1atL5SvR7RNMZoVs0tZNSQ9Y=
+X-Gm-Gg: ASbGncvSMHfHGC4WNJRX5pBzJ1zKbU9ys+d1okaiZJXhe56LCG4Tww/exdApcJ1oQSB
+	G5RGmGU5NOfUyziVCei30FRKnKdXHuFEoG0D77wcAStbrhp+/j9dkbfGl+dk1qezuYvpzvgU3FV
+	dW4TmMyKpCxwFw4EmO2Te2ZJ5cNQNGsxln+GCMJAUKSYcIinCcda+/MFbGqoCbvC3qDYk8NpjTL
+	6E7sCAsAhaXLVSSJsqclci0MRCE+ZdyD3MZpIY=
+X-Google-Smtp-Source: AGHT+IFTfN1coorLrwE2sGpBPgiwbMQRLv3O3/lrS5S51cYJtVH5MaBD5VSy9wexPib47xVD6NBTgk3WNDDS0W/zmgg=
+X-Received: by 2002:a05:690c:6b07:b0:70f:6ec6:62b2 with SMTP id
+ 00721157ae682-717d5c3905bmr231580667b3.8.1752585627107; Tue, 15 Jul 2025
+ 06:20:27 -0700 (PDT)
+MIME-Version: 1.0
+References: <076f750a-017a-4616-a2b3-99cf338a1799@mail.gmail.com>
+In-Reply-To: <076f750a-017a-4616-a2b3-99cf338a1799@mail.gmail.com>
+From: zdev <thezdev1@gmail.com>
+Date: Tue, 15 Jul 2025 15:20:16 +0200
+X-Gm-Features: Ac12FXxgzaqWJ9J-cgNXj_BQiMxcuXPtVVZFM4PqsVLYyvnZ73MH_SypxN4d-AQ
+Message-ID: <CAPxFdS6m-Q00tZm_1RaC7OJ2kai+9aPC6L4ow0iEvvyFh1Qhzw@mail.gmail.com>
+Subject: Re: [Reply Needed] Link my email to zkfriendly.eth
+To: thezdev3@gmail.com
+Content-Type: multipart/alternative; boundary="000000000000be050d0639f7a30f"
+
+--000000000000be050d0639f7a30f
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+confirm
+
+On Tue, Jul 15, 2025 at 3:19=E2=80=AFPM <thezdev3@gmail.com> wrote:
+
+> Please reply "confirm" to confirm the below command.
+>
+> If you don't reply, the command will be rejected.
+> {"email":"thezdev1@gmail.com","command":"Link my email to
+> zkfriendly.eth","verifier":"0x51f15e1398f870cd8b0ff52d60e3d25abdae0d70"}
+> Link my email to zkfriendly.eth
+>
+
+--000000000000be050d0639f7a30f
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">confirm</div><br><div class=3D"gmail_quote gmail_quote_con=
+tainer"><div dir=3D"ltr" class=3D"gmail_attr">On Tue, Jul 15, 2025 at 3:19=
+=E2=80=AFPM &lt;<a href=3D"mailto:thezdev3@gmail.com">thezdev3@gmail.com</a=
+>&gt; wrote:<br></div><blockquote class=3D"gmail_quote" style=3D"margin:0px=
+ 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex"><di=
+v class=3D"msg-659331139017932862"><u></u>
+
+ =20
+   =20
+   =20
+   =20
+ =20
+  <div>
+    <div class=3D"m_-659331139017932862instructions">
+      <p>Please reply &quot;confirm&quot; to confirm the below command.</p>
+    </div>
+
+    <p class=3D"m_-659331139017932862warning">If you don&#39;t reply, the c=
+ommand will be rejected.</p>
+
+    <div id=3D"m_-659331139017932862relayer-data" style=3D"display:none">{&=
+quot;email&quot;:&quot;<a href=3D"mailto:thezdev1@gmail.com" target=3D"_bla=
+nk">thezdev1@gmail.com</a>&quot;,&quot;command&quot;:&quot;Link my email to=
+ zkfriendly.eth&quot;,&quot;verifier&quot;:&quot;0x51f15e1398f870cd8b0ff52d=
+60e3d25abdae0d70&quot;}</div>
+
+    <div id=3D"m_-659331139017932862zkemail" class=3D"m_-659331139017932862=
+command">Link my email to zkfriendly.eth</div>
+  </div>
+
+</div></blockquote></div>
+
+--000000000000be050d0639f7a30f--

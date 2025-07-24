@@ -48,10 +48,10 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
      * @param data The ABI-encoded ProveAndClaimCommand struct to verify
      * @return True if the command and its proof are valid, false otherwise
      */
-    function isValid(bytes memory data) external view returns (bool) {
+    function verify(bytes memory data) external view returns (bool) {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
         DecodedFields memory fields = command.proof.fields;
-        return _isValidEmailProof(command.proof, GORTH16_VERIFIER)
+        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
             && CircuitUtils.verifyEmailParts(command.emailParts, fields.emailAddress)
             && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
     }
@@ -66,7 +66,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         uint256[] calldata pubSignals,
         bytes calldata proof
     )
-        public
+        external
         pure
         returns (bytes memory encodedCommand)
     {
@@ -83,7 +83,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         uint256[] calldata pubSignals,
         bytes memory proof
     )
-        internal
+        private
         pure
         returns (ProveAndClaimCommand memory command)
     {
@@ -104,6 +104,19 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     }
 
     /**
+     * @notice Generates the expected command string for a given owner address
+     * @param command The ProveAndClaimCommand struct containing the necessary data
+     * @return The expected command string that should be present in the verified email
+     */
+    function _getMaskedCommand(ProveAndClaimCommand memory command) private pure returns (string memory) {
+        bytes[] memory commandParams = new bytes[](2);
+        commandParams[0] = abi.encode(command.owner);
+        commandParams[1] = abi.encode(command.resolver);
+
+        return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
+    }
+
+    /**
      * @notice Returns the command template for the expected command string
      * @return template The command template as a string array
      */
@@ -121,18 +134,5 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         template[8] = CommandUtils.STRING_MATCHER;
 
         return template;
-    }
-
-    /**
-     * @notice Generates the expected command string for a given owner address
-     * @param command The ProveAndClaimCommand struct containing the necessary data
-     * @return The expected command string that should be present in the verified email
-     */
-    function _getMaskedCommand(ProveAndClaimCommand memory command) private pure returns (string memory) {
-        bytes[] memory commandParams = new bytes[](2);
-        commandParams[0] = abi.encode(command.owner);
-        commandParams[1] = abi.encode(command.resolver);
-
-        return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
 }
