@@ -51,7 +51,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     function isValid(bytes memory data) external view returns (bool) {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
         DecodedFields memory fields = command.proof.fields;
-        return _isValidEmailProof(command.proof, GORTH16_VERIFIER)
+        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
             && CircuitUtils.verifyEmailParts(command.emailParts, fields.emailAddress)
             && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
     }

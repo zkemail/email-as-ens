@@ -77,7 +77,7 @@ abstract contract EmailAuthVerifier {
      * @param groth16Verifier The address of the Groth16Verifier contract
      * @return isValid True if the proof is valid, false otherwise
      */
-    function _isValidEmailProof(
+    function _verifyEmailProof(
         EmailAuthProof memory emailProof,
         address groth16Verifier
     )
