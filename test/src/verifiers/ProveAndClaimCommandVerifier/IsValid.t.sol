@@ -22,13 +22,13 @@ contract IsValidTest is Test {
             abi.decode(command.proof.proof, (uint256[2], uint256[2][2], uint256[2]));
         pA[0] = _verifier.Q();
         command.proof.proof = abi.encode(pA, pB, pC);
-        bool isValid = _verifier.isValid(abi.encode(command));
+        bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }
 
     function test_returnsTrueForValidCommand() public view {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bool isValid = _verifier.isValid(abi.encode(command));
+        bool isValid = _verifier.verify(abi.encode(command));
         assertTrue(isValid);
     }
 
@@ -39,7 +39,7 @@ contract IsValidTest is Test {
         emailParts[1] = "com";
         command.proof.fields.emailAddress = "bob@example.com";
         command.emailParts = emailParts;
-        bool isValid = _verifier.isValid(abi.encode(command));
+        bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }
 
@@ -47,7 +47,7 @@ contract IsValidTest is Test {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         command.emailParts = new string[](1);
         command.emailParts[0] = "bob@example";
-        bool isValid = _verifier.isValid(abi.encode(command));
+        bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }
 }

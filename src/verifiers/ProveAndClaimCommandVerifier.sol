@@ -48,7 +48,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
      * @param data The ABI-encoded ProveAndClaimCommand struct to verify
      * @return True if the command and its proof are valid, false otherwise
      */
-    function isValid(bytes memory data) external view returns (bool) {
+    function verify(bytes memory data) external view returns (bool) {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
         DecodedFields memory fields = command.proof.fields;
         return _verifyEmailProof(command.proof, GORTH16_VERIFIER)

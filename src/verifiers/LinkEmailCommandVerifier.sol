@@ -24,7 +24,7 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
         GORTH16_VERIFIER = _groth16Verifier;
     }
 
-    function isValid(bytes memory data) external view returns (bool) {
+    function verify(bytes memory data) external view returns (bool) {
         LinkEmailCommand memory command = abi.decode(data, (LinkEmailCommand));
         DecodedFields memory fields = command.proof.fields;
         return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
