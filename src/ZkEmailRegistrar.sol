@@ -2,14 +2,10 @@
 pragma solidity ^0.8.30;
 
 import { ProveAndClaimCommand } from "./verifiers/ProveAndClaimCommandVerifier.sol";
+import { IVerifier } from "./interfaces/IVerifier.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
-
-interface IVerifier {
-    function verify(bytes memory data) external view returns (bool);
-    function encode(uint256[] memory publicSignals, bytes memory proof) external pure returns (bytes memory);
-}
 
 interface IResolver {
     /// @dev Approve a delegate to be able to updated records on a node.
