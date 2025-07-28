@@ -62,7 +62,9 @@ contract ZkEmailRegistrar {
      */
     function entrypoint(bytes memory data) external {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
-        bytes32 node = _proveAndClaim(command);
+        _validate(command);
+
+        bytes32 node = _claim(command.emailParts, command.owner);
         // set the record and approve the resolver for the node
         address resolver = _resolveName(command.resolver);
         _setRecord(node, command.owner, resolver, 0);
@@ -98,7 +100,7 @@ contract ZkEmailRegistrar {
      * @notice Proves and claims an email-based ENS name
      * @param command The command to prove and claim
      */
-    function _proveAndClaim(ProveAndClaimCommand memory command) internal returns (bytes32) {
+    function _validate(ProveAndClaimCommand memory command) internal {
         bytes32 emailNullifier = command.proof.fields.emailNullifier;
         if (_isUsed[emailNullifier]) {
             revert NullifierUsed();
@@ -108,8 +110,6 @@ contract ZkEmailRegistrar {
         if (!IVerifier(VERIFIER).verify(abi.encode(command))) {
             revert InvalidCommand();
         }
-
-        return _claim(command.emailParts, command.owner);
     }
 
     /**
