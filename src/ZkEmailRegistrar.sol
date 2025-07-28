@@ -3,8 +3,8 @@ pragma solidity ^0.8.30;
 
 import { ProveAndClaimCommand } from "./verifiers/ProveAndClaimCommandVerifier.sol";
 import { IVerifier } from "./interfaces/IVerifier.sol";
+import { EnsUtils } from "./utils/EnsUtils.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 
 interface IResolver {
@@ -22,6 +22,7 @@ interface IResolver {
  */
 contract ZkEmailRegistrar {
     using Bytes for bytes;
+    using EnsUtils for bytes;
 
     bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e$d.com.zk.eth
     address public immutable VERIFIER; // ProveAndClaimCommand Verifier contract address
@@ -157,7 +158,7 @@ contract ZkEmailRegistrar {
      */
     function _resolveName(string memory resolverName) internal view returns (address) {
         bytes memory name = bytes(resolverName);
-        bytes32 node = _nameHash(name, 0);
+        bytes32 node = name.namehash();
         address resolver = ENS(REGISTRY).resolver(node);
 
         if (resolver == address(0)) {
@@ -165,26 +166,5 @@ contract ZkEmailRegistrar {
         }
 
         return IResolver(resolver).addr(node);
-    }
-
-    /**
-     * @notice Hashes an ENS name
-     * @param name The name to hash
-     * @param offset The offset to start hashing from
-     * @return The hash of the name
-     */
-    function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
-        uint256 len = name.length;
-
-        if (offset >= len) {
-            return bytes32(0);
-        }
-
-        uint256 labelEnd = Math.min(name.indexOf(0x2E, offset), len);
-        bytes memory label = name.slice(offset, labelEnd);
-        bytes32 labelHash = keccak256(label);
-
-        // Recursive case: hash of (parent nameHash + current labelHash)
-        return keccak256(abi.encodePacked(_nameHash(name, labelEnd + 1), labelHash));
     }
 }

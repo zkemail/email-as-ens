@@ -6,16 +6,17 @@ import { TestFixtures } from "../../fixtures/TestFixtures.sol";
 import {
     ProveAndClaimCommand, ProveAndClaimCommandVerifier
 } from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
+import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
 import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";
 import { IResolver, ZkEmailRegistrar } from "../../../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { ZkEmailRegistrarHelper } from "./_ZkEmailRegistrarHelper.sol";
 
 contract ZkEmailRegistrarTest is Test {
     using Bytes for bytes;
+    using EnsUtils for bytes;
 
     // namehash(0)
     bytes32 public constant ROOT_NODE = 0x0;
@@ -48,8 +49,8 @@ contract ZkEmailRegistrarTest is Test {
     function test_proveAndClaim_passesForValidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
-        bytes32 expectedNode = _nameHash(expectedEnsName, 0);
-        bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
+        bytes32 expectedNode = expectedEnsName.namehash();
+        bytes32 resolverNode = bytes(command.resolver).namehash();
 
         // check that the node is not owned by anyone
         address ownerBefore = ens.owner(expectedNode);
@@ -77,8 +78,8 @@ contract ZkEmailRegistrarTest is Test {
     function test_proveAndClaim_preventsDoubleUseOfNullifier() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
-        bytes32 expectedNode = _nameHash(expectedEnsName, 0);
-        bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
+        bytes32 expectedNode = expectedEnsName.namehash();
+        bytes32 resolverNode = bytes(command.resolver).namehash();
 
         address resolver = makeAddr("resolver");
         address resolverResolver = makeAddr("resolverResolver");
@@ -95,7 +96,7 @@ contract ZkEmailRegistrarTest is Test {
     }
 
     function test_setRecord_revertsForNonOwner() public {
-        bytes32 node = _nameHash(abi.encodePacked(bytes("zk.eth")), 0);
+        bytes32 node = abi.encodePacked(bytes("zk.eth")).namehash();
         vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.NotOwner.selector));
         registrar.setRecord(node, owner, address(0), 0);
     }
@@ -103,8 +104,8 @@ contract ZkEmailRegistrarTest is Test {
     function test_setRecord_setsRecordCorrectlyIfOwner() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
-        bytes32 expectedNode = _nameHash(expectedEnsName, 0);
-        bytes32 resolverNode = _nameHash(bytes(command.resolver), 0);
+        bytes32 expectedNode = expectedEnsName.namehash();
+        bytes32 resolverNode = bytes(command.resolver).namehash();
 
         address initialResolver = makeAddr("initialResolver");
         address resolverResolver = makeAddr("resolverResolver");
@@ -154,32 +155,12 @@ contract ZkEmailRegistrarTest is Test {
     function test_nameHash_returnsCorrectHash() public pure {
         bytes memory nameBytes = "thezdev3$gmail.com.zk.eth";
         bytes32 expectedHash = 0xd3f54039086a0b9a16feda37bd0cb0dc73ef8ed3449303620fd902e2d1e38c54;
-        bytes32 actualHash = _nameHash(nameBytes, 0);
+        bytes32 actualHash = nameBytes.namehash();
         assertEq(actualHash, expectedHash);
     }
 
     function _mockAndExpect(address target, bytes memory call, bytes memory ret) internal {
         vm.mockCall(target, call, ret);
         vm.expectCall(target, call);
-    }
-
-    function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
-        uint256 atSignIndex = name.indexOf(0x40);
-        if (atSignIndex != type(uint256).max) {
-            name[atSignIndex] = bytes1("$");
-        }
-
-        uint256 len = name.length;
-
-        if (offset >= len) {
-            return bytes32(0);
-        }
-
-        uint256 labelEnd = Math.min(name.indexOf(0x2E, offset), len);
-        bytes memory label = name.slice(offset, labelEnd);
-        bytes32 labelHash = keccak256(label);
-
-        // Recursive case: hash of (parent nameHash + current labelHash)
-        return keccak256(abi.encodePacked(_nameHash(name, labelEnd + 1), labelHash));
     }
 }
