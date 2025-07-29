@@ -3,8 +3,11 @@ pragma solidity ^0.8.30;
 
 import { LinkEmailCommand } from "./verifiers/LinkEmailCommandVerifier.sol";
 import { IVerifier } from "./interfaces/IVerifier.sol";
+import { EnsUtils } from "./utils/EnsUtils.sol";
 
 contract LinkEmail {
+    using EnsUtils for bytes;
+
     address public immutable VERIFIER;
 
     mapping(bytes32 node => string emailAddress) public link;
@@ -22,6 +25,8 @@ contract LinkEmail {
     function entrypoint(bytes memory data) external {
         LinkEmailCommand memory command = abi.decode(data, (LinkEmailCommand));
         _validate(command);
+        link[bytes(command.email).namehash()] = command.email;
+        emit Linked(bytes(command.email).namehash(), command.email);
     }
 
     function encode(
