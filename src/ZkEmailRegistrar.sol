@@ -53,13 +53,11 @@ contract ZkEmailRegistrar {
     }
 
     /**
-     * @notice Proves and claims an email-based ENS name, optionally setting a resolver.
+     * @notice Verifies a ProveAndClaimCommand and claims an email-based ENS name, optionally setting a resolver.
      * @param data The ABI-encoded ProveAndClaimCommand struct.
-     * @dev This is the main entrypoint for the registrar, typically called by a relayer.
-     *      The `data` parameter is constructed off-chain by calling `encode()` with the
+     * @dev Expected to be constructed off-chain by calling `encode()` with the
      *      ZK proof's public signals and the proof itself. This function verifies the proof,
-     *      claims the corresponding ENS name for the owner, and if a resolver is provided
-     *      in the command, it sets the resolver records.
+     *      claims the corresponding ENS name for the owner, and sets the resolver records.
      */
     function entrypoint(bytes memory data) external {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
@@ -73,10 +71,10 @@ contract ZkEmailRegistrar {
     }
 
     /**
-     * @notice Encodes public signals and a ZK proof into the `ProveAndClaimCommand` format.
-     * @param publicSignals The public signals from the ZK proof.
-     * @param proof The ZK proof bytes (e.g., from a Groth16 prover).
-     * @return The ABI-encoded `ProveAndClaimCommand` struct.
+     * @notice Exposes the encode function of the verifier contract.
+     * @param publicSignals The public signals for the ZK proof.
+     * @param proof The ZK proof bytes.
+     * @return The ABI-encoded ProveAndClaimCommand struct constructed from the public signals and proof.
      * @dev This function is a convenience wrapper around the verifier's `encode` function.
      *      It allows off-chain services (like a relayer) to construct the data payload
      *      required by the `entrypoint` function without coupling to the verifier's internal
@@ -97,10 +95,6 @@ contract ZkEmailRegistrar {
         _setRecord(node, newOwner, resolver, ttl);
     }
 
-    /**
-     * @notice Proves and claims an email-based ENS name
-     * @param command The command to prove and claim
-     */
     function _validate(ProveAndClaimCommand memory command) internal {
         bytes32 emailNullifier = command.proof.fields.emailNullifier;
         if (_isUsed[emailNullifier]) {
@@ -113,12 +107,6 @@ contract ZkEmailRegistrar {
         }
     }
 
-    /**
-     * @notice Claims a node for an email domain
-     * @param domainParts The parts of the email domain
-     * @param newOwner The new owner of the node
-     * @return The node that was claimed
-     */
     function _claim(string[] memory domainParts, address newOwner) internal returns (bytes32) {
         bytes32 parent = ROOT_NODE;
 
@@ -134,13 +122,6 @@ contract ZkEmailRegistrar {
         return parent;
     }
 
-    /**
-     * @notice Sets the record for an ENS name
-     * @param node The node to set the record for
-     * @param newOwner The new owner of the node
-     * @param resolver The resolver for the node
-     * @param ttl The TTL for the node
-     */
     function _setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) internal {
         address previousOwner = owner[node];
         owner[node] = newOwner;
@@ -151,19 +132,15 @@ contract ZkEmailRegistrar {
         IResolver(resolver).approve(node, newOwner, true);
     }
 
-    /**
-     * @notice Resolves an ENS name to an address
-     * @param resolverName The ens name of the resolver
-     * @return The address of the resolver
-     */
-    function _resolveName(string memory resolverName) internal view returns (address) {
-        bytes memory name = bytes(resolverName);
-        bytes32 node = name.namehash();
+    function _resolveName(string memory name) internal view returns (address) {
+        bytes32 node = bytes(name).namehash();
         address resolver = ENS(REGISTRY).resolver(node);
 
         if (resolver == address(0)) {
             revert ResolverNotFound();
         }
+
+        // TODO: check if the resolver has expected interface
 
         return IResolver(resolver).addr(node);
     }
