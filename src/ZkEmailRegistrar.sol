@@ -63,7 +63,7 @@ contract ZkEmailRegistrar is IEntryPoint {
 
     /**
      * @inheritdoc IEntryPoint
-     * @dev Delegates encoding to the configured VERIFIER contract to produce ProveAndClaimCommand data
+     * @dev Delegates encoding to the configured VERIFIER contract
      */
     function encode(uint256[] memory publicSignals, bytes memory proof) external view returns (bytes memory) {
         return IVerifier(VERIFIER).encode(publicSignals, proof);
