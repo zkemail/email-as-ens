@@ -2,30 +2,20 @@
 pragma solidity ^0.8.30;
 
 import { ProveAndClaimCommand } from "./verifiers/ProveAndClaimCommandVerifier.sol";
+import { IVerifier } from "./interfaces/IVerifier.sol";
+import { EnsUtils } from "./utils/EnsUtils.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
-
-interface IVerifier {
-    function verify(bytes memory data) external view returns (bool);
-    function encode(uint256[] memory publicSignals, bytes memory proof) external pure returns (bytes memory);
-}
-
-interface IResolver {
-    /// @dev Approve a delegate to be able to updated records on a node.
-    function approve(bytes32 node, address delegate, bool approved) external;
-    /// @dev Set the address for a node.
-    function setAddr(bytes32 node, address addr) external;
-    /// @dev Get the address for a node.
-    function addr(bytes32 node) external view returns (address);
-}
-
+import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
+import { IResolver } from "./interfaces/IResolver.sol";
 /**
  * @title ZkEmailRegistrar
  * @notice A contract for registering email-based ENS names
  */
-contract ZkEmailRegistrar {
+
+contract ZkEmailRegistrar is IEntryPoint {
     using Bytes for bytes;
+    using EnsUtils for bytes;
 
     bytes32 public immutable ROOT_NODE; // e.g. namehash(zk.eth). all emails domains are under this node e$d.com.zk.eth
     address public immutable VERIFIER; // ProveAndClaimCommand Verifier contract address
@@ -56,17 +46,15 @@ contract ZkEmailRegistrar {
     }
 
     /**
-     * @notice Proves and claims an email-based ENS name, optionally setting a resolver.
-     * @param data The ABI-encoded ProveAndClaimCommand struct.
-     * @dev This is the main entrypoint for the registrar, typically called by a relayer.
-     *      The `data` parameter is constructed off-chain by calling `encode()` with the
-     *      ZK proof's public signals and the proof itself. This function verifies the proof,
-     *      claims the corresponding ENS name for the owner, and if a resolver is provided
-     *      in the command, it sets the resolver records.
+     * @inheritdoc IEntryPoint
+     * @dev Specifically decodes data as ProveAndClaimCommand, validates proof and nullifier,
+     *      claims the corresponding ENS name for the owner, and sets the resolver records.
      */
     function entrypoint(bytes memory data) external {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
-        bytes32 node = _proveAndClaim(command);
+        _validate(command);
+
+        bytes32 node = _claim(command.emailParts, command.owner);
         // set the record and approve the resolver for the node
         address resolver = _resolveName(command.resolver);
         _setRecord(node, command.owner, resolver, 0);
@@ -74,14 +62,8 @@ contract ZkEmailRegistrar {
     }
 
     /**
-     * @notice Encodes public signals and a ZK proof into the `ProveAndClaimCommand` format.
-     * @param publicSignals The public signals from the ZK proof.
-     * @param proof The ZK proof bytes (e.g., from a Groth16 prover).
-     * @return The ABI-encoded `ProveAndClaimCommand` struct.
-     * @dev This function is a convenience wrapper around the verifier's `encode` function.
-     *      It allows off-chain services (like a relayer) to construct the data payload
-     *      required by the `entrypoint` function without coupling to the verifier's internal
-     *      encoding logic.
+     * @inheritdoc IEntryPoint
+     * @dev Delegates encoding to the configured VERIFIER contract
      */
     function encode(uint256[] memory publicSignals, bytes memory proof) external view returns (bytes memory) {
         return IVerifier(VERIFIER).encode(publicSignals, proof);
@@ -98,11 +80,7 @@ contract ZkEmailRegistrar {
         _setRecord(node, newOwner, resolver, ttl);
     }
 
-    /**
-     * @notice Proves and claims an email-based ENS name
-     * @param command The command to prove and claim
-     */
-    function _proveAndClaim(ProveAndClaimCommand memory command) internal returns (bytes32) {
+    function _validate(ProveAndClaimCommand memory command) internal {
         bytes32 emailNullifier = command.proof.fields.emailNullifier;
         if (_isUsed[emailNullifier]) {
             revert NullifierUsed();
@@ -112,16 +90,8 @@ contract ZkEmailRegistrar {
         if (!IVerifier(VERIFIER).verify(abi.encode(command))) {
             revert InvalidCommand();
         }
-
-        return _claim(command.emailParts, command.owner);
     }
 
-    /**
-     * @notice Claims a node for an email domain
-     * @param domainParts The parts of the email domain
-     * @param newOwner The new owner of the node
-     * @return The node that was claimed
-     */
     function _claim(string[] memory domainParts, address newOwner) internal returns (bytes32) {
         bytes32 parent = ROOT_NODE;
 
@@ -137,13 +107,6 @@ contract ZkEmailRegistrar {
         return parent;
     }
 
-    /**
-     * @notice Sets the record for an ENS name
-     * @param node The node to set the record for
-     * @param newOwner The new owner of the node
-     * @param resolver The resolver for the node
-     * @param ttl The TTL for the node
-     */
     function _setRecord(bytes32 node, address newOwner, address resolver, uint64 ttl) internal {
         address previousOwner = owner[node];
         owner[node] = newOwner;
@@ -154,41 +117,16 @@ contract ZkEmailRegistrar {
         IResolver(resolver).approve(node, newOwner, true);
     }
 
-    /**
-     * @notice Resolves an ENS name to an address
-     * @param resolverName The ens name of the resolver
-     * @return The address of the resolver
-     */
-    function _resolveName(string memory resolverName) internal view returns (address) {
-        bytes memory name = bytes(resolverName);
-        bytes32 node = _nameHash(name, 0);
+    function _resolveName(string memory name) internal view returns (address) {
+        bytes32 node = bytes(name).namehash();
         address resolver = ENS(REGISTRY).resolver(node);
 
         if (resolver == address(0)) {
             revert ResolverNotFound();
         }
 
+        // TODO: check if the resolver has expected interface
+
         return IResolver(resolver).addr(node);
-    }
-
-    /**
-     * @notice Hashes an ENS name
-     * @param name The name to hash
-     * @param offset The offset to start hashing from
-     * @return The hash of the name
-     */
-    function _nameHash(bytes memory name, uint256 offset) internal pure returns (bytes32) {
-        uint256 len = name.length;
-
-        if (offset >= len) {
-            return bytes32(0);
-        }
-
-        uint256 labelEnd = Math.min(name.indexOf(0x2E, offset), len);
-        bytes memory label = name.slice(offset, labelEnd);
-        bytes32 labelHash = keccak256(label);
-
-        // Recursive case: hash of (parent nameHash + current labelHash)
-        return keccak256(abi.encodePacked(_nameHash(name, labelEnd + 1), labelHash));
     }
 }
