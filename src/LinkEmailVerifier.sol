@@ -4,13 +4,14 @@ pragma solidity ^0.8.30;
 import { LinkEmailCommand } from "./verifiers/LinkEmailCommandVerifier.sol";
 import { IVerifier } from "./interfaces/IVerifier.sol";
 import { EnsUtils } from "./utils/EnsUtils.sol";
+import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
 
 /**
  * @title LinkEmailVerifier
  * @notice Verifies a LinkEmailCommand and set the mapping of namehash(ensName) to email address.
  * @dev The verifier can be updated via the entrypoint function.
  */
-contract LinkEmailVerifier {
+contract LinkEmailVerifier is IEntryPoint {
     using EnsUtils for bytes;
 
     address public immutable VERIFIER;
@@ -29,11 +30,9 @@ contract LinkEmailVerifier {
     }
 
     /**
-     * @notice Verifies a LinkEmailCommand and set the mapping of namehash(ensName) to email address.
-     * @param data The ABI-encoded LinkEmailCommand struct.
-     * @dev Expected to be constructed off-chain by calling `encode()` with the
-     *      ZK proof's public signals and the proof itself. This function verifies the proof,
-     *      and if valid, sets the mapping of namehash(ensName) to email address.
+     * @inheritdoc IEntryPoint
+     * @dev Specifically decodes data as LinkEmailCommand, validates proof and nullifier,
+     *      then maps the ENS name hash to the email address
      */
     function entrypoint(bytes memory data) external {
         LinkEmailCommand memory command = abi.decode(data, (LinkEmailCommand));
@@ -45,14 +44,8 @@ contract LinkEmailVerifier {
     }
 
     /**
-     * @notice Exposes the encode function of the verifier contract.
-     * @param publicSignals The public signals for the ZK proof.
-     * @param proof The ZK proof bytes.
-     * @return The ABI-encoded LinkEmailCommand struct constructed from the public signals and proof.
-     * @dev This function is a convenience wrapper around the verifier's `encode` function.
-     *      It allows off-chain services (like a relayer) to construct the data payload
-     *      required by the `entrypoint` function without coupling to the verifier's internal
-     *      encoding logic.
+     * @inheritdoc IEntryPoint
+     * @dev Delegates encoding to the configured VERIFIER contract
      */
     function encode(uint256[] calldata publicSignals, bytes calldata proof) external view returns (bytes memory) {
         return IVerifier(VERIFIER).encode(publicSignals, proof);

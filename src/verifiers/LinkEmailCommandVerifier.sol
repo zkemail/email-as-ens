@@ -24,7 +24,10 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
         GORTH16_VERIFIER = _groth16Verifier;
     }
 
-    function verify(bytes memory data) external view returns (bool) {
+    /**
+     * @inheritdoc EmailAuthVerifier
+     */
+    function verify(bytes memory data) external view override returns (bool) {
         LinkEmailCommand memory command = abi.decode(data, (LinkEmailCommand));
         DecodedFields memory fields = command.proof.fields;
         return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
@@ -32,17 +35,24 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
             && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
     }
 
+    /**
+     * @inheritdoc EmailAuthVerifier
+     */
     function encode(
         uint256[] calldata pubSignals,
         bytes calldata proof
     )
         external
         pure
+        override
         returns (bytes memory encodedCommand)
     {
         return abi.encode(_buildLinkEmailCommand(pubSignals, proof));
     }
 
+    /**
+     * @notice Reconstructs a LinkEmailCommand struct from public signals and proof bytes.
+     */
     function _buildLinkEmailCommand(
         uint256[] calldata pubSignals,
         bytes memory proof

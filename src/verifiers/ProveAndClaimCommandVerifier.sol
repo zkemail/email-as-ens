@@ -30,25 +30,16 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     using Strings for string;
     using CircuitUtils for bytes;
 
-    /// @notice The address of the deployed Groth16Verifier contract
-    /// @dev The Groth16 verifier must be compatible with the specific circuit used for email verification.
-    ///      This address is immutable to prevent unauthorized changes to the verification logic.
     address public immutable GORTH16_VERIFIER;
 
-    /**
-     * @notice Initializes the verifier with a Groth16 verifier contract
-     * @param _groth16Verifier The address of the deployed Groth16Verifier contract
-     */
     constructor(address _groth16Verifier) {
         GORTH16_VERIFIER = _groth16Verifier;
     }
 
     /**
-     * @notice Verifies the validity of a ProveAndClaimCommand
-     * @param data The ABI-encoded ProveAndClaimCommand struct to verify
-     * @return True if the command and its proof are valid, false otherwise
+     * @inheritdoc EmailAuthVerifier
      */
-    function verify(bytes memory data) external view returns (bool) {
+    function verify(bytes memory data) external view override returns (bool) {
         ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
         DecodedFields memory fields = command.proof.fields;
         return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
@@ -57,10 +48,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     }
 
     /**
-     * @notice Unpacks the public signals and proof into a ProveAndClaimCommand struct and encodes it into bytes
-     * @param pubSignals Array of public signals from the ZK proof, usually provided by the relayer
-     * @param proof The zero-knowledge proof bytes
-     * @return encodedCommand ABI-encoded ProveAndClaimCommand struct in bytes
+     * @inheritdoc EmailAuthVerifier
      */
     function encode(
         uint256[] calldata pubSignals,
@@ -68,6 +56,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     )
         external
         pure
+        override
         returns (bytes memory encodedCommand)
     {
         return abi.encode(_buildProveAndClaimCommand(pubSignals, proof));
@@ -75,9 +64,6 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
 
     /**
      * @notice Reconstructs a ProveAndClaimCommand struct from public signals and proof bytes.
-     * @param pubSignals The array of public signals as output by the ZK circuit.
-     * @param proof The zero-knowledge proof bytes.
-     * @return command The reconstructed ProveAndClaimCommand struct, ready for encoding or verification.
      */
     function _buildProveAndClaimCommand(
         uint256[] calldata pubSignals,
@@ -103,11 +89,6 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         });
     }
 
-    /**
-     * @notice Generates the expected command string for a given owner address
-     * @param command The ProveAndClaimCommand struct containing the necessary data
-     * @return The expected command string that should be present in the verified email
-     */
     function _getMaskedCommand(ProveAndClaimCommand memory command) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](2);
         commandParams[0] = abi.encode(command.owner);
@@ -116,10 +97,6 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
 
-    /**
-     * @notice Returns the command template for the expected command string
-     * @return template The command template as a string array
-     */
     function _getTemplate() private pure returns (string[] memory template) {
         template = new string[](9);
 

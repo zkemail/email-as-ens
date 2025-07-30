@@ -6,21 +6,14 @@ import { IVerifier } from "./interfaces/IVerifier.sol";
 import { EnsUtils } from "./utils/EnsUtils.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
-
-interface IResolver {
-    /// @dev Approve a delegate to be able to updated records on a node.
-    function approve(bytes32 node, address delegate, bool approved) external;
-    /// @dev Set the address for a node.
-    function setAddr(bytes32 node, address addr) external;
-    /// @dev Get the address for a node.
-    function addr(bytes32 node) external view returns (address);
-}
-
+import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
+import { IResolver } from "./interfaces/IResolver.sol";
 /**
  * @title ZkEmailRegistrar
  * @notice A contract for registering email-based ENS names
  */
-contract ZkEmailRegistrar {
+
+contract ZkEmailRegistrar is IEntryPoint {
     using Bytes for bytes;
     using EnsUtils for bytes;
 
@@ -53,10 +46,8 @@ contract ZkEmailRegistrar {
     }
 
     /**
-     * @notice Verifies a ProveAndClaimCommand and claims an email-based ENS name, optionally setting a resolver.
-     * @param data The ABI-encoded ProveAndClaimCommand struct.
-     * @dev Expected to be constructed off-chain by calling `encode()` with the
-     *      ZK proof's public signals and the proof itself. This function verifies the proof,
+     * @inheritdoc IEntryPoint
+     * @dev Specifically decodes data as ProveAndClaimCommand, validates proof and nullifier,
      *      claims the corresponding ENS name for the owner, and sets the resolver records.
      */
     function entrypoint(bytes memory data) external {
@@ -71,14 +62,8 @@ contract ZkEmailRegistrar {
     }
 
     /**
-     * @notice Exposes the encode function of the verifier contract.
-     * @param publicSignals The public signals for the ZK proof.
-     * @param proof The ZK proof bytes.
-     * @return The ABI-encoded ProveAndClaimCommand struct constructed from the public signals and proof.
-     * @dev This function is a convenience wrapper around the verifier's `encode` function.
-     *      It allows off-chain services (like a relayer) to construct the data payload
-     *      required by the `entrypoint` function without coupling to the verifier's internal
-     *      encoding logic.
+     * @inheritdoc IEntryPoint
+     * @dev Delegates encoding to the configured VERIFIER contract to produce ProveAndClaimCommand data
      */
     function encode(uint256[] memory publicSignals, bytes memory proof) external view returns (bytes memory) {
         return IVerifier(VERIFIER).encode(publicSignals, proof);

@@ -6,6 +6,14 @@ import { EmailAuthVerifier, DecodedFields } from "../../../../src/verifiers/Emai
 contract EmailAuthVerifierHelper is EmailAuthVerifier {
     constructor() EmailAuthVerifier() { }
 
+    function encode(uint256[] calldata, bytes calldata) external pure override returns (bytes memory) {
+        return "";
+    }
+
+    function verify(bytes memory) external pure override returns (bool) {
+        return false;
+    }
+
     function packPubSignals(DecodedFields memory decodedFields) public pure returns (uint256[60] memory) {
         return _packPubSignals(decodedFields);
     }

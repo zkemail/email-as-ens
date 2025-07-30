@@ -72,6 +72,23 @@ abstract contract EmailAuthVerifier {
     uint256 public constant EMAIL_ADDRESS_SIZE = 256;
 
     /**
+     * @notice Verifies the validity of given encoded data
+     * @param data The ABI-encoded data. Can be obtained by calling `encode` with the public signals and proof.
+     * @return isValid True if the proof is valid, false otherwise
+     * @dev The encoded data is expected to be constructed off-chain by calling `encode` with the public signals and
+     * proof.
+     */
+    function verify(bytes memory data) external view virtual returns (bool);
+
+    /**
+     * @notice Encodes the public signals and proof into a bytes memory that can be used as input to `verify`
+     * @param pubSignals The public signals array
+     * @param proof The proof bytes
+     * @return encodedCommand The encoded command bytes
+     */
+    function encode(uint256[] calldata pubSignals, bytes calldata proof) external view virtual returns (bytes memory);
+
+    /**
      * @notice Verifies the validity of an EmailAuthProof
      * @param emailProof The EmailAuthProof struct containing the proof and decoded fields
      * @param groth16Verifier The address of the Groth16Verifier contract
