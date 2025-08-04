@@ -5,13 +5,14 @@ import { LinkEmailCommand } from "./verifiers/LinkEmailCommandVerifier.sol";
 import { IVerifier } from "./interfaces/IVerifier.sol";
 import { EnsUtils } from "./utils/EnsUtils.sol";
 import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
+import { ITextRecordVerifier } from "./interfaces/ITextRecordVerifier.sol";
 
 /**
  * @title LinkEmailVerifier
  * @notice Verifies a LinkEmailCommand and set the mapping of namehash(ensName) to email address.
  * @dev The verifier can be updated via the entrypoint function.
  */
-contract LinkEmailVerifier is IEntryPoint {
+contract LinkEmailVerifier is IEntryPoint, ITextRecordVerifier {
     using EnsUtils for bytes;
 
     address public immutable VERIFIER;
@@ -49,6 +50,18 @@ contract LinkEmailVerifier is IEntryPoint {
      */
     function encode(uint256[] calldata publicSignals, bytes calldata proof) external view returns (bytes memory) {
         return IVerifier(VERIFIER).encode(publicSignals, proof);
+    }
+
+    /**
+     * @inheritdoc ITextRecordVerifier
+     */
+    function verifyTextRecord(bytes32 node, string memory key, string memory value) external view returns (bool) {
+        // this verifier only supports email text record
+        if (keccak256(bytes(key)) != keccak256(bytes("email"))) {
+            revert UnsupportedKey();
+        }
+        string memory storedEmail = emailAddress[node];
+        return keccak256(bytes(storedEmail)) == keccak256(bytes(value));
     }
 
     function _validate(LinkEmailCommand memory command) internal {

@@ -38,6 +38,20 @@ contract LinkEmailVerifierTest is Test {
         linkEmail.entrypoint(encodedCommand);
     }
 
+    function test_verifyTextRecord_returnsTrueWhenTextRecordIsCorrect() public {
+        (LinkEmailCommand memory command, uint256[60] memory pubSignals) = TestFixtures.linkEmailCommand();
+        bytes memory encodedCommand = linkEmail.encode(_toDynamicArray(pubSignals), command.proof.proof);
+        linkEmail.entrypoint(encodedCommand);
+        assertEq(linkEmail.verifyTextRecord(bytes(command.ensName).namehash(), "email", command.email), true);
+    }
+
+    function test_verifyTextRecord_returnsFalseWhenTextRecordIsIncorrect() public {
+        (LinkEmailCommand memory command, uint256[60] memory pubSignals) = TestFixtures.linkEmailCommand();
+        bytes memory encodedCommand = linkEmail.encode(_toDynamicArray(pubSignals), command.proof.proof);
+        linkEmail.entrypoint(encodedCommand);
+        assertEq(linkEmail.verifyTextRecord(bytes(command.ensName).namehash(), "email", "incorrect@e.com"), false);
+    }
+
     function _toDynamicArray(uint256[60] memory pubSignals) internal pure returns (uint256[] memory) {
         uint256[] memory pubSignalsArray = new uint256[](60);
         for (uint256 i = 0; i < 60; i++) {
