@@ -15,7 +15,7 @@ import { ITextRecordVerifier } from "./interfaces/ITextRecordVerifier.sol";
 contract LinkEmailVerifier is IEntryPoint, ITextRecordVerifier {
     using EnsUtils for bytes;
 
-    address public immutable VERIFIER;
+    address public immutable VERIFIER; // link email command verifier
 
     mapping(bytes32 node => string emailAddress) public emailAddress; // can only be updated via the entrypoint function
         // with a valid command
