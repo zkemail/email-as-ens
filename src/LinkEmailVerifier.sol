@@ -15,6 +15,8 @@ import { ITextRecordVerifier } from "./interfaces/ITextRecordVerifier.sol";
 contract LinkEmailVerifier is IEntryPoint, ITextRecordVerifier {
     using EnsUtils for bytes;
 
+    bytes32 private immutable _EMAIL_KEY = keccak256(bytes("email"));
+
     address public immutable VERIFIER; // link email command verifier
 
     mapping(bytes32 node => string emailAddress) public emailAddress; // can only be updated via the entrypoint function
@@ -57,7 +59,7 @@ contract LinkEmailVerifier is IEntryPoint, ITextRecordVerifier {
      */
     function verifyTextRecord(bytes32 node, string memory key, string memory value) external view returns (bool) {
         // this verifier only supports email text record
-        if (keccak256(bytes(key)) != keccak256(bytes("email"))) {
+        if (keccak256(bytes(key)) != _EMAIL_KEY) {
             revert UnsupportedKey();
         }
         string memory storedEmail = emailAddress[node];
