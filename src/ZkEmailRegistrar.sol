@@ -8,11 +8,11 @@ import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
 import { IResolver } from "./interfaces/IResolver.sol";
+
 /**
  * @title ZkEmailRegistrar
  * @notice A contract for registering email-based ENS names
  */
-
 contract ZkEmailRegistrar is IEntryPoint {
     using Bytes for bytes;
     using EnsUtils for bytes;
