@@ -18,21 +18,13 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
     using Strings for string;
     using CircuitUtils for bytes;
 
-    address public immutable GORTH16_VERIFIER;
-
-    constructor(address _groth16Verifier) {
-        GORTH16_VERIFIER = _groth16Verifier;
-    }
+    constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
 
     /**
      * @inheritdoc EmailAuthVerifier
      */
     function verify(bytes memory data) external view override returns (bool) {
-        LinkEmailCommand memory command = abi.decode(data, (LinkEmailCommand));
-        DecodedFields memory fields = command.proof.fields;
-        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
-            && Strings.equal(command.email, command.proof.fields.emailAddress)
-            && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
+        return _isValid(abi.decode(data, (LinkEmailCommand)));
     }
 
     /**
@@ -48,6 +40,18 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
         returns (bytes memory encodedCommand)
     {
         return abi.encode(_buildLinkEmailCommand(pubSignals, proof));
+    }
+
+    function _isValid(LinkEmailCommand memory command)
+        internal
+        view
+        onlyValidDKIMHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
+        returns (bool)
+    {
+        DecodedFields memory fields = command.proof.fields;
+        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
+            && Strings.equal(command.email, command.proof.fields.emailAddress)
+            && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
     }
 
     /**

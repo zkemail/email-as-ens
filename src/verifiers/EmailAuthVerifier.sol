@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import { CircuitUtils } from "../utils/CircuitUtils.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
+import { IDKIMRegistry } from "../interfaces/IDKIMRegistry.sol";
 
 struct EmailAuthProof {
     DecodedFields fields;
@@ -71,6 +72,24 @@ abstract contract EmailAuthVerifier {
     uint256 public constant EMAIL_ADDRESS_OFFSET = 51;
     uint256 public constant EMAIL_ADDRESS_SIZE = 256;
 
+    address public immutable GORTH16_VERIFIER;
+    address public immutable DKIM_REGISTRY;
+
+    error InvalidDKIMPublicKeyHash();
+
+    /**
+     * @notice Ensures the provided DKIM public key hash is valid for the given domain
+     */
+    modifier onlyValidDKIMHash(string memory domainName, bytes32 publicKeyHash) {
+        if (!_isValidDKIMPublicKeyHash(domainName, publicKeyHash)) revert InvalidDKIMPublicKeyHash();
+        _;
+    }
+
+    constructor(address _groth16Verifier, address _dkimRegistry) {
+        GORTH16_VERIFIER = _groth16Verifier;
+        DKIM_REGISTRY = _dkimRegistry;
+    }
+
     /**
      * @notice Verifies the validity of given encoded data
      * @param data The ABI-encoded data. Can be obtained by calling `encode` with the public signals and proof.
@@ -87,6 +106,17 @@ abstract contract EmailAuthVerifier {
      * @return encodedCommand The encoded command bytes
      */
     function encode(uint256[] calldata pubSignals, bytes calldata proof) external view virtual returns (bytes memory);
+
+    /**
+     * @notice Verifies the validity of the DKIM public key hash
+     * @param domainName The domain name of the email
+     * @param publicKeyHash The hash of the DKIM public key
+     * @return isValid True if the public key hash is valid, false otherwise
+     */
+    function _isValidDKIMPublicKeyHash(string memory domainName, bytes32 publicKeyHash) internal view returns (bool) {
+        bytes32 domainHash = keccak256(bytes(domainName));
+        return IDKIMRegistry(DKIM_REGISTRY).isKeyHashValid(domainHash, publicKeyHash);
+    }
 
     /**
      * @notice Verifies the validity of an EmailAuthProof

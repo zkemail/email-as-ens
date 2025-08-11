@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
 import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
+import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import {
     ProveAndClaimCommand,
     ProveAndClaimCommandVerifier
@@ -13,7 +14,10 @@ contract IsValidTest is Test {
     ProveAndClaimCommandVerifier internal _verifier;
 
     function setUp() public {
-        _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()));
+        DKIMRegistryMock dkim = new DKIMRegistryMock();
+        _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(dkim));
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
     }
 
     function test_returnsFalseForInvalidProof() public view {

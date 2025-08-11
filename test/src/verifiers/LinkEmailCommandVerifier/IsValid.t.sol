@@ -4,13 +4,19 @@ pragma solidity ^0.8.30;
 import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
 import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
+import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import { LinkEmailCommand, LinkEmailCommandVerifier } from "../../../../src/verifiers/LinkEmailCommandVerifier.sol";
 
 contract IsValidTest is Test {
     LinkEmailCommandVerifier internal _verifier;
 
     function setUp() public {
-        _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()));
+        DKIMRegistryMock dkim = new DKIMRegistryMock();
+        _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), address(dkim));
+        // configure DKIM mock with valid domain+key
+        (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
+        bytes32 domainHash = keccak256(bytes(command.proof.fields.domainName));
+        dkim.setValid(domainHash, command.proof.fields.publicKeyHash, true);
     }
 
     function test_returnsFalseForInvalidProof() public view {

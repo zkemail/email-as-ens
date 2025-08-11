@@ -5,6 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "../../fixtures/TestFixtures.sol";
 import { LinkEmailCommand, LinkEmailCommandVerifier } from "../../../src/verifiers/LinkEmailCommandVerifier.sol";
 import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";
+import { DKIMRegistryMock } from "../../fixtures/DKIMRegistryMock.sol";
 import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
 import { LinkEmailVerifierHelper } from "./_LinkEmailVerifierHelper.sol";
 import { LinkEmailVerifier } from "../../../src/LinkEmailVerifier.sol";
@@ -16,7 +17,10 @@ contract LinkEmailVerifierTest is Test {
     LinkEmailVerifierHelper public linkEmail;
 
     function setUp() public {
-        verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()));
+        DKIMRegistryMock dkim = new DKIMRegistryMock();
+        verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), address(dkim));
+        (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
+        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
         linkEmail = new LinkEmailVerifierHelper(address(verifier));
     }
 
