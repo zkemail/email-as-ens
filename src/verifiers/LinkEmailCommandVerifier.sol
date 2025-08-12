@@ -45,7 +45,7 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
     function _isValid(LinkEmailCommand memory command)
         internal
         view
-        onlyValidDKIMHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
+        onlyValidDkimKeyHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
         returns (bool)
     {
         DecodedFields memory fields = command.proof.fields;

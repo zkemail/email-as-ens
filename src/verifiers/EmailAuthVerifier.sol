@@ -75,13 +75,13 @@ abstract contract EmailAuthVerifier {
     address public immutable GORTH16_VERIFIER;
     address public immutable DKIM_REGISTRY;
 
-    error InvalidDKIMPublicKeyHash();
+    error InvalidDkimKeyHash();
 
     /**
      * @notice Ensures the provided DKIM public key hash is valid for the given domain
      */
-    modifier onlyValidDKIMHash(string memory domainName, bytes32 publicKeyHash) {
-        if (!_isValidDKIMPublicKeyHash(domainName, publicKeyHash)) revert InvalidDKIMPublicKeyHash();
+    modifier onlyValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) {
+        if (!_isValidDkimKeyHash(domainName, dkimKeyHash)) revert InvalidDkimKeyHash();
         _;
     }
 
@@ -110,12 +110,12 @@ abstract contract EmailAuthVerifier {
     /**
      * @notice Verifies the validity of the DKIM public key hash
      * @param domainName The domain name of the email
-     * @param publicKeyHash The hash of the DKIM public key
+     * @param dkimKeyHash The hash of the DKIM public key
      * @return isValid True if the public key hash is valid, false otherwise
      */
-    function _isValidDKIMPublicKeyHash(string memory domainName, bytes32 publicKeyHash) internal view returns (bool) {
+    function _isValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) internal view returns (bool) {
         bytes32 domainHash = keccak256(bytes(domainName));
-        return IDKIMRegistry(DKIM_REGISTRY).isKeyHashValid(domainHash, publicKeyHash);
+        return IDKIMRegistry(DKIM_REGISTRY).isKeyHashValid(domainHash, dkimKeyHash);
     }
 
     /**

@@ -57,7 +57,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     function _isValid(ProveAndClaimCommand memory command)
         internal
         view
-        onlyValidDKIMHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
+        onlyValidDkimKeyHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
         returns (bool)
     {
         DecodedFields memory fields = command.proof.fields;
