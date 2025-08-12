@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
 import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
+import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import {
     ProveAndClaimCommand,
     ProveAndClaimCommandVerifier
@@ -13,7 +14,10 @@ contract EncodeTest is _EmailAuthVerifierTest {
     ProveAndClaimCommandVerifier internal _verifier;
 
     function setUp() public {
-        _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()));
+        DKIMRegistryMock dkim = new DKIMRegistryMock();
+        _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(dkim));
+        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
+        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {

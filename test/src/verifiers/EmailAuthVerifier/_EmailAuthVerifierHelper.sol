@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import { EmailAuthVerifier, DecodedFields } from "../../../../src/verifiers/EmailAuthVerifier.sol";
 
 contract EmailAuthVerifierHelper is EmailAuthVerifier {
-    constructor() EmailAuthVerifier() { }
+    constructor() EmailAuthVerifier(address(0), address(0)) { }
 
     function encode(uint256[] calldata, bytes calldata) external pure override returns (bytes memory) {
         return "";

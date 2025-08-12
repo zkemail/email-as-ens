@@ -15,7 +15,9 @@ contract ZkEmailRegistrarScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(deployerPrivateKey);
-        ProveAndClaimCommandVerifier verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()));
+        // TODO: replace address(0) with a real DKIM registry when deploying
+        ProveAndClaimCommandVerifier verifier =
+            new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(0));
         ZkEmailRegistrar registrar = new ZkEmailRegistrar(DEFAULT_ROOT_NODE, address(verifier), ENS_REGISTRY);
         vm.stopBroadcast();
 

@@ -30,21 +30,13 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     using Strings for string;
     using CircuitUtils for bytes;
 
-    address public immutable GORTH16_VERIFIER;
-
-    constructor(address _groth16Verifier) {
-        GORTH16_VERIFIER = _groth16Verifier;
-    }
+    constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
 
     /**
      * @inheritdoc EmailAuthVerifier
      */
     function verify(bytes memory data) external view override returns (bool) {
-        ProveAndClaimCommand memory command = abi.decode(data, (ProveAndClaimCommand));
-        DecodedFields memory fields = command.proof.fields;
-        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
-            && CircuitUtils.verifyEmailParts(command.emailParts, fields.emailAddress)
-            && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
+        return _isValid(abi.decode(data, (ProveAndClaimCommand)));
     }
 
     /**
@@ -60,6 +52,18 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         returns (bytes memory encodedCommand)
     {
         return abi.encode(_buildProveAndClaimCommand(pubSignals, proof));
+    }
+
+    function _isValid(ProveAndClaimCommand memory command)
+        internal
+        view
+        onlyValidDkimKeyHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
+        returns (bool)
+    {
+        DecodedFields memory fields = command.proof.fields;
+        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
+            && CircuitUtils.verifyEmailParts(command.emailParts, fields.emailAddress)
+            && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
     }
 
     /**
