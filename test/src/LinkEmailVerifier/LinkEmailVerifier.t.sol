@@ -56,6 +56,10 @@ contract LinkEmailVerifierTest is Test {
         assertEq(linkEmail.verifyTextRecord(bytes(command.ensName).namehash(), "email", "incorrect@e.com"), false);
     }
 
+    function test_dkimRegistryAddress_returnsCorrectAddress() public view {
+        assertEq(linkEmail.dkimRegistryAddress(), address(verifier.DKIM_REGISTRY()));
+    }
+
     function _toDynamicArray(uint256[60] memory pubSignals) internal pure returns (uint256[] memory) {
         uint256[] memory pubSignalsArray = new uint256[](60);
         for (uint256 i = 0; i < 60; i++) {
