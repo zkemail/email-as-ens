@@ -14,7 +14,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
         _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), address(dkim));
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
+        dkim.setValid(command.proof.fields.domainName, command.proof.fields.publicKeyHash, true);
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {

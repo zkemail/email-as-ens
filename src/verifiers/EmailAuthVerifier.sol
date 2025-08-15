@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { CircuitUtils } from "../utils/CircuitUtils.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
-import { IDKIMRegistry } from "../interfaces/IDKIMRegistry.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IDKIMRegistry.sol";
 
 struct EmailAuthProof {
     DecodedFields fields;
@@ -81,7 +81,9 @@ abstract contract EmailAuthVerifier {
      * @notice Ensures the provided DKIM public key hash is valid for the given domain
      */
     modifier onlyValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) {
-        if (!_isValidDkimKeyHash(domainName, dkimKeyHash)) revert InvalidDkimKeyHash();
+        if (!IDKIMRegistry(DKIM_REGISTRY).isDKIMPublicKeyHashValid(domainName, dkimKeyHash)) {
+            revert InvalidDkimKeyHash();
+        }
         _;
     }
 
@@ -106,17 +108,6 @@ abstract contract EmailAuthVerifier {
      * @return encodedCommand The encoded command bytes
      */
     function encode(uint256[] calldata pubSignals, bytes calldata proof) external view virtual returns (bytes memory);
-
-    /**
-     * @notice Verifies the validity of the DKIM public key hash
-     * @param domainName The domain name of the email
-     * @param dkimKeyHash The hash of the DKIM public key
-     * @return isValid True if the public key hash is valid, false otherwise
-     */
-    function _isValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) internal view returns (bool) {
-        bytes32 domainHash = keccak256(bytes(domainName));
-        return IDKIMRegistry(DKIM_REGISTRY).isKeyHashValid(domainHash, dkimKeyHash);
-    }
 
     /**
      * @notice Verifies the validity of an EmailAuthProof
