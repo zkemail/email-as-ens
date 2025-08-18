@@ -7,7 +7,7 @@ import { LinkEmailCommandVerifier } from "../src/verifiers/LinkEmailCommandVerif
 import { Groth16Verifier } from "../test/fixtures/Groth16Verifier.sol";
 
 contract LinkEmailVerifierScript is Script {
-    address internal constant _ICP_ORACLE_SIGNER = 0x024828b9075e3A315Cea29a6Ccc7a2bEd6DDDC53; // chain agnostic
+    address internal constant _DKIM_REGISTRY = 0x7B192D9207ef9b390f0530ECDFFB055D6d439BA8;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -15,7 +15,7 @@ contract LinkEmailVerifierScript is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         LinkEmailCommandVerifier commandVerifier =
-            new LinkEmailCommandVerifier(address(new Groth16Verifier()), _ICP_ORACLE_SIGNER);
+            new LinkEmailCommandVerifier(address(new Groth16Verifier()), _DKIM_REGISTRY);
         LinkEmailVerifier verifier = new LinkEmailVerifier(address(commandVerifier));
         vm.stopBroadcast();
 
