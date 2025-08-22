@@ -4,8 +4,9 @@ pragma solidity ^0.8.30;
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { CircuitUtils } from "../utils/CircuitUtils.sol";
+import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
 import { EmailAuthVerifier, DecodedFields, EmailAuthProof } from "./EmailAuthVerifier.sol";
+import { EnsUtils } from "../utils/EnsUtils.sol";
 
 /**
  * @notice Enum representing the indices of command parameters in the command template
@@ -62,7 +63,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     {
         DecodedFields memory fields = command.proof.fields;
         return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
-            && CircuitUtils.verifyEmailParts(command.emailParts, fields.emailAddress)
+            && EnsUtils.verifyEmailParts(command.emailParts, fields.emailAddress)
             && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
     }
 
@@ -83,7 +84,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
             resolver: CircuitUtils.extractCommandParamByIndex(
                 _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.RESOLVER)
             ),
-            emailParts: CircuitUtils.extractEmailParts(decodedFields.emailAddress),
+            emailParts: EnsUtils.extractEmailParts(decodedFields.emailAddress),
             owner: Strings.parseAddress(
                 CircuitUtils.extractCommandParamByIndex(
                     _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.OWNER)
