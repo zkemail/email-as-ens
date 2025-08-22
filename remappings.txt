@@ -2,5 +2,5 @@
 @openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/
 @openzeppelin/community-contracts/=node_modules/@openzeppelin/community-contracts/contracts/
 @zk-email/email-tx-builder/=node_modules/@zk-email/email-tx-builder/packages/contracts/
-@zk-email/contracts/=node_modules/@zk-email/contracts/
+@zk-email/contracts/=node_modules/@zk-email/zk-email-verify/packages/contracts/
 forge-std/=node_modules/forge-std/src/

@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { CircuitUtils } from "../utils/CircuitUtils.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
-import { IDKIMRegistry } from "../interfaces/IDKIMRegistry.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
 struct EmailAuthProof {
     DecodedFields fields;

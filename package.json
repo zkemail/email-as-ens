@@ -31,8 +31,9 @@
     "@openzeppelin/community-contracts": "github:OpenZeppelin/openzeppelin-community-contracts#303697f",
     "@openzeppelin/contracts": "5.3.0",
     "@openzeppelin/contracts-upgradeable": "5.3.0",
-    "@zk-email/contracts": "6.3.2",
-    "@zk-email/email-tx-builder": "https://github.com/zkemail/email-tx-builder#895e1fe"
+    "@zk-email/zk-email-verify": "github:zkemail/zk-email-verify#60e2711ab6e8683ef251d3c68dd2697e51802bb5",
+    "@zk-email/email-tx-builder": "github:zkemail/email-tx-builder#b2aa4190eda7d0c55328ef2fd8f723fd26dd8cf9",
+    "solidity-stringutils": "github:zkemail/layer-zero-string-utils.git"
   },
   "scripts": {
     "build": "forge build --sizes",
