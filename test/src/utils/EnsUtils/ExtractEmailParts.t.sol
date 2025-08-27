@@ -2,13 +2,13 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { CircuitUtilsHelper } from "./_CircuitUtilsHelper.sol";
+import { EnsUtilsHelper } from "./_EnsUtilsHelper.sol";
 
 contract ExtractEmailPartsTest is Test {
-    CircuitUtilsHelper private _helper;
+    EnsUtilsHelper private _helper;
 
     function setUp() public {
-        _helper = new CircuitUtilsHelper();
+        _helper = new EnsUtilsHelper();
     }
 
     function test_simpleEmail() public view {

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { CircuitUtils } from "../utils/CircuitUtils.sol";
+import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
-import { IDKIMRegistry } from "../interfaces/IDKIMRegistry.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
+import { EnsUtils } from "../utils/EnsUtils.sol";
 
 struct EmailAuthProof {
     DecodedFields fields;
@@ -172,9 +173,12 @@ abstract contract EmailAuthVerifier {
         fields[4] = CircuitUtils.packString(decodedFields.maskedCommand, MASKED_COMMAND_SIZE);
         fields[5] = CircuitUtils.packBytes32(decodedFields.accountSalt);
         fields[6] = CircuitUtils.packBool(decodedFields.isCodeExist);
-        fields[7] = CircuitUtils.packPubKey(decodedFields.miscellaneousData);
+        fields[7] = EnsUtils.packPubKey(decodedFields.miscellaneousData);
         fields[8] = CircuitUtils.packString(decodedFields.emailAddress, EMAIL_ADDRESS_SIZE);
-        pubSignals = CircuitUtils.flattenFields(fields);
+        uint256[] memory _pubSignals = CircuitUtils.flattenFields(fields, pubSignals.length);
+        for (uint256 i = 0; i < _pubSignals.length; i++) {
+            pubSignals[i] = _pubSignals[i];
+        }
 
         return pubSignals;
     }
@@ -199,7 +203,7 @@ abstract contract EmailAuthVerifier {
         decodedFields.maskedCommand = CircuitUtils.unpackString(pubSignals, MASKED_COMMAND_OFFSET, MASKED_COMMAND_SIZE);
         decodedFields.accountSalt = CircuitUtils.unpackBytes32(pubSignals, ACCOUNT_SALT_OFFSET);
         decodedFields.isCodeExist = CircuitUtils.unpackBool(pubSignals, IS_CODE_EXIST_OFFSET);
-        decodedFields.miscellaneousData = CircuitUtils.unpackMiscellaneousData(pubSignals, MISCELLANEOUS_DATA_OFFSET);
+        decodedFields.miscellaneousData = EnsUtils.unpackPubKey(pubSignals, MISCELLANEOUS_DATA_OFFSET);
         decodedFields.emailAddress = CircuitUtils.unpackString(pubSignals, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_SIZE);
 
         return decodedFields;
