@@ -69,7 +69,7 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
 
         return LinkEmailCommand({
             email: decodedFields.emailAddress,
-            ensName: string(CircuitUtils.extractCommandParamByIndex(_getTemplate(), decodedFields.maskedCommand, 0)),
+            ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), decodedFields.maskedCommand, 0)),
             proof: EmailAuthProof({ fields: decodedFields, proof: proof })
         });
     }
