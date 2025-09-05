@@ -27,8 +27,6 @@ contract BuildPubSignalsTest is Test {
     }
 
     function _assertPubSignals(uint256[60] memory publicSignals, uint256[60] memory expectedPubSignals) internal pure {
-        for (uint8 i = 0; i < 60; i++) {
-            assertEq(publicSignals[i], expectedPubSignals[i]);
-        }
+        assertEq(keccak256(abi.encode(publicSignals)), keccak256(abi.encode(expectedPubSignals)));
     }
 }
