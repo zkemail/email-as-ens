@@ -25,4 +25,12 @@ interface IEntryPoint {
      *      encoding logic.
      */
     function encode(uint256[] calldata publicSignals, bytes calldata proof) external view returns (bytes memory);
+
+    /**
+     * @notice Returns the address of the DKIM registry
+     * @return The address of the DKIM registry
+     * @dev This is used (by the relayer) to check if the DKIM registry is valid for the given domain and update it if
+     * needed
+     */
+    function dkimRegistryAddress() external view returns (address);
 }

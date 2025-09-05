@@ -55,6 +55,14 @@ contract LinkEmailVerifier is IEntryPoint, ITextRecordVerifier {
     }
 
     /**
+     * @inheritdoc IEntryPoint
+     * @dev Returns the address of the DKIM registry
+     */
+    function dkimRegistryAddress() external view returns (address) {
+        return IVerifier(VERIFIER).dkimRegistryAddress();
+    }
+
+    /**
      * @inheritdoc ITextRecordVerifier
      */
     function verifyTextRecord(bytes32 node, string memory key, string memory value) external view returns (bool) {
