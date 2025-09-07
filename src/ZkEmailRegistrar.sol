@@ -70,6 +70,14 @@ contract ZkEmailRegistrar is IEntryPoint {
     }
 
     /**
+     * @inheritdoc IEntryPoint
+     * @dev Returns the address of the DKIM registry
+     */
+    function dkimRegistryAddress() external view returns (address) {
+        return IVerifier(VERIFIER).dkimRegistryAddress();
+    }
+
+    /**
      * @notice Sets the record for an ENS name (only callable by the owner of the node)
      * @param node The node to set the record for
      * @param newOwner The new owner of the node

@@ -30,6 +30,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     using Bytes for bytes;
     using Strings for string;
     using CircuitUtils for bytes;
+    using CommandUtils for bytes;
 
     constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
 
@@ -81,12 +82,12 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         DecodedFields memory decodedFields = _unpackPubSignals(pubSignals);
 
         return ProveAndClaimCommand({
-            resolver: CircuitUtils.extractCommandParamByIndex(
+            resolver: CommandUtils.extractCommandParamByIndex(
                 _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.RESOLVER)
             ),
             emailParts: EnsUtils.extractEmailParts(decodedFields.emailAddress),
             owner: Strings.parseAddress(
-                CircuitUtils.extractCommandParamByIndex(
+                CommandUtils.extractCommandParamByIndex(
                     _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.OWNER)
                 )
             ),

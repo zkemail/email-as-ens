@@ -10,6 +10,7 @@ contract ZkEmailRegistrarScript is Script {
     address public constant ENS_REGISTRY = 0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e;
     // namehash(zkemail.eth)
     bytes32 public constant DEFAULT_ROOT_NODE = 0x9779bbcebf3daee4340657d5ad76d6cc4289ba3185d61166d7b7099ae8bab0b8;
+    address public constant DKIM_REGISTRY = 0xe24c24Ab94c93D5754De1cbE61b777e47cc57723;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -17,7 +18,7 @@ contract ZkEmailRegistrarScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         // TODO: replace address(0) with a real DKIM registry when deploying
         ProveAndClaimCommandVerifier verifier =
-            new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(0));
+            new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), DKIM_REGISTRY);
         ZkEmailRegistrar registrar = new ZkEmailRegistrar(DEFAULT_ROOT_NODE, address(verifier), ENS_REGISTRY);
         vm.stopBroadcast();
 

@@ -5,6 +5,7 @@ import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { EnsUtils } from "../utils/EnsUtils.sol";
+import { IVerifier } from "../interfaces/IVerifier.sol";
 
 struct EmailAuthProof {
     DecodedFields fields;
@@ -45,7 +46,7 @@ struct DecodedFields {
  *      | 51-59   | 9       | emailAddress        | The packed string of the sender's full email address.          |
  *       ----------------------------------------------------------------------------------------------------------
  */
-abstract contract EmailAuthVerifier {
+abstract contract EmailAuthVerifier is IVerifier {
     /// @notice The order of the BN128 elliptic curve used in the ZK proofs
     /// @dev All field elements in proofs must be less than this value
     uint256 public constant Q =
@@ -107,6 +108,13 @@ abstract contract EmailAuthVerifier {
      * @return encodedCommand The encoded command bytes
      */
     function encode(uint256[] calldata pubSignals, bytes calldata proof) external view virtual returns (bytes memory);
+
+    /**
+     * @dev Returns the address of the DKIM registry
+     */
+    function dkimRegistryAddress() external view returns (address) {
+        return DKIM_REGISTRY;
+    }
 
     /**
      * @notice Verifies the validity of the DKIM public key hash
