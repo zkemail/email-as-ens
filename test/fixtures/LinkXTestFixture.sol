@@ -578,7 +578,7 @@ library LinkXTestFixture {
         });
 
         command = LinkXCommand({
-            xHandle: string(abi.encodePacked(xHandleCapture1Elements)),
+            xHandle: "thezdev1",
             ensName: "zkfriendly.eth",
             proof: abi.encode(proofUint256),
             pubSignals: pubSignals
