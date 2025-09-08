@@ -5,7 +5,6 @@ import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
 import { BoundedVec, Field, FieldArray, NoirUtils } from "../utils/NoirUtils.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
-import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
 
 struct PubSignals {
     Field pubkeyHash;
@@ -111,7 +110,7 @@ contract LinkXCommandVerifier {
         return LinkXCommand({
             xHandle: _extractXHandle(pubSignals.xHandleCapture1),
             ensName: string(
-                CircuitUtils.extractCommandParamByIndex(
+                CommandUtils.extractCommandParamByIndex(
                     _getTemplate(), NoirUtils.fieldArrayToString(pubSignals.maskedCommand), 1
                 )
             ),
