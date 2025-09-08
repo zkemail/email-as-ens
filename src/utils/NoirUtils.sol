@@ -3,6 +3,11 @@ pragma solidity ^0.8.30;
 
 type Field is bytes32;
 
+struct FieldArray {
+    Field[] elements;
+    uint256 length;
+}
+
 // BoundedVec<Field, MaxLength>
 // Contains a dynamic array of Field elements up to a maximum length
 // The last element of the array is the actual length of the elements
@@ -23,12 +28,24 @@ library NoirUtils {
         return packedField;
     }
 
-    function encodeFieldArray(Field[] memory fields) internal pure returns (bytes32[] memory packedFieldArray) {
-        return _encodeFieldArray(fields);
+    function encodeFieldArray(FieldArray memory fieldArray) internal pure returns (bytes32[] memory fieldArrayBytes) {
+        fieldArrayBytes = new bytes32[](fieldArray.length);
+        for (uint256 i = 0; i < fieldArray.elements.length; i++) {
+            fieldArrayBytes[i] = _encodeField(fieldArray.elements[i]);
+        }
+        return fieldArrayBytes;
     }
 
     function encodeBoundedVec(BoundedVec memory boundedVec) internal pure returns (bytes32[] memory packedBoundedVec) {
-        return _encodeBoundedVec(boundedVec);
+        // array size is max length + 1 (for storing the actual length)
+        packedBoundedVec = new bytes32[](boundedVec.maxLength + 1);
+        // first elements are the bounded vec elements, others are left zeroed out
+        for (uint256 i = 0; i < boundedVec.elements.length; i++) {
+            packedBoundedVec[i] = _encodeField(boundedVec.elements[i]);
+        }
+        // last element is the actual length of the bounded vec elements
+        packedBoundedVec[packedBoundedVec.length - 1] = bytes32(boundedVec.elements.length);
+        return packedBoundedVec;
     }
 
     function decodeField(bytes32[] calldata pubSignals, uint256 startIndex) internal pure returns (Field field) {
@@ -42,9 +59,9 @@ library NoirUtils {
     )
         internal
         pure
-        returns (Field[] memory fieldArray)
+        returns (FieldArray memory fieldArray)
     {
-        return _decodeFieldArray(pubSignals, startIndex, length);
+        return FieldArray({ elements: _decodeFields(pubSignals, startIndex, length), length: length });
     }
 
     function decodeBoundedVec(
@@ -56,7 +73,13 @@ library NoirUtils {
         pure
         returns (BoundedVec memory boundedVec)
     {
-        return _decodeBoundedVec(pubSignals, startIndex, maxLength);
+        // max length is the maximum possible length of the bounded vec
+        boundedVec.maxLength = maxLength;
+        // last element is the actual length of the bounded vec elements
+        uint256 actualLength = uint256(pubSignals[pubSignals.length - 1]);
+        // only unpack the elements that are actually present
+        boundedVec.elements = _decodeFields(pubSignals, startIndex, actualLength);
+        return boundedVec;
     }
 
     function flattenArray(bytes32[][] memory inputs, uint256 outLength) internal pure returns (bytes32[] memory out) {
@@ -77,31 +100,11 @@ library NoirUtils {
         return Field.unwrap(field);
     }
 
-    function _encodeFieldArray(Field[] memory fields) private pure returns (bytes32[] memory packedFieldArray) {
-        bytes32[] memory fieldsBytes = new bytes32[](fields.length);
-        for (uint256 i = 0; i < fields.length; i++) {
-            fieldsBytes[i] = _encodeField(fields[i]);
-        }
-        return fieldsBytes;
-    }
-
-    function _encodeBoundedVec(BoundedVec memory boundedVec) private pure returns (bytes32[] memory packedBoundedVec) {
-        // array size is max length + 1 (for storing the actual length)
-        packedBoundedVec = new bytes32[](boundedVec.maxLength + 1);
-        // first elements are the bounded vec elements, others are left zeroed out
-        for (uint256 i = 0; i < boundedVec.elements.length; i++) {
-            packedBoundedVec[i] = _encodeField(boundedVec.elements[i]);
-        }
-        // last element is the actual length of the bounded vec elements
-        packedBoundedVec[packedBoundedVec.length - 1] = bytes32(boundedVec.elements.length);
-        return packedBoundedVec;
-    }
-
     function _decodeField(bytes32[] calldata pubSignals, uint256 startIndex) private pure returns (Field field) {
         return Field.wrap(pubSignals[startIndex]);
     }
 
-    function _decodeFieldArray(
+    function _decodeFields(
         bytes32[] calldata pubSignals,
         uint256 startIndex,
         uint256 length
@@ -115,23 +118,5 @@ library NoirUtils {
             fields[i] = _decodeField(pubSignals, startIndex + i);
         }
         return fields;
-    }
-
-    function _decodeBoundedVec(
-        bytes32[] calldata pubSignals,
-        uint256 startIndex,
-        uint256 maxLength
-    )
-        private
-        pure
-        returns (BoundedVec memory boundedVec)
-    {
-        // max length is the maximum possible length of the bounded vec
-        boundedVec.maxLength = maxLength;
-        // last element is the actual length of the bounded vec elements
-        uint256 actualLength = uint256(pubSignals[pubSignals.length - 1]);
-        // only unpack the elements that are actually present
-        boundedVec.elements = _decodeFieldArray(pubSignals, startIndex, actualLength);
-        return boundedVec;
     }
 }
