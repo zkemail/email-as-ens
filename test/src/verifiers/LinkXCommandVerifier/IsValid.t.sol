@@ -29,13 +29,12 @@ contract IsValidTest is Test {
         assertTrue(isValid);
     }
 
-    // not in verifier yet
-    // function test_returnsFalseForWrongENSName() public view {
-    //     (LinkXCommand memory command,) = LinkXTestFixture.linkXCommand();
-    //     command.ensName = "wrong.eth";
-    //     bool isValid = _verifier.verify(abi.encode(command));
-    //     assertFalse(isValid);
-    // }
+    function test_returnsFalseForWrongENSName() public view {
+        (LinkXCommand memory command,) = LinkXTestFixture.linkXCommand();
+        command.ensName = "wrong.eth";
+        bool isValid = _verifier.verify(abi.encode(command));
+        assertFalse(isValid);
+    }
 
     function test_returnsFalseForWrongXHandle() public view {
         (LinkXCommand memory command,) = LinkXTestFixture.linkXCommand();

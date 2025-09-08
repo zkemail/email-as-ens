@@ -4,6 +4,8 @@ pragma solidity ^0.8.30;
 import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
 import { BoundedVec, Field, FieldArray, NoirUtils } from "../utils/NoirUtils.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
+import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
 
 struct PubSignals {
     Field pubkeyHash;
@@ -50,10 +52,7 @@ contract LinkXCommandVerifier {
     }
 
     function verify(bytes memory data) external view returns (bool) {
-        LinkXCommand memory command = abi.decode(data, (LinkXCommand));
-
-        return IHonkVerifier(HONK_VERIFIER).verify(command.proof, _encodePubSignals(command.pubSignals))
-            && _compareXHandle(command.xHandle, command.pubSignals.xHandleCapture1);
+        return _isValid(abi.decode(data, (LinkXCommand)));
     }
 
     function encode(
@@ -64,7 +63,15 @@ contract LinkXCommandVerifier {
         pure
         returns (bytes memory encodedCommand)
     {
-        return abi.encode(_buildCommand(pubSignals, proof));
+        return abi.encode(_buildLinkXCommand(pubSignals, proof));
+    }
+
+    function _isValid(LinkXCommand memory command) internal view returns (bool) {
+        PubSignals memory pubSignals = command.pubSignals;
+
+        return IHonkVerifier(HONK_VERIFIER).verify(command.proof, _encodePubSignals(pubSignals))
+            && Strings.equal(command.xHandle, _extractXHandle(pubSignals.xHandleCapture1))
+            && Strings.equal(_getMaskedCommand(command), NoirUtils.fieldArrayToString(pubSignals.maskedCommand));
     }
 
     function _encodePubSignals(PubSignals memory decodedFields) internal pure returns (bytes32[] memory pubSignals) {
@@ -92,7 +99,7 @@ contract LinkXCommandVerifier {
         });
     }
 
-    function _buildCommand(
+    function _buildLinkXCommand(
         bytes32[] calldata encodedPubSignals,
         bytes memory proof
     )
@@ -102,16 +109,45 @@ contract LinkXCommandVerifier {
     {
         PubSignals memory pubSignals = _decodePubSignals(encodedPubSignals);
         return LinkXCommand({
-            xHandle: string(abi.encodePacked(pubSignals.xHandleCapture1.elements)),
-            ensName: "zkfriendly.eth",
+            xHandle: _extractXHandle(pubSignals.xHandleCapture1),
+            ensName: string(
+                CircuitUtils.extractCommandParamByIndex(
+                    _getTemplate(), NoirUtils.fieldArrayToString(pubSignals.maskedCommand), 1
+                )
+            ),
             proof: proof,
             pubSignals: pubSignals
         });
     }
 
-    function _compareXHandle(string memory xHandle, BoundedVec memory xHandleCapture1) private pure returns (bool) {
-        string memory xHandleString = string(abi.encodePacked(xHandleCapture1.elements));
-        bool res = Strings.equal(xHandle, xHandleString);
-        return res;
+    function _extractXHandle(BoundedVec memory xHandleCapture1) private pure returns (string memory) {
+        Field[] memory elements = xHandleCapture1.elements;
+        bytes memory out = new bytes(elements.length);
+        for (uint256 i = 0; i < elements.length; i++) {
+            uint256 fieldValue = uint256(Field.unwrap(elements[i]));
+            out[i] = bytes1(uint8(fieldValue & 0xFF));
+        }
+        return string(out);
+    }
+
+    function _getMaskedCommand(LinkXCommand memory command) private pure returns (string memory) {
+        bytes[] memory commandParams = new bytes[](2);
+        commandParams[0] = abi.encode(command.xHandle);
+        commandParams[1] = abi.encode(command.ensName);
+
+        return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
+    }
+
+    function _getTemplate() private pure returns (string[] memory template) {
+        template = new string[](6);
+
+        template[0] = "Link";
+        template[1] = CommandUtils.STRING_MATCHER;
+        template[2] = "x";
+        template[3] = "handle";
+        template[4] = "to";
+        template[5] = CommandUtils.STRING_MATCHER;
+
+        return template;
     }
 }
