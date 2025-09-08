@@ -3,9 +3,9 @@ pragma solidity ^0.8.30;
 
 import { LinkXTestFixture } from "../../../fixtures/LinkXTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/HonkVerifier.sol";
-import { Command, LinkXCommandVerifier, PubSignals } from "../../../../src/verifiers/LinkXCommandVerifier.sol";
+import { LinkXCommand, LinkXCommandVerifier, PubSignals } from "../../../../src/verifiers/LinkXCommandVerifier.sol";
 import { _EmailAuthVerifierTest } from "../EmailAuthVerifier/_EmailAuthVerifierTest.sol";
-import { Field, BoundedVec } from "../../../../src/utils/NoirUtils.sol";
+import { BoundedVec, Field, FieldArray } from "../../../../src/utils/NoirUtils.sol";
 
 contract EncodeTest is _EmailAuthVerifierTest {
     LinkXCommandVerifier internal _verifier;
@@ -15,10 +15,10 @@ contract EncodeTest is _EmailAuthVerifierTest {
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
-        (Command memory command, bytes32[] memory expectedPubSignals) = LinkXTestFixture.linkXCommand();
+        (LinkXCommand memory command, bytes32[] memory expectedPubSignals) = LinkXTestFixture.linkXCommand();
 
         bytes memory encodedData = _verifier.encode(command.proof, expectedPubSignals);
-        Command memory decodedCommand = abi.decode(encodedData, (Command));
+        LinkXCommand memory decodedCommand = abi.decode(encodedData, (LinkXCommand));
 
         _assertPubSignalsEq(decodedCommand.pubSignals, command.pubSignals);
     }
@@ -33,16 +33,20 @@ contract EncodeTest is _EmailAuthVerifierTest {
         _assertFieldEq(decodedPubSignals.pubkeyHash, expectedPubSignals.pubkeyHash, "Pubkey hash mismatch");
         _assertFieldEq(decodedPubSignals.headerHash0, expectedPubSignals.headerHash0, "Header hash 0 mismatch");
         _assertFieldEq(decodedPubSignals.headerHash1, expectedPubSignals.headerHash1, "Header hash 1 mismatch");
-        _assertFieldsEq(decodedPubSignals.proverAddress, expectedPubSignals.proverAddress, "Prover address mismatch");
-        _assertFieldsEq(decodedPubSignals.owner, expectedPubSignals.owner, "Owner mismatch");
+        _assertFieldArrayEq(
+            decodedPubSignals.proverAddress, expectedPubSignals.proverAddress, "Prover address mismatch"
+        );
+        _assertFieldArrayEq(
+            decodedPubSignals.maskedCommand, expectedPubSignals.maskedCommand, "Masked command mismatch"
+        );
         _assertBoundedVecEq(
             decodedPubSignals.xHandleCapture1, expectedPubSignals.xHandleCapture1, "X handle capture 1 mismatch"
         );
     }
 
-    function _assertFieldsEq(
-        Field[] memory decodedFields,
-        Field[] memory expectedFields,
+    function _assertFieldArrayEq(
+        FieldArray memory decodedFields,
+        FieldArray memory expectedFields,
         string memory errorMessage
     )
         internal

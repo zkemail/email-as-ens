@@ -2,19 +2,19 @@
 pragma solidity ^0.8.30;
 
 import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
-import { NoirUtils, BoundedVec, Field } from "../utils/NoirUtils.sol";
+import { BoundedVec, Field, FieldArray, NoirUtils } from "../utils/NoirUtils.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 struct PubSignals {
     Field pubkeyHash;
     Field headerHash0;
     Field headerHash1;
-    Field[] proverAddress;
-    Field[] owner;
+    FieldArray proverAddress;
+    FieldArray maskedCommand;
     BoundedVec xHandleCapture1;
 }
 
-struct Command {
+struct LinkXCommand {
     string xHandle;
     string ensName;
     bytes proof;
@@ -31,13 +31,13 @@ contract LinkXCommandVerifier {
     // #3: header_hash_1 32 bytes -> 1 field -> idx 2
     uint256 public constant HEADER_HASH_1_OFFSET = 2;
     uint256 public constant HEADER_HASH_1_LEN = 1;
-    // #4: prover_address CEIL(31 bytes / 31 bytes per field) = 1 field -> idx 3
+    // #4: prover_address 1 field -> idx 3
     uint256 public constant PROVER_ADDRESS_OFFSET = 3;
     uint256 public constant PROVER_ADDRESS_LEN = 1;
-    // #5: owner CEIL(93 bytes / 31 bytes per field) = 3 fields -> idx 4-6
-    uint256 public constant OWNER_OFFSET = 4;
-    uint256 public constant OWNER_LEN = 3;
-    // // #6: x_handle_capture 64 fields + 1 field (length) = 65 fields -> idx 7-71
+    // #5: masked_command 3 fields -> idx 4-6
+    uint256 public constant MASKED_COMMAND_OFFSET = 4;
+    uint256 public constant MASKED_COMMAND_LEN = 3;
+    // #6: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 7-71
     uint256 public constant X_HANDLE_CAPTURE_1_OFFSET = 7;
     uint256 public constant X_HANDLE_CAPTURE_1_MAX_LEN = 64;
 
@@ -50,10 +50,9 @@ contract LinkXCommandVerifier {
     }
 
     function verify(bytes memory data) external view returns (bool) {
-        Command memory command = abi.decode(data, (Command));
+        LinkXCommand memory command = abi.decode(data, (LinkXCommand));
 
         return IHonkVerifier(HONK_VERIFIER).verify(command.proof, _encodePubSignals(command.pubSignals))
-            && Strings.equal(command.ensName, command.ensName)
             && _compareXHandle(command.xHandle, command.pubSignals.xHandleCapture1);
     }
 
@@ -74,7 +73,7 @@ contract LinkXCommandVerifier {
         fields[1] = NoirUtils.encodeField(decodedFields.headerHash0);
         fields[2] = NoirUtils.encodeField(decodedFields.headerHash1);
         fields[3] = NoirUtils.encodeFieldArray(decodedFields.proverAddress);
-        fields[4] = NoirUtils.encodeFieldArray(decodedFields.owner);
+        fields[4] = NoirUtils.encodeFieldArray(decodedFields.maskedCommand);
         fields[5] = NoirUtils.encodeBoundedVec(decodedFields.xHandleCapture1);
 
         return NoirUtils.flattenArray(fields, PUBLIC_SIGNALS_LENGTH);
@@ -88,7 +87,7 @@ contract LinkXCommandVerifier {
             headerHash0: NoirUtils.decodeField(encoded, HEADER_HASH_0_OFFSET),
             headerHash1: NoirUtils.decodeField(encoded, HEADER_HASH_1_OFFSET),
             proverAddress: NoirUtils.decodeFieldArray(encoded, PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_LEN),
-            owner: NoirUtils.decodeFieldArray(encoded, OWNER_OFFSET, OWNER_LEN),
+            maskedCommand: NoirUtils.decodeFieldArray(encoded, MASKED_COMMAND_OFFSET, MASKED_COMMAND_LEN),
             xHandleCapture1: NoirUtils.decodeBoundedVec(encoded, X_HANDLE_CAPTURE_1_OFFSET, X_HANDLE_CAPTURE_1_MAX_LEN)
         });
     }
@@ -99,10 +98,10 @@ contract LinkXCommandVerifier {
     )
         private
         pure
-        returns (Command memory command)
+        returns (LinkXCommand memory command)
     {
         PubSignals memory pubSignals = _decodePubSignals(encodedPubSignals);
-        return Command({
+        return LinkXCommand({
             xHandle: string(abi.encodePacked(pubSignals.xHandleCapture1.elements)),
             ensName: "zkfriendly.eth",
             proof: proof,

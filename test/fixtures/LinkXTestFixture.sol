@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { Command, PubSignals } from "../../src/verifiers/LinkXCommandVerifier.sol";
-import { BoundedVec, Field } from "../../src/utils/NoirUtils.sol";
+import { LinkXCommand, PubSignals } from "../../src/verifiers/LinkXCommandVerifier.sol";
+import { BoundedVec, Field, FieldArray } from "../../src/utils/NoirUtils.sol";
 
 library LinkXTestFixture {
-    function linkXCommand() internal pure returns (Command memory command, bytes32[] memory expectedPubSignals) {
+    function linkXCommand() internal pure returns (LinkXCommand memory command, bytes32[] memory expectedPubSignals) {
         uint256[456] memory proofUint256 = [
             0x0000000000000000000000000000000000000000000000042ab5d6d1986846cf,
             0x00000000000000000000000000000000000000000000000b75c020998797da78,
@@ -547,16 +547,18 @@ library LinkXTestFixture {
 
         uint256 proverAddressStartIndex = 3;
         uint256 proverAddressLen = 1;
-        Field[] memory proverAddress = new Field[](proverAddressLen);
+        FieldArray memory proverAddress =
+            FieldArray({ elements: new Field[](proverAddressLen), length: proverAddressLen });
         for (uint256 i = 0; i < proverAddressLen; i++) {
-            proverAddress[i] = Field.wrap(expectedPubSignals[i + proverAddressStartIndex]);
+            proverAddress.elements[i] = Field.wrap(expectedPubSignals[i + proverAddressStartIndex]);
         }
 
-        uint256 ownerStartIndex = 4;
-        uint256 ownerLen = 3;
-        Field[] memory owner = new Field[](ownerLen);
-        for (uint256 i = 0; i < ownerLen; i++) {
-            owner[i] = Field.wrap(expectedPubSignals[i + ownerStartIndex]);
+        uint256 maskedCommandStartIndex = 4;
+        uint256 maskedCommandLen = 3;
+        FieldArray memory maskedCommand =
+            FieldArray({ elements: new Field[](maskedCommandLen), length: maskedCommandLen });
+        for (uint256 i = 0; i < maskedCommandLen; i++) {
+            maskedCommand.elements[i] = Field.wrap(expectedPubSignals[i + maskedCommandStartIndex]);
         }
 
         uint256 xHandleCapture1StartIndex = 7;
@@ -571,11 +573,11 @@ library LinkXTestFixture {
             headerHash0: Field.wrap(0x0000000000000000000000000000000085fb869a94511ccbaaf108f91f59b407),
             headerHash1: Field.wrap(0x00000000000000000000000000000000f36f89025341ed6536cbe2d0d338b7a1),
             proverAddress: proverAddress,
-            owner: owner,
+            maskedCommand: maskedCommand,
             xHandleCapture1: BoundedVec({ elements: xHandleCapture1Elements, maxLength: 64 })
         });
 
-        command = Command({
+        command = LinkXCommand({
             xHandle: string(abi.encodePacked(xHandleCapture1Elements)),
             ensName: "zkfriendly.eth",
             proof: abi.encode(proofUint256),
