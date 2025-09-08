@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
+
 type Field is bytes32;
 
 struct FieldArray {
@@ -94,6 +96,29 @@ library NoirUtils {
         }
         if (k != outLength) revert InvalidPubSignalsLength();
         return out;
+    }
+
+    function fieldArrayToString(FieldArray memory fieldArray) internal pure returns (string memory) {
+        bytes memory result = new bytes(fieldArray.length * 31);
+        uint256 resultIndex = 0;
+        for (uint256 i = 0; i < fieldArray.length; i++) {
+            uint256 field = uint256(Field.unwrap(fieldArray.elements[i]));
+            for (uint256 j = 0; j < 31 && resultIndex < result.length; j++) {
+                result[resultIndex] = bytes1(uint8(field & 0xFF));
+                field = field >> 8;
+                resultIndex++;
+            }
+        }
+
+        // Trim trailing zeros
+        uint256 actualLength = 0;
+        for (uint256 i = 0; i < result.length; i++) {
+            if (result[i] != 0) {
+                actualLength = i + 1;
+            }
+        }
+
+        return string(Bytes.slice(result, 0, actualLength));
     }
 
     function _encodeField(Field field) private pure returns (bytes32 packedField) {
