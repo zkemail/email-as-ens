@@ -35,14 +35,14 @@ contract LinkXCommandVerifier {
     // #4: prover_address 1 field -> idx 3
     uint256 public constant PROVER_ADDRESS_OFFSET = 3;
     uint256 public constant PROVER_ADDRESS_LEN = 1;
-    // #5: masked_command 3 fields -> idx 4-6
+    // #5: masked_command 20 fields -> idx 4-23 (605 bytes)
     uint256 public constant MASKED_COMMAND_OFFSET = 4;
-    uint256 public constant MASKED_COMMAND_LEN = 3;
-    // #6: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 7-71
-    uint256 public constant X_HANDLE_CAPTURE_1_OFFSET = 7;
+    uint256 public constant MASKED_COMMAND_LEN = 20;
+    // #6: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 24-88
+    uint256 public constant X_HANDLE_CAPTURE_1_OFFSET = 24;
     uint256 public constant X_HANDLE_CAPTURE_1_MAX_LEN = 64;
 
-    uint256 public constant PUBLIC_SIGNALS_LENGTH = 72;
+    uint256 public constant PUBLIC_SIGNALS_LENGTH = 89;
 
     address public immutable HONK_VERIFIER;
 
