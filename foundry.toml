@@ -11,6 +11,7 @@ optimizer_runs = 10_000
 solc = "0.8.30"
 evm_version = "prague"
 ignored_warnings_from = ["node_modules"]
+fs_permissions = [{ access = "read", path = "./test/fixtures" }]
 
 [profile.ci]
 verbosity = 4
