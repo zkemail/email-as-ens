@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import { LinkXTestFixture } from "../../../fixtures/LinkXTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/HonkVerifier.sol";
+import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import { LinkXCommand, LinkXCommandVerifier, PubSignals } from "../../../../src/verifiers/LinkXCommandVerifier.sol";
 import { _EmailAuthVerifierTest } from "../EmailAuthVerifier/_EmailAuthVerifierTest.sol";
 
@@ -10,7 +11,10 @@ contract EncodeTest is _EmailAuthVerifierTest {
     LinkXCommandVerifier internal _verifier;
 
     function setUp() public {
-        _verifier = new LinkXCommandVerifier(address(new HonkVerifier()));
+        DKIMRegistryMock dkim = new DKIMRegistryMock();
+        _verifier = new LinkXCommandVerifier(address(new HonkVerifier()), address(dkim));
+        (LinkXCommand memory command,) = LinkXTestFixture.linkXCommand();
+        dkim.setValid(keccak256(bytes("domainName")), command.pubSignals.pubkeyHash, true);
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {

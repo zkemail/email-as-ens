@@ -4,13 +4,19 @@ pragma solidity ^0.8.30;
 import { Test } from "forge-std/Test.sol";
 import { LinkXTestFixture } from "../../../fixtures/LinkXTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/HonkVerifier.sol";
+import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import { LinkXCommand, LinkXCommandVerifier } from "../../../../src/verifiers/LinkXCommandVerifier.sol";
 
 contract IsValidTest is Test {
     LinkXCommandVerifier internal _verifier;
 
     function setUp() public {
-        _verifier = new LinkXCommandVerifier(address(new HonkVerifier()));
+        DKIMRegistryMock dkim = new DKIMRegistryMock();
+        _verifier = new LinkXCommandVerifier(address(new HonkVerifier()), address(dkim));
+        // configure DKIM mock with valid domain+key
+        (LinkXCommand memory command,) = LinkXTestFixture.linkXCommand();
+        bytes32 domainHash = keccak256(bytes("domainName"));
+        dkim.setValid(domainHash, command.pubSignals.pubkeyHash, true);
     }
 
     // when verifier fails it reverts not returns false

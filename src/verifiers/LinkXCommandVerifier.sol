@@ -2,6 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { NoirUtils } from "../utils/NoirUtils.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
@@ -45,15 +46,28 @@ contract LinkXCommandVerifier {
     uint256 public constant PUBLIC_SIGNALS_LENGTH = 89;
 
     address public immutable HONK_VERIFIER;
+    address public immutable DKIM_REGISTRY;
 
     error InvalidPubSignalsLength();
 
-    constructor(address _honkVerifier) {
+    error InvalidDkimKeyHash();
+
+    modifier onlyValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) {
+        if (!_isValidDkimKeyHash(domainName, dkimKeyHash)) revert InvalidDkimKeyHash();
+        _;
+    }
+
+    constructor(address _honkVerifier, address _dkimRegistry) {
         HONK_VERIFIER = _honkVerifier;
+        DKIM_REGISTRY = _dkimRegistry;
     }
 
     function verify(bytes memory data) external view returns (bool) {
         return _isValid(abi.decode(data, (LinkXCommand)));
+    }
+
+    function dkimRegistryAddress() external view returns (address) {
+        return DKIM_REGISTRY;
     }
 
     function encode(
@@ -67,7 +81,17 @@ contract LinkXCommandVerifier {
         return abi.encode(_buildLinkXCommand(pubSignals, proofFields));
     }
 
-    function _isValid(LinkXCommand memory command) internal view returns (bool) {
+    function _isValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) internal view returns (bool) {
+        bytes32 domainHash = keccak256(bytes(domainName));
+        return IDKIMRegistry(DKIM_REGISTRY).isKeyHashValid(domainHash, dkimKeyHash);
+    }
+
+    function _isValid(LinkXCommand memory command)
+        internal
+        view
+        onlyValidDkimKeyHash("domainName", command.pubSignals.pubkeyHash)
+        returns (bool)
+    {
         PubSignals memory pubSignals = command.pubSignals;
 
         // proof needs to be in non-standard packed mode (abi.encodePacked)
