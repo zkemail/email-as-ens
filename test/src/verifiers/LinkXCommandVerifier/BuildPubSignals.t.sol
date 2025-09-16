@@ -15,7 +15,7 @@ contract BuildPubSignalsTest is Test {
 
     function test_correctlyBuildsSignalsForLinkXCommand() public view {
         (LinkXCommand memory command, bytes32[] memory expectedPubSignals) = LinkXTestFixture.linkXCommand();
-        bytes32[] memory pubSignals = _verifier.encodePubSignals(command.pubSignals);
+        bytes32[] memory pubSignals = _verifier.packPubSignals(command.pubSignals);
         _assertPubSignals(pubSignals, expectedPubSignals);
     }
 

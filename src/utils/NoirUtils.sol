@@ -1,116 +1,84 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
-
-type Field is bytes32;
-
-struct FieldArray {
-    Field[] elements;
-    uint256 length;
-}
-
-// BoundedVec<Field, MaxLength>
-// Contains a dynamic array of Field elements up to a maximum length
-// The last element of the array is the actual length of the elements
-// This allows for the storage of a variable-length array of Field elements with a maximum size
-// The maxLength is the maximum number of elements that can be stored in the bounded vec
-// The elements are the actual elements of the bounded vec
-struct BoundedVec {
-    Field[] elements;
-    uint256 maxLength;
-}
+uint256 constant FIELD_BYTES = 31;
 
 library NoirUtils {
-    error InvalidPubSignalsLength();
+    error InvalidLength();
 
-    function encodeField(Field field) internal pure returns (bytes32[] memory packedField) {
-        packedField = new bytes32[](1);
-        packedField[0] = _encodeField(field);
-        return packedField;
-    }
+    function packBoundedVecU8(string memory input, uint256 numFields) internal pure returns (bytes32[] memory) {
+        bytes memory strBytes = bytes(input);
 
-    function encodeFieldArray(FieldArray memory fieldArray) internal pure returns (bytes32[] memory fieldArrayBytes) {
-        fieldArrayBytes = new bytes32[](fieldArray.length);
-        for (uint256 i = 0; i < fieldArray.elements.length; i++) {
-            fieldArrayBytes[i] = _encodeField(fieldArray.elements[i]);
+        if (strBytes.length > numFields) revert InvalidLength();
+
+        bytes32[] memory result = new bytes32[](numFields);
+
+        // First fields are the data
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            result[i] = bytes32(uint256(uint8(strBytes[i])));
         }
-        return fieldArrayBytes;
+        // Other fields are empty
+
+        // Last element is the length
+        result[numFields - 1] = bytes32(strBytes.length);
+        return result;
     }
 
-    function encodeBoundedVec(BoundedVec memory boundedVec) internal pure returns (bytes32[] memory packedBoundedVec) {
-        // array size is max length + 1 (for storing the actual length)
-        packedBoundedVec = new bytes32[](boundedVec.maxLength + 1);
-        // first elements are the bounded vec elements, others are left zeroed out
-        for (uint256 i = 0; i < boundedVec.elements.length; i++) {
-            packedBoundedVec[i] = _encodeField(boundedVec.elements[i]);
-        }
-        // last element is the actual length of the bounded vec elements
-        packedBoundedVec[packedBoundedVec.length - 1] = bytes32(boundedVec.elements.length);
-        return packedBoundedVec;
-    }
+    function packFieldsArray(string memory input, uint256 numFields) internal pure returns (bytes32[] memory) {
+        bytes memory strBytes = bytes(input);
 
-    function decodeField(bytes32[] calldata pubSignals, uint256 startIndex) internal pure returns (Field field) {
-        return _decodeField(pubSignals, startIndex);
-    }
+        if (strBytes.length > numFields * FIELD_BYTES) revert InvalidLength();
 
-    function decodeFieldArray(
-        bytes32[] calldata pubSignals,
-        uint256 startIndex,
-        uint256 length
-    )
-        internal
-        pure
-        returns (FieldArray memory fieldArray)
-    {
-        return FieldArray({ elements: _decodeFields(pubSignals, startIndex, length), length: length });
-    }
+        bytes32[] memory fieldElements = new bytes32[](numFields);
 
-    function decodeBoundedVec(
-        bytes32[] calldata pubSignals,
-        uint256 startIndex,
-        uint256 maxLength
-    )
-        internal
-        pure
-        returns (BoundedVec memory boundedVec)
-    {
-        // max length is the maximum possible length of the bounded vec
-        boundedVec.maxLength = maxLength;
-        // last element is the actual length of the bounded vec elements
-        uint256 actualLength = uint256(pubSignals[pubSignals.length - 1]);
-        // only unpack the elements that are actually present
-        boundedVec.elements = _decodeFields(pubSignals, startIndex, actualLength);
-        return boundedVec;
-    }
+        for (uint256 i = 0; i < numFields; i++) {
+            uint256 start = i * FIELD_BYTES;
+            uint256 field = 0;
 
-    function flattenArray(bytes32[][] memory inputs, uint256 outLength) internal pure returns (bytes32[] memory out) {
-        out = new bytes32[](outLength);
-        uint256 k = 0;
-        for (uint256 i = 0; i < inputs.length; i++) {
-            bytes32[] memory arr = inputs[i];
-            for (uint256 j = 0; j < arr.length; j++) {
-                if (k >= outLength) revert InvalidPubSignalsLength();
-                out[k++] = arr[j];
+            for (uint256 j = 0; j < FIELD_BYTES; j++) {
+                if (start + j < strBytes.length) {
+                    // LSB first
+                    field |= uint256(uint8(strBytes[start + j])) << (8 * j);
+                } else {
+                    // Padding with 0x00 (already zeroed by default)
+                    break;
+                }
             }
+
+            fieldElements[i] = bytes32(field);
         }
-        if (k != outLength) revert InvalidPubSignalsLength();
-        return out;
+
+        return fieldElements;
     }
 
-    function fieldArrayToString(FieldArray memory fieldArray) internal pure returns (string memory) {
-        bytes memory result = new bytes(fieldArray.length * 31);
+    function unpackBoundedVecU8(bytes32[] memory fields) internal pure returns (string memory) {
+        // BoundedVec stores the length of the array in the last element
+        uint256 length = uint256(fields[fields.length - 1]);
+        // Create a new bytes array of the correct length
+        bytes memory result = new bytes(length);
+        for (uint256 i = 0; i < length; i++) {
+            // u8 is 8 bits, so we need to take the least-significant byte of each bytes32
+            result[i] = bytes1(uint8(uint256(fields[i])));
+        }
+        return string(result);
+    }
+
+    function unpackFieldsArray(bytes32[] memory fields) internal pure returns (string memory) {
+        uint256 totalBytes = fields.length * FIELD_BYTES;
+        bytes memory result = new bytes(totalBytes);
         uint256 resultIndex = 0;
-        for (uint256 i = 0; i < fieldArray.length; i++) {
-            uint256 field = uint256(Field.unwrap(fieldArray.elements[i]));
-            for (uint256 j = 0; j < 31 && resultIndex < result.length; j++) {
-                result[resultIndex] = bytes1(uint8(field & 0xFF));
-                field = field >> 8;
-                resultIndex++;
+
+        for (uint256 i = 0; i < fields.length; i++) {
+            uint256 field = uint256(fields[i]); // Convert bytes32 to uint256
+
+            // Extract FIELD_BYTES bytes in little-endian order (LSB first)
+            for (uint256 j = 0; j < FIELD_BYTES && resultIndex < totalBytes; j++) {
+                result[resultIndex++] = bytes1(uint8(field & 0xFF));
+                field >>= 8;
             }
         }
 
-        // Trim trailing zeros
+        // Trim trailing 0x00 bytes (preserve internal 0x00s)
         uint256 actualLength = 0;
         for (uint256 i = 0; i < result.length; i++) {
             if (result[i] != 0) {
@@ -118,30 +86,12 @@ library NoirUtils {
             }
         }
 
-        return string(Bytes.slice(result, 0, actualLength));
-    }
-
-    function _encodeField(Field field) private pure returns (bytes32 packedField) {
-        return Field.unwrap(field);
-    }
-
-    function _decodeField(bytes32[] calldata pubSignals, uint256 startIndex) private pure returns (Field field) {
-        return Field.wrap(pubSignals[startIndex]);
-    }
-
-    function _decodeFields(
-        bytes32[] calldata pubSignals,
-        uint256 startIndex,
-        uint256 length
-    )
-        private
-        pure
-        returns (Field[] memory fields)
-    {
-        fields = new Field[](length);
-        for (uint256 i = 0; i < length; i++) {
-            fields[i] = _decodeField(pubSignals, startIndex + i);
+        // Create trimmed byte array
+        bytes memory trimmed = new bytes(actualLength);
+        for (uint256 i = 0; i < actualLength; i++) {
+            trimmed[i] = result[i];
         }
-        return fields;
+
+        return string(trimmed);
     }
 }

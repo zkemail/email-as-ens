@@ -2,17 +2,18 @@
 pragma solidity ^0.8.30;
 
 import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
-import { BoundedVec, Field, FieldArray, NoirUtils } from "../utils/NoirUtils.sol";
+import { NoirUtils } from "../utils/NoirUtils.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
+import { Bytes32 } from "../utils/Bytes32.sol";
 
 struct PubSignals {
-    Field pubkeyHash;
-    Field headerHash0;
-    Field headerHash1;
-    FieldArray proverAddress;
-    FieldArray maskedCommand;
-    BoundedVec xHandleCapture1;
+    bytes32 pubkeyHash;
+    bytes32 headerHash0;
+    bytes32 headerHash1;
+    string proverAddress;
+    string maskedCommand;
+    string xHandleCapture1;
 }
 
 struct LinkXCommand {
@@ -23,28 +24,29 @@ struct LinkXCommand {
 }
 
 contract LinkXCommandVerifier {
-    // #1: pubkey_hash 32 bytes -> 1 field -> idx 0
+    using Bytes32 for bytes32[];
+
+    // #1: pubkey_hash -> 1 field -> idx 0
     uint256 public constant PUBKEY_HASH_OFFSET = 0;
-    uint256 public constant PUBKEY_HASH_LEN = 1;
-    // #2: header_hash_0 32 bytes -> 1 field -> idx 1
+    // #2: header_hash_0 -> 1 field -> idx 1
     uint256 public constant HEADER_HASH_0_OFFSET = 1;
-    uint256 public constant HEADER_HASH_0_LEN = 1;
-    // #3: header_hash_1 32 bytes -> 1 field -> idx 2
+    // #3: header_hash_1 -> 1 field -> idx 2
     uint256 public constant HEADER_HASH_1_OFFSET = 2;
-    uint256 public constant HEADER_HASH_1_LEN = 1;
-    // #4: prover_address 1 field -> idx 3
+    // #4: prover_address -> 1 field -> idx 3
     uint256 public constant PROVER_ADDRESS_OFFSET = 3;
-    uint256 public constant PROVER_ADDRESS_LEN = 1;
+    uint256 public constant PROVER_ADDRESS_NUM_FIELDS = 1;
     // #5: masked_command 20 fields -> idx 4-23 (605 bytes)
     uint256 public constant MASKED_COMMAND_OFFSET = 4;
-    uint256 public constant MASKED_COMMAND_LEN = 20;
+    uint256 public constant MASKED_COMMAND_NUM_FIELDS = 20;
     // #6: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 24-88
     uint256 public constant X_HANDLE_CAPTURE_1_OFFSET = 24;
-    uint256 public constant X_HANDLE_CAPTURE_1_MAX_LEN = 64;
+    uint256 public constant X_HANDLE_CAPTURE_1_NUM_FIELDS = 65;
 
     uint256 public constant PUBLIC_SIGNALS_LENGTH = 89;
 
     address public immutable HONK_VERIFIER;
+
+    error InvalidPubSignalsLength();
 
     constructor(address _honkVerifier) {
         HONK_VERIFIER = _honkVerifier;
@@ -68,34 +70,49 @@ contract LinkXCommandVerifier {
     function _isValid(LinkXCommand memory command) internal view returns (bool) {
         PubSignals memory pubSignals = command.pubSignals;
 
-        // we need the non-standard packed mode (no head parts) for the proof
-        return IHonkVerifier(HONK_VERIFIER).verify(abi.encodePacked(command.proofFields), _encodePubSignals(pubSignals))
-            && Strings.equal(command.xHandle, _extractXHandle(pubSignals.xHandleCapture1))
-            && Strings.equal(_getMaskedCommand(command), NoirUtils.fieldArrayToString(pubSignals.maskedCommand));
+        // proof needs to be in non-standard packed mode (abi.encodePacked)
+        return IHonkVerifier(HONK_VERIFIER).verify(abi.encodePacked(command.proofFields), _packPubSignals(pubSignals))
+            && Strings.equal(command.xHandle, pubSignals.xHandleCapture1)
+            && Strings.equal(_getMaskedCommand(command), pubSignals.maskedCommand);
     }
 
-    function _encodePubSignals(PubSignals memory decodedFields) internal pure returns (bytes32[] memory pubSignals) {
-        bytes32[][] memory fields = new bytes32[][](6);
-        fields[0] = NoirUtils.encodeField(decodedFields.pubkeyHash);
-        fields[1] = NoirUtils.encodeField(decodedFields.headerHash0);
-        fields[2] = NoirUtils.encodeField(decodedFields.headerHash1);
-        fields[3] = NoirUtils.encodeFieldArray(decodedFields.proverAddress);
-        fields[4] = NoirUtils.encodeFieldArray(decodedFields.maskedCommand);
-        fields[5] = NoirUtils.encodeBoundedVec(decodedFields.xHandleCapture1);
-
-        return NoirUtils.flattenArray(fields, PUBLIC_SIGNALS_LENGTH);
+    function _packPubSignals(PubSignals memory decodedFields)
+        internal
+        pure
+        returns (bytes32[] memory publicInputsFields)
+    {
+        publicInputsFields = new bytes32[](PUBLIC_SIGNALS_LENGTH);
+        publicInputsFields[PUBKEY_HASH_OFFSET] = decodedFields.pubkeyHash;
+        publicInputsFields[HEADER_HASH_0_OFFSET] = decodedFields.headerHash0;
+        publicInputsFields[HEADER_HASH_1_OFFSET] = decodedFields.headerHash1;
+        publicInputsFields.splice(
+            PROVER_ADDRESS_OFFSET, NoirUtils.packFieldsArray(decodedFields.proverAddress, PROVER_ADDRESS_NUM_FIELDS)
+        );
+        publicInputsFields.splice(
+            MASKED_COMMAND_OFFSET, NoirUtils.packFieldsArray(decodedFields.maskedCommand, MASKED_COMMAND_NUM_FIELDS)
+        );
+        publicInputsFields.splice(
+            X_HANDLE_CAPTURE_1_OFFSET,
+            NoirUtils.packBoundedVecU8(decodedFields.xHandleCapture1, X_HANDLE_CAPTURE_1_NUM_FIELDS)
+        );
     }
 
-    function _decodePubSignals(bytes32[] calldata encoded) internal pure returns (PubSignals memory decoded) {
-        if (encoded.length != PUBLIC_SIGNALS_LENGTH) revert NoirUtils.InvalidPubSignalsLength();
+    function _unpackPubSignals(bytes32[] calldata encoded) internal pure returns (PubSignals memory decoded) {
+        if (encoded.length != PUBLIC_SIGNALS_LENGTH) revert InvalidPubSignalsLength();
 
         return PubSignals({
-            pubkeyHash: NoirUtils.decodeField(encoded, PUBKEY_HASH_OFFSET),
-            headerHash0: NoirUtils.decodeField(encoded, HEADER_HASH_0_OFFSET),
-            headerHash1: NoirUtils.decodeField(encoded, HEADER_HASH_1_OFFSET),
-            proverAddress: NoirUtils.decodeFieldArray(encoded, PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_LEN),
-            maskedCommand: NoirUtils.decodeFieldArray(encoded, MASKED_COMMAND_OFFSET, MASKED_COMMAND_LEN),
-            xHandleCapture1: NoirUtils.decodeBoundedVec(encoded, X_HANDLE_CAPTURE_1_OFFSET, X_HANDLE_CAPTURE_1_MAX_LEN)
+            pubkeyHash: encoded[PUBKEY_HASH_OFFSET],
+            headerHash0: encoded[HEADER_HASH_0_OFFSET],
+            headerHash1: encoded[HEADER_HASH_1_OFFSET],
+            proverAddress: NoirUtils.unpackFieldsArray(
+                encoded.slice(PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_OFFSET + PROVER_ADDRESS_NUM_FIELDS)
+            ),
+            maskedCommand: NoirUtils.unpackFieldsArray(
+                encoded.slice(MASKED_COMMAND_OFFSET, MASKED_COMMAND_OFFSET + MASKED_COMMAND_NUM_FIELDS)
+            ),
+            xHandleCapture1: NoirUtils.unpackBoundedVecU8(
+                encoded.slice(X_HANDLE_CAPTURE_1_OFFSET, X_HANDLE_CAPTURE_1_OFFSET + X_HANDLE_CAPTURE_1_NUM_FIELDS)
+            )
         });
     }
 
@@ -107,27 +124,13 @@ contract LinkXCommandVerifier {
         pure
         returns (LinkXCommand memory command)
     {
-        PubSignals memory pubSignals = _decodePubSignals(encodedPubSignals);
+        PubSignals memory pubSignals = _unpackPubSignals(encodedPubSignals);
         return LinkXCommand({
-            xHandle: _extractXHandle(pubSignals.xHandleCapture1),
-            ensName: string(
-                CommandUtils.extractCommandParamByIndex(
-                    _getTemplate(), NoirUtils.fieldArrayToString(pubSignals.maskedCommand), 1
-                )
-            ),
+            xHandle: pubSignals.xHandleCapture1,
+            ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), pubSignals.maskedCommand, 1)),
             proofFields: proofFields,
             pubSignals: pubSignals
         });
-    }
-
-    function _extractXHandle(BoundedVec memory xHandleCapture1) private pure returns (string memory) {
-        Field[] memory elements = xHandleCapture1.elements;
-        bytes memory out = new bytes(elements.length);
-        for (uint256 i = 0; i < elements.length; i++) {
-            uint256 fieldValue = uint256(Field.unwrap(elements[i]));
-            out[i] = bytes1(uint8(fieldValue & 0xFF));
-        }
-        return string(out);
     }
 
     function _getMaskedCommand(LinkXCommand memory command) private pure returns (string memory) {
