@@ -18,7 +18,7 @@ struct PubSignals {
 struct LinkXCommand {
     string xHandle;
     string ensName;
-    bytes proof;
+    bytes32[] proofFields;
     PubSignals pubSignals;
 }
 
@@ -55,20 +55,21 @@ contract LinkXCommandVerifier {
     }
 
     function encode(
-        bytes calldata proof,
+        bytes32[] calldata proofFields,
         bytes32[] calldata pubSignals
     )
         external
         pure
         returns (bytes memory encodedCommand)
     {
-        return abi.encode(_buildLinkXCommand(pubSignals, proof));
+        return abi.encode(_buildLinkXCommand(pubSignals, proofFields));
     }
 
     function _isValid(LinkXCommand memory command) internal view returns (bool) {
         PubSignals memory pubSignals = command.pubSignals;
 
-        return IHonkVerifier(HONK_VERIFIER).verify(command.proof, _encodePubSignals(pubSignals))
+        // we need the non-standard packed mode (no head parts) for the proof
+        return IHonkVerifier(HONK_VERIFIER).verify(abi.encodePacked(command.proofFields), _encodePubSignals(pubSignals))
             && Strings.equal(command.xHandle, _extractXHandle(pubSignals.xHandleCapture1))
             && Strings.equal(_getMaskedCommand(command), NoirUtils.fieldArrayToString(pubSignals.maskedCommand));
     }
@@ -100,7 +101,7 @@ contract LinkXCommandVerifier {
 
     function _buildLinkXCommand(
         bytes32[] calldata encodedPubSignals,
-        bytes memory proof
+        bytes32[] calldata proofFields
     )
         private
         pure
@@ -114,7 +115,7 @@ contract LinkXCommandVerifier {
                     _getTemplate(), NoirUtils.fieldArrayToString(pubSignals.maskedCommand), 1
                 )
             ),
-            proof: proof,
+            proofFields: proofFields,
             pubSignals: pubSignals
         });
     }

@@ -17,7 +17,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
     function test_correctlyEncodesAndDecodesCommand() public view {
         (LinkXCommand memory command, bytes32[] memory expectedPubSignals) = LinkXTestFixture.linkXCommand();
 
-        bytes memory encodedData = _verifier.encode(command.proof, expectedPubSignals);
+        bytes memory encodedData = _verifier.encode(command.proofFields, expectedPubSignals);
         LinkXCommand memory decodedCommand = abi.decode(encodedData, (LinkXCommand));
 
         _assertPubSignalsEq(decodedCommand.pubSignals, command.pubSignals);

@@ -9,10 +9,10 @@ address constant _VM_ADDR = address(uint160(uint256(keccak256("hevm cheat code")
 Vm constant vm = Vm(_VM_ADDR);
 
 library LinkXTestFixture {
-    function linkXCommand() internal view returns (LinkXCommand memory command, bytes32[] memory rawPublicInputs) {
+    function linkXCommand() internal view returns (LinkXCommand memory command, bytes32[] memory publicInputsFields) {
         string memory linkXPath = string.concat(vm.projectRoot(), "/test/fixtures/linkX/");
 
-        rawPublicInputs = _getRawPublicInputs(linkXPath);
+        publicInputsFields = _getPublicInputsFields(linkXPath);
 
         uint256 offset = 3;
 
@@ -20,7 +20,7 @@ library LinkXTestFixture {
         FieldArray memory proverAddress =
             FieldArray({ elements: new Field[](proverAddressLen), length: proverAddressLen });
         for (uint256 i = 0; i < proverAddressLen; i++) {
-            proverAddress.elements[i] = Field.wrap(rawPublicInputs[i + offset]);
+            proverAddress.elements[i] = Field.wrap(publicInputsFields[i + offset]);
         }
         offset += proverAddressLen;
 
@@ -28,14 +28,14 @@ library LinkXTestFixture {
         FieldArray memory maskedCommand =
             FieldArray({ elements: new Field[](maskedCommandLen), length: maskedCommandLen });
         for (uint256 i = 0; i < maskedCommandLen; i++) {
-            maskedCommand.elements[i] = Field.wrap(rawPublicInputs[i + offset]);
+            maskedCommand.elements[i] = Field.wrap(publicInputsFields[i + offset]);
         }
         offset += maskedCommandLen;
 
-        uint256 xHandleCapture1Len = uint256(rawPublicInputs[rawPublicInputs.length - 1]);
+        uint256 xHandleCapture1Len = uint256(publicInputsFields[publicInputsFields.length - 1]);
         Field[] memory xHandleCapture1Elements = new Field[](xHandleCapture1Len);
         for (uint256 i = 0; i < xHandleCapture1Len; i++) {
-            xHandleCapture1Elements[i] = Field.wrap(rawPublicInputs[i + offset]);
+            xHandleCapture1Elements[i] = Field.wrap(publicInputsFields[i + offset]);
         }
         offset += xHandleCapture1Len;
 
@@ -51,22 +51,19 @@ library LinkXTestFixture {
         command = LinkXCommand({
             xHandle: "thezdev1",
             ensName: "zkfriendly.eth",
-            proof: _getRawProof(linkXPath),
+            proofFields: _getProofFields(linkXPath),
             pubSignals: pubSignals
         });
 
-        return (command, rawPublicInputs);
+        return (command, publicInputsFields);
     }
 
-    function _getRawProof(string memory dirPath) private view returns (bytes memory proof) {
+    function _getProofFields(string memory dirPath) private view returns (bytes32[] memory proofFields) {
         bytes memory proofFieldsData = vm.parseJson(vm.readFile(string.concat(dirPath, "proof_fields.json")), ".");
-        // proofFieldsData is in strict encoding mode (has head parts at the beginning)
-        // we need the non-standard packed mode (no head parts) for the proof
-        // thus we decode the data and then encode it again in packed mode
-        return abi.encodePacked(abi.decode(proofFieldsData, (bytes32[])));
+        return abi.decode(proofFieldsData, (bytes32[]));
     }
 
-    function _getRawPublicInputs(string memory dirPath) private view returns (bytes32[] memory publicInputs) {
+    function _getPublicInputsFields(string memory dirPath) private view returns (bytes32[] memory publicInputs) {
         bytes memory publicInputsFieldsData =
             vm.parseJson(vm.readFile(string.concat(dirPath, "public_inputs_fields.json")), ".");
         return abi.decode(publicInputsFieldsData, (bytes32[]));
