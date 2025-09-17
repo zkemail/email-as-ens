@@ -86,6 +86,7 @@ contract LinkXCommandVerifier {
         return IDKIMRegistry(DKIM_REGISTRY).isKeyHashValid(domainHash, dkimKeyHash);
     }
 
+    // TODO: use actual domain name
     function _isValid(LinkXCommand memory command)
         internal
         view
