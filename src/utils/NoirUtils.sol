@@ -74,7 +74,7 @@ library NoirUtils {
 
             // Extract FIELD_BYTES bytes in little-endian order (LSB first)
             for (uint256 j = 0; j < FIELD_BYTES && resultIndex < totalBytes; j++) {
-                result[resultIndex++] = bytes1(uint8(field & 0xFF));
+                result[resultIndex++] = bytes1(uint8(field));
                 field >>= 8;
             }
         }
