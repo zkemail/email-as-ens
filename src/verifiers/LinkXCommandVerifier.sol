@@ -90,11 +90,10 @@ contract LinkXCommandVerifier {
         return IDKIMRegistry(DKIM_REGISTRY).isKeyHashValid(domainHash, dkimKeyHash);
     }
 
-    // TODO: use actual domain name
     function _isValid(LinkXCommand memory command)
         internal
         view
-        onlyValidDkimKeyHash("domainName", command.pubSignals.pubkeyHash)
+        onlyValidDkimKeyHash(command.pubSignals.senderDomainCapture1, command.pubSignals.pubkeyHash)
         returns (bool)
     {
         PubSignals memory pubSignals = command.pubSignals;

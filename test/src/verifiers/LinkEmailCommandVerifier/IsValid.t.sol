@@ -15,8 +15,7 @@ contract IsValidTest is Test {
         _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), address(dkim));
         // configure DKIM mock with valid domain+key
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        bytes32 domainHash = keccak256(bytes(command.proof.fields.domainName));
-        dkim.setValid(domainHash, command.proof.fields.publicKeyHash, true);
+        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
     }
 
     function test_returnsFalseForInvalidProof() public view {
