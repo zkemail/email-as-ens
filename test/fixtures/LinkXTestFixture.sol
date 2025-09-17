@@ -13,24 +13,27 @@ library LinkXTestFixture {
 
         publicInputsFields = _getPublicInputsFields(linkXPath);
 
-        PubSignals memory pubSignals = PubSignals({
-            pubkeyHash: 0x25c40dbd781e1a284366b032fe40ab3026e55269cec1694dfe64239c88fdbb5c,
-            headerHash0: 0x0000000000000000000000000000000085fb869a94511ccbaaf108f91f59b407,
-            headerHash1: 0x00000000000000000000000000000000f36f89025341ed6536cbe2d0d338b7a1,
-            proverAddress: "",
-            command: "Link my x handle to zkfriendly.eth",
-            xHandleCapture1: "thezdev1",
-            senderDomainCapture1: "x.com"
-        });
-
         command = LinkXCommand({
             xHandle: "thezdev1",
             ensName: "zkfriendly.eth",
             proofFields: _getProofFields(linkXPath),
-            pubSignals: pubSignals
+            pubSignals: _getExpectedPubSignals(linkXPath)
         });
 
         return (command, publicInputsFields);
+    }
+
+    function _getExpectedPubSignals(string memory dirPath) private view returns (PubSignals memory pubSignals) {
+        string memory pubSignalsFile = vm.readFile(string.concat(dirPath, "expected_pub_signals.json"));
+        return PubSignals({
+            pubkeyHash: abi.decode(vm.parseJson(pubSignalsFile, ".pubkeyHash"), (bytes32)),
+            headerHash0: abi.decode(vm.parseJson(pubSignalsFile, ".headerHash0"), (bytes32)),
+            headerHash1: abi.decode(vm.parseJson(pubSignalsFile, ".headerHash1"), (bytes32)),
+            proverAddress: abi.decode(vm.parseJson(pubSignalsFile, ".proverAddress"), (string)),
+            command: abi.decode(vm.parseJson(pubSignalsFile, ".command"), (string)),
+            xHandleCapture1: abi.decode(vm.parseJson(pubSignalsFile, ".xHandleCapture1"), (string)),
+            senderDomainCapture1: abi.decode(vm.parseJson(pubSignalsFile, ".senderDomainCapture1"), (string))
+        });
     }
 
     function _getProofFields(string memory dirPath) private view returns (bytes32[] memory proofFields) {

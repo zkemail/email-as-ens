@@ -1,0 +1,9 @@
+{
+  "pubkeyHash": "0x25c40dbd781e1a284366b032fe40ab3026e55269cec1694dfe64239c88fdbb5c",
+  "headerHash0": "0x0000000000000000000000000000000085fb869a94511ccbaaf108f91f59b407",
+  "headerHash1": "0x00000000000000000000000000000000f36f89025341ed6536cbe2d0d338b7a1",
+  "proverAddress": "",
+  "command": "Link my x handle to zkfriendly.eth",
+  "xHandleCapture1": "thezdev1",
+  "senderDomainCapture1": "x.com"
+}
