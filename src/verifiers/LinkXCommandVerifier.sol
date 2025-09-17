@@ -13,8 +13,9 @@ struct PubSignals {
     bytes32 headerHash0;
     bytes32 headerHash1;
     string proverAddress;
-    string maskedCommand;
+    string command;
     string xHandleCapture1;
+    string senderDomainCapture1;
 }
 
 struct LinkXCommand {
@@ -36,14 +37,17 @@ contract LinkXCommandVerifier {
     // #4: prover_address -> 1 field -> idx 3
     uint256 public constant PROVER_ADDRESS_OFFSET = 3;
     uint256 public constant PROVER_ADDRESS_NUM_FIELDS = 1;
-    // #5: masked_command 20 fields -> idx 4-23 (605 bytes)
-    uint256 public constant MASKED_COMMAND_OFFSET = 4;
-    uint256 public constant MASKED_COMMAND_NUM_FIELDS = 20;
+    // #5: command 20 fields -> idx 4-23 (605 bytes)
+    uint256 public constant COMMAND_OFFSET = 4;
+    uint256 public constant COMMAND_NUM_FIELDS = 20;
     // #6: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 24-88
     uint256 public constant X_HANDLE_CAPTURE_1_OFFSET = 24;
     uint256 public constant X_HANDLE_CAPTURE_1_NUM_FIELDS = 65;
+    // #7: sender_domain_capture_1 64 fields + 1 field (length) -> idx 89-153
+    uint256 public constant SENDER_DOMAIN_CAPTURE_1_OFFSET = 89;
+    uint256 public constant SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS = 65;
 
-    uint256 public constant PUBLIC_SIGNALS_LENGTH = 89;
+    uint256 public constant PUBLIC_SIGNALS_LENGTH = 154;
 
     address public immutable HONK_VERIFIER;
     address public immutable DKIM_REGISTRY;
@@ -98,7 +102,7 @@ contract LinkXCommandVerifier {
         // proof needs to be in non-standard packed mode (abi.encodePacked)
         return IHonkVerifier(HONK_VERIFIER).verify(abi.encodePacked(command.proofFields), _packPubSignals(pubSignals))
             && Strings.equal(command.xHandle, pubSignals.xHandleCapture1)
-            && Strings.equal(_getMaskedCommand(command), pubSignals.maskedCommand);
+            && Strings.equal(_getcommand(command), pubSignals.command);
     }
 
     function _packPubSignals(PubSignals memory decodedFields)
@@ -113,12 +117,14 @@ contract LinkXCommandVerifier {
         publicInputsFields.splice(
             PROVER_ADDRESS_OFFSET, NoirUtils.packFieldsArray(decodedFields.proverAddress, PROVER_ADDRESS_NUM_FIELDS)
         );
-        publicInputsFields.splice(
-            MASKED_COMMAND_OFFSET, NoirUtils.packFieldsArray(decodedFields.maskedCommand, MASKED_COMMAND_NUM_FIELDS)
-        );
+        publicInputsFields.splice(COMMAND_OFFSET, NoirUtils.packFieldsArray(decodedFields.command, COMMAND_NUM_FIELDS));
         publicInputsFields.splice(
             X_HANDLE_CAPTURE_1_OFFSET,
             NoirUtils.packBoundedVecU8(decodedFields.xHandleCapture1, X_HANDLE_CAPTURE_1_NUM_FIELDS)
+        );
+        publicInputsFields.splice(
+            SENDER_DOMAIN_CAPTURE_1_OFFSET,
+            NoirUtils.packBoundedVecU8(decodedFields.senderDomainCapture1, SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS)
         );
     }
 
@@ -132,11 +138,14 @@ contract LinkXCommandVerifier {
             proverAddress: NoirUtils.unpackFieldsArray(
                 encoded.slice(PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_OFFSET + PROVER_ADDRESS_NUM_FIELDS)
             ),
-            maskedCommand: NoirUtils.unpackFieldsArray(
-                encoded.slice(MASKED_COMMAND_OFFSET, MASKED_COMMAND_OFFSET + MASKED_COMMAND_NUM_FIELDS)
-            ),
+            command: NoirUtils.unpackFieldsArray(encoded.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS)),
             xHandleCapture1: NoirUtils.unpackBoundedVecU8(
                 encoded.slice(X_HANDLE_CAPTURE_1_OFFSET, X_HANDLE_CAPTURE_1_OFFSET + X_HANDLE_CAPTURE_1_NUM_FIELDS)
+            ),
+            senderDomainCapture1: NoirUtils.unpackBoundedVecU8(
+                encoded.slice(
+                    SENDER_DOMAIN_CAPTURE_1_OFFSET, SENDER_DOMAIN_CAPTURE_1_OFFSET + SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS
+                )
             )
         });
     }
@@ -152,16 +161,15 @@ contract LinkXCommandVerifier {
         PubSignals memory pubSignals = _unpackPubSignals(encodedPubSignals);
         return LinkXCommand({
             xHandle: pubSignals.xHandleCapture1,
-            ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), pubSignals.maskedCommand, 1)),
+            ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), pubSignals.command, 0)),
             proofFields: proofFields,
             pubSignals: pubSignals
         });
     }
 
-    function _getMaskedCommand(LinkXCommand memory command) private pure returns (string memory) {
-        bytes[] memory commandParams = new bytes[](2);
-        commandParams[0] = abi.encode(command.xHandle);
-        commandParams[1] = abi.encode(command.ensName);
+    function _getcommand(LinkXCommand memory command) private pure returns (string memory) {
+        bytes[] memory commandParams = new bytes[](1);
+        commandParams[0] = abi.encode(command.ensName);
 
         return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
@@ -170,7 +178,7 @@ contract LinkXCommandVerifier {
         template = new string[](6);
 
         template[0] = "Link";
-        template[1] = CommandUtils.STRING_MATCHER;
+        template[1] = "my";
         template[2] = "x";
         template[3] = "handle";
         template[4] = "to";

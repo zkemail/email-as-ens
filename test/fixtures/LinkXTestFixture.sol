@@ -18,8 +18,9 @@ library LinkXTestFixture {
             headerHash0: 0x0000000000000000000000000000000085fb869a94511ccbaaf108f91f59b407,
             headerHash1: 0x00000000000000000000000000000000f36f89025341ed6536cbe2d0d338b7a1,
             proverAddress: "",
-            maskedCommand: "Link thezdev1 x handle to zkfriendly.eth",
-            xHandleCapture1: "thezdev1"
+            command: "Link my x handle to zkfriendly.eth",
+            xHandleCapture1: "thezdev1",
+            senderDomainCapture1: "x.com"
         });
 
         command = LinkXCommand({
