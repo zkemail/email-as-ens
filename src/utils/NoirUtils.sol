@@ -9,7 +9,8 @@ library NoirUtils {
     function packBoundedVecU8(string memory input, uint256 numFields) internal pure returns (bytes32[] memory) {
         bytes memory strBytes = bytes(input);
 
-        if (strBytes.length > numFields) revert InvalidLength();
+        // numFields includes the length field, therefore length should be less than numFields
+        if (strBytes.length >= numFields) revert InvalidLength();
 
         bytes32[] memory result = new bytes32[](numFields);
 
