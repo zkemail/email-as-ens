@@ -1,28 +1,33 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { LinkXTestFixture } from "../../../fixtures/LinkXTestFixture.sol";
+import { LinkXHandleTestFixture } from "../../../fixtures/LinkXHandleTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/HonkVerifier.sol";
 import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
-import { LinkXCommand, LinkXCommandVerifier, PubSignals } from "../../../../src/verifiers/LinkXCommandVerifier.sol";
+import {
+    LinkXHandleCommand,
+    LinkXHandleCommandVerifier,
+    PubSignals
+} from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { _EmailAuthVerifierTest } from "../EmailAuthVerifier/_EmailAuthVerifierTest.sol";
 
 contract EncodeTest is _EmailAuthVerifierTest {
-    LinkXCommandVerifier internal _verifier;
+    LinkXHandleCommandVerifier internal _verifier;
 
     function setUp() public {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
-        _verifier = new LinkXCommandVerifier(address(new HonkVerifier()), address(dkim));
+        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
         // configure DKIM mock with valid domain+key
-        (LinkXCommand memory command,) = LinkXTestFixture.linkXCommand();
+        (LinkXHandleCommand memory command,) = LinkXHandleTestFixture.linkXHandleCommand();
         dkim.setValid(keccak256(bytes(command.pubSignals.senderDomainCapture1)), command.pubSignals.pubkeyHash, true);
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
-        (LinkXCommand memory command, bytes32[] memory expectedPubSignals) = LinkXTestFixture.linkXCommand();
+        (LinkXHandleCommand memory command, bytes32[] memory expectedPubSignals) =
+            LinkXHandleTestFixture.linkXHandleCommand();
 
         bytes memory encodedData = _verifier.encode(command.proofFields, expectedPubSignals);
-        LinkXCommand memory decodedCommand = abi.decode(encodedData, (LinkXCommand));
+        LinkXHandleCommand memory decodedCommand = abi.decode(encodedData, (LinkXHandleCommand));
 
         _assertPubSignalsEq(decodedCommand.pubSignals, command.pubSignals);
     }

@@ -18,14 +18,14 @@ struct PubSignals {
     string senderDomainCapture1;
 }
 
-struct LinkXCommand {
+struct LinkXHandleCommand {
     string xHandle;
     string ensName;
     bytes32[] proofFields;
     PubSignals pubSignals;
 }
 
-contract LinkXCommandVerifier {
+contract LinkXHandleCommandVerifier {
     using Bytes32 for bytes32[];
 
     // #1: pubkey_hash -> 1 field -> idx 0
@@ -67,7 +67,7 @@ contract LinkXCommandVerifier {
     }
 
     function verify(bytes memory data) external view returns (bool) {
-        return _isValid(abi.decode(data, (LinkXCommand)));
+        return _isValid(abi.decode(data, (LinkXHandleCommand)));
     }
 
     function dkimRegistryAddress() external view returns (address) {
@@ -82,7 +82,7 @@ contract LinkXCommandVerifier {
         pure
         returns (bytes memory encodedCommand)
     {
-        return abi.encode(_buildLinkXCommand(pubSignals, proofFields));
+        return abi.encode(_buildLinkXHandleCommand(pubSignals, proofFields));
     }
 
     function _isValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) internal view returns (bool) {
@@ -90,7 +90,7 @@ contract LinkXCommandVerifier {
         return IDKIMRegistry(DKIM_REGISTRY).isKeyHashValid(domainHash, dkimKeyHash);
     }
 
-    function _isValid(LinkXCommand memory command)
+    function _isValid(LinkXHandleCommand memory command)
         internal
         view
         onlyValidDkimKeyHash(command.pubSignals.senderDomainCapture1, command.pubSignals.pubkeyHash)
@@ -149,16 +149,16 @@ contract LinkXCommandVerifier {
         });
     }
 
-    function _buildLinkXCommand(
+    function _buildLinkXHandleCommand(
         bytes32[] calldata encodedPubSignals,
         bytes32[] calldata proofFields
     )
         private
         pure
-        returns (LinkXCommand memory command)
+        returns (LinkXHandleCommand memory command)
     {
         PubSignals memory pubSignals = _unpackPubSignals(encodedPubSignals);
-        return LinkXCommand({
+        return LinkXHandleCommand({
             xHandle: pubSignals.xHandleCapture1,
             ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), pubSignals.command, 0)),
             proofFields: proofFields,
@@ -166,7 +166,7 @@ contract LinkXCommandVerifier {
         });
     }
 
-    function _getcommand(LinkXCommand memory command) private pure returns (string memory) {
+    function _getcommand(LinkXHandleCommand memory command) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(command.ensName);
 
