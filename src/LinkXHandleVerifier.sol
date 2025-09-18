@@ -1,30 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { LinkEmailCommand } from "./verifiers/LinkEmailCommandVerifier.sol";
+import { LinkXHandleCommand } from "./verifiers/LinkXHandleCommandVerifier.sol";
 import { IVerifier } from "./interfaces/IVerifier.sol";
 import { EnsUtils } from "./utils/EnsUtils.sol";
 import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
 import { ITextRecordVerifier } from "./interfaces/ITextRecordVerifier.sol";
 
 /**
- * @title LinkEmailVerifier
- * @notice Verifies a LinkEmailCommand and set the mapping of namehash(ensName) to email address.
+ * @title LinkXHandleVerifier
+ * @notice Verifies a LinkXHandleCommand and set the mapping of namehash(ensName) to x handle.
  * @dev The verifier can be updated via the entrypoint function.
  */
-contract LinkEmailVerifier is IEntryPoint, ITextRecordVerifier {
+contract LinkXHandleVerifier is IEntryPoint, ITextRecordVerifier {
     using EnsUtils for bytes;
 
-    bytes32 private immutable _EMAIL_KEY = keccak256(bytes("email"));
+    bytes32 private immutable _X_HANDLE_KEY = keccak256(bytes("com.twitter"));
 
-    // link email command verifier
+    // link x handle command verifier
     address public immutable VERIFIER;
 
     // can only be updated via the entrypoint function with a valid command
-    mapping(bytes32 node => string emailAddress) public emailAddress;
+    mapping(bytes32 node => string xHandle) public xHandle;
     mapping(bytes32 nullifier => bool used) internal _isUsed;
 
-    event EmailAddressSet(bytes32 indexed node, string emailAddress);
+    event XHandleSet(bytes32 indexed node, string xHandle);
 
     error InvalidCommand();
     error NullifierUsed();
@@ -35,16 +35,16 @@ contract LinkEmailVerifier is IEntryPoint, ITextRecordVerifier {
 
     /**
      * @inheritdoc IEntryPoint
-     * @dev Specifically decodes data as LinkEmailCommand, validates proof and nullifier,
-     *      then maps the ENS name hash to the email address
+     * @dev Specifically decodes data as LinkXHandleCommand, validates proof and nullifier,
+     *      then maps the ENS name hash to the x handle
      */
     function entrypoint(bytes memory data) external {
-        LinkEmailCommand memory command = abi.decode(data, (LinkEmailCommand));
+        LinkXHandleCommand memory command = abi.decode(data, (LinkXHandleCommand));
         _validate(command);
 
         bytes32 node = bytes(command.ensName).namehash();
-        emailAddress[node] = command.email;
-        emit EmailAddressSet(node, command.email);
+        xHandle[node] = command.xHandle;
+        emit XHandleSet(node, command.xHandle);
     }
 
     /**
@@ -67,20 +67,20 @@ contract LinkEmailVerifier is IEntryPoint, ITextRecordVerifier {
      * @inheritdoc ITextRecordVerifier
      */
     function verifyTextRecord(bytes32 node, string memory key, string memory value) external view returns (bool) {
-        // this verifier only supports email text record
-        if (keccak256(bytes(key)) != _EMAIL_KEY) {
+        // this verifier only supports x handle text record
+        if (keccak256(bytes(key)) != _X_HANDLE_KEY) {
             revert UnsupportedKey();
         }
-        string memory storedEmail = emailAddress[node];
-        return keccak256(bytes(storedEmail)) == keccak256(bytes(value));
+        string memory storedXHandle = xHandle[node];
+        return keccak256(bytes(storedXHandle)) == keccak256(bytes(value));
     }
 
-    function _validate(LinkEmailCommand memory command) internal {
-        bytes32 emailNullifier = command.proof.fields.emailNullifier;
-        if (_isUsed[emailNullifier]) {
-            revert NullifierUsed();
-        }
-        _isUsed[emailNullifier] = true;
+    function _validate(LinkXHandleCommand memory command) internal view {
+        // bytes32 emailNullifier = command.proof.fields.emailNullifier;
+        // if (_isUsed[emailNullifier]) {
+        //     revert NullifierUsed();
+        // }
+        // _isUsed[emailNullifier] = true;
 
         if (!IVerifier(VERIFIER).verify(abi.encode(command))) {
             revert InvalidCommand();
