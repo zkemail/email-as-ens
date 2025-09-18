@@ -2,29 +2,27 @@
 pragma solidity ^0.8.30;
 
 import { Vm } from "forge-std/Vm.sol";
-import { LinkXHandleCommand, PubSignals } from "../../src/verifiers/LinkXHandleCommandVerifier.sol";
+import { LinkXHandleCommand, PubSignals } from "../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 
 address constant _VM_ADDR = address(uint160(uint256(keccak256("hevm cheat code"))));
 Vm constant vm = Vm(_VM_ADDR);
 
-library LinkXHandleTestFixture {
-    function linkXHandleCommand()
+library LinkXHandleCommandTestFixture {
+    function getFixture()
         internal
         view
         returns (LinkXHandleCommand memory command, bytes32[] memory publicInputsFields)
     {
-        string memory linkXPath = string.concat(vm.projectRoot(), "/test/fixtures/linkXHandle/");
-
-        publicInputsFields = _getPublicInputsFields(linkXPath);
+        string memory path = string.concat(vm.projectRoot(), "/test/fixtures/linkXHandleCommand/files/");
 
         command = LinkXHandleCommand({
             xHandle: "thezdev1",
             ensName: "zkfriendly.eth",
-            proofFields: _getProofFields(linkXPath),
-            pubSignals: _getExpectedPubSignals(linkXPath)
+            proofFields: _getProofFields(path),
+            pubSignals: _getExpectedPubSignals(path)
         });
 
-        return (command, publicInputsFields);
+        return (command, _getPublicInputsFields(path));
     }
 
     function _getExpectedPubSignals(string memory dirPath) private view returns (PubSignals memory pubSignals) {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { LinkXHandleTestFixture } from "../../../fixtures/LinkXHandleTestFixture.sol";
+import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
 import { LinkXHandleCommand } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { LinkXHandleCommandVerifierHelper } from "./_LinkXHandleCommandVerifierHelper.sol";
 
@@ -15,7 +15,7 @@ contract BuildPubSignalsTest is Test {
 
     function test_correctlyBuildsSignalsForLinkXHandleCommand() public view {
         (LinkXHandleCommand memory command, bytes32[] memory expectedPubSignals) =
-            LinkXHandleTestFixture.linkXHandleCommand();
+            LinkXHandleCommandTestFixture.getFixture();
         bytes32[] memory pubSignals = _verifier.packPubSignals(command.pubSignals);
         _assertPubSignals(pubSignals, expectedPubSignals);
     }

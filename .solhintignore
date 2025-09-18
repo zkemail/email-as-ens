@@ -1,4 +1,4 @@
 # dirs
 node_modules/
 Groth16Verifier.sol
-HonkVerifier.sol
+*HonkVerifier.sol

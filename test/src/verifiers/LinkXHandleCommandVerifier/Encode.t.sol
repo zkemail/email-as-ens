@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { LinkXHandleTestFixture } from "../../../fixtures/LinkXHandleTestFixture.sol";
-import { HonkVerifier } from "../../../fixtures/HonkVerifier.sol";
+import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
+import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandHonkVerifier.sol";
 import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import {
     LinkXHandleCommand,
@@ -18,13 +18,13 @@ contract EncodeTest is _EmailAuthVerifierTest {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
         _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
         // configure DKIM mock with valid domain+key
-        (LinkXHandleCommand memory command,) = LinkXHandleTestFixture.linkXHandleCommand();
+        (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
         dkim.setValid(keccak256(bytes(command.pubSignals.senderDomainCapture1)), command.pubSignals.pubkeyHash, true);
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
         (LinkXHandleCommand memory command, bytes32[] memory expectedPubSignals) =
-            LinkXHandleTestFixture.linkXHandleCommand();
+            LinkXHandleCommandTestFixture.getFixture();
 
         bytes memory encodedData = _verifier.encode(command.proofFields, expectedPubSignals);
         LinkXHandleCommand memory decodedCommand = abi.decode(encodedData, (LinkXHandleCommand));
