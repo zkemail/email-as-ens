@@ -10,8 +10,7 @@ import { Bytes32 } from "../utils/Bytes32.sol";
 
 struct PubSignals {
     bytes32 pubkeyHash;
-    bytes32 headerHash0;
-    bytes32 headerHash1;
+    bytes32 headerHash;
     string proverAddress;
     string command;
     string xHandleCapture1;
@@ -30,20 +29,19 @@ contract LinkXHandleCommandVerifier {
 
     // #1: pubkey_hash -> 1 field -> idx 0
     uint256 public constant PUBKEY_HASH_OFFSET = 0;
-    // #2: header_hash_0 -> 1 field -> idx 1
-    uint256 public constant HEADER_HASH_0_OFFSET = 1;
-    // #3: header_hash_1 -> 1 field -> idx 2
-    uint256 public constant HEADER_HASH_1_OFFSET = 2;
-    // #4: prover_address -> 1 field -> idx 3
+    // #2: header_hash -> 2 fields -> idx 1-2
+    uint256 public constant HEADER_HASH_OFFSET = 1;
+    uint256 public constant HEADER_HASH_NUM_FIELDS = 2;
+    // #3: prover_address -> 1 field -> idx 3
     uint256 public constant PROVER_ADDRESS_OFFSET = 3;
     uint256 public constant PROVER_ADDRESS_NUM_FIELDS = 1;
-    // #5: command 20 fields -> idx 4-23 (605 bytes)
+    // #4: command 20 fields -> idx 4-23 (605 bytes)
     uint256 public constant COMMAND_OFFSET = 4;
     uint256 public constant COMMAND_NUM_FIELDS = 20;
-    // #6: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 24-88
+    // #5: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 24-88
     uint256 public constant X_HANDLE_CAPTURE_1_OFFSET = 24;
     uint256 public constant X_HANDLE_CAPTURE_1_NUM_FIELDS = 65;
-    // #7: sender_domain_capture_1 64 fields + 1 field (length) -> idx 89-153
+    // #6: sender_domain_capture_1 64 fields + 1 field (length) -> idx 89-153
     uint256 public constant SENDER_DOMAIN_CAPTURE_1_OFFSET = 89;
     uint256 public constant SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS = 65;
 
@@ -111,8 +109,7 @@ contract LinkXHandleCommandVerifier {
     {
         publicInputsFields = new bytes32[](PUBLIC_SIGNALS_LENGTH);
         publicInputsFields[PUBKEY_HASH_OFFSET] = decodedFields.pubkeyHash;
-        publicInputsFields[HEADER_HASH_0_OFFSET] = decodedFields.headerHash0;
-        publicInputsFields[HEADER_HASH_1_OFFSET] = decodedFields.headerHash1;
+        publicInputsFields.splice(HEADER_HASH_OFFSET, NoirUtils.packHeaderHash(decodedFields.headerHash));
         publicInputsFields.splice(
             PROVER_ADDRESS_OFFSET, NoirUtils.packFieldsArray(decodedFields.proverAddress, PROVER_ADDRESS_NUM_FIELDS)
         );
@@ -132,8 +129,9 @@ contract LinkXHandleCommandVerifier {
 
         return PubSignals({
             pubkeyHash: encoded[PUBKEY_HASH_OFFSET],
-            headerHash0: encoded[HEADER_HASH_0_OFFSET],
-            headerHash1: encoded[HEADER_HASH_1_OFFSET],
+            headerHash: NoirUtils.unpackHeaderHash(
+                encoded.slice(HEADER_HASH_OFFSET, HEADER_HASH_OFFSET + HEADER_HASH_NUM_FIELDS)
+            ),
             proverAddress: NoirUtils.unpackFieldsArray(
                 encoded.slice(PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_OFFSET + PROVER_ADDRESS_NUM_FIELDS)
             ),

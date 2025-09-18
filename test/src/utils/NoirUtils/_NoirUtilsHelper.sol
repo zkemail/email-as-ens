@@ -8,7 +8,15 @@ contract NoirUtilsHelper {
         return NoirUtils.packBoundedVecU8(input, numFields);
     }
 
+    function callPackHeaderHash(bytes32 headerHash) external pure returns (bytes32[] memory) {
+        return NoirUtils.packHeaderHash(headerHash);
+    }
+
     function callUnpackBoundedVecU8(bytes32[] memory fields) external pure returns (string memory) {
         return NoirUtils.unpackBoundedVecU8(fields);
+    }
+
+    function callUnpackHeaderHash(bytes32[] memory fields) external pure returns (bytes32) {
+        return NoirUtils.unpackHeaderHash(fields);
     }
 }

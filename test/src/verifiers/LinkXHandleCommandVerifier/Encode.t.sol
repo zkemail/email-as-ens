@@ -40,8 +40,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
         pure
     {
         assertEq(decodedPubSignals.pubkeyHash, expectedPubSignals.pubkeyHash, "Pubkey hash mismatch");
-        assertEq(decodedPubSignals.headerHash0, expectedPubSignals.headerHash0, "Header hash 0 mismatch");
-        assertEq(decodedPubSignals.headerHash1, expectedPubSignals.headerHash1, "Header hash 1 mismatch");
+        assertEq(decodedPubSignals.headerHash, expectedPubSignals.headerHash, "Header hash mismatch");
         assertEq(decodedPubSignals.proverAddress, expectedPubSignals.proverAddress, "Prover address mismatch");
         assertEq(decodedPubSignals.command, expectedPubSignals.command, "Command mismatch");
         assertEq(decodedPubSignals.xHandleCapture1, expectedPubSignals.xHandleCapture1, "X handle capture 1 mismatch");

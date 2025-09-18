@@ -29,8 +29,7 @@ library LinkXHandleCommandTestFixture {
         string memory pubSignalsFile = vm.readFile(string.concat(dirPath, "expected_pub_signals.json"));
         return PubSignals({
             pubkeyHash: abi.decode(vm.parseJson(pubSignalsFile, ".pubkeyHash"), (bytes32)),
-            headerHash0: abi.decode(vm.parseJson(pubSignalsFile, ".headerHash0"), (bytes32)),
-            headerHash1: abi.decode(vm.parseJson(pubSignalsFile, ".headerHash1"), (bytes32)),
+            headerHash: abi.decode(vm.parseJson(pubSignalsFile, ".headerHash"), (bytes32)),
             proverAddress: abi.decode(vm.parseJson(pubSignalsFile, ".proverAddress"), (string)),
             command: abi.decode(vm.parseJson(pubSignalsFile, ".command"), (string)),
             xHandleCapture1: abi.decode(vm.parseJson(pubSignalsFile, ".xHandleCapture1"), (string)),
