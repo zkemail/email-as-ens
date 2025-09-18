@@ -18,6 +18,7 @@ library LinkXHandleCommandTestFixture {
         command = LinkXHandleCommand({
             xHandle: "thezdev1",
             ensName: "zkfriendly.eth",
+            nullifier: 0x85fb869a94511ccbaaf108f91f59b407f36f89025341ed6536cbe2d0d338b7a1,
             proofFields: _getProofFields(path),
             pubSignals: _getExpectedPubSignals(path)
         });

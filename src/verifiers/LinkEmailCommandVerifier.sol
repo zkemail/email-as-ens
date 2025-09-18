@@ -10,6 +10,7 @@ import { EmailAuthVerifier, DecodedFields, EmailAuthProof } from "./EmailAuthVer
 struct LinkEmailCommand {
     string email;
     string ensName;
+    bytes32 nullifier;
     EmailAuthProof proof;
 }
 
@@ -70,6 +71,7 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
         return LinkEmailCommand({
             email: decodedFields.emailAddress,
             ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), decodedFields.maskedCommand, 0)),
+            nullifier: decodedFields.emailNullifier,
             proof: EmailAuthProof({ fields: decodedFields, proof: proof })
         });
     }

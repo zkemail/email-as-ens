@@ -20,6 +20,7 @@ struct PubSignals {
 struct LinkXHandleCommand {
     string xHandle;
     string ensName;
+    bytes32 nullifier;
     bytes32[] proofFields;
     PubSignals pubSignals;
 }
@@ -159,6 +160,8 @@ contract LinkXHandleCommandVerifier {
         return LinkXHandleCommand({
             xHandle: pubSignals.xHandleCapture1,
             ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), pubSignals.command, 0)),
+            // header hash is used as nullifier
+            nullifier: pubSignals.headerHash,
             proofFields: proofFields,
             pubSignals: pubSignals
         });

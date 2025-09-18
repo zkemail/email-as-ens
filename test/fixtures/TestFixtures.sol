@@ -271,7 +271,12 @@ library TestFixtures {
 
         EmailAuthProof memory proof = EmailAuthProof({ fields: fields, proof: abi.encode(pA, pB, pC) });
 
-        command = LinkEmailCommand({ email: "thezdev1@gmail.com", ensName: "zkfriendly.eth", proof: proof });
+        command = LinkEmailCommand({
+            email: "thezdev1@gmail.com",
+            ensName: "zkfriendly.eth",
+            nullifier: hex"0CEF36D2E53A61D038B0F46466F7C1E4E5D62636FC3ACAB471C8AC6A0558F705",
+            proof: proof
+        });
 
         expectedPubSignals = [
             2_018_721_414_038_404_820_327,

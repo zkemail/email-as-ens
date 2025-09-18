@@ -19,6 +19,6 @@ contract LinkXHandleVerifier is LinkTextRecordVerifier {
     function _extractTextRecord(bytes memory data) internal pure override returns (TextRecord memory) {
         LinkXHandleCommand memory command = abi.decode(data, (LinkXHandleCommand));
 
-        return TextRecord({ ensName: command.ensName, value: command.xHandle, nullifier: bytes32(0) });
+        return TextRecord({ ensName: command.ensName, value: command.xHandle, nullifier: command.nullifier });
     }
 }

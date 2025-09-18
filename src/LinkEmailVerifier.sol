@@ -19,10 +19,6 @@ contract LinkEmailVerifier is LinkTextRecordVerifier {
     function _extractTextRecord(bytes memory data) internal pure override returns (TextRecord memory) {
         LinkEmailCommand memory command = abi.decode(data, (LinkEmailCommand));
 
-        return TextRecord({
-            ensName: command.ensName,
-            value: command.email,
-            nullifier: command.proof.fields.emailNullifier
-        });
+        return TextRecord({ ensName: command.ensName, value: command.email, nullifier: command.nullifier });
     }
 }
