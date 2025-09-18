@@ -8,7 +8,7 @@ import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";
 import { DKIMRegistryMock } from "../../fixtures/DKIMRegistryMock.sol";
 import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
 import { LinkEmailVerifierHelper } from "./_LinkEmailVerifierHelper.sol";
-import { LinkEmailVerifier } from "../../../src/LinkEmailVerifier.sol";
+import { LinkTextRecordVerifier } from "../../../src/LinkTextRecordVerifier.sol";
 
 contract LinkEmailVerifierTest is Test {
     using EnsUtils for bytes;
@@ -28,17 +28,17 @@ contract LinkEmailVerifierTest is Test {
         (LinkEmailCommand memory command, uint256[60] memory pubSignals) = TestFixtures.linkEmailCommand();
 
         bytes memory encodedCommand = linkEmail.encode(_toDynamicArray(pubSignals), command.proof.proof);
-        assertEq(linkEmail.emailAddress(bytes(command.ensName).namehash()), "");
+        assertEq(linkEmail.textRecord(bytes(command.ensName).namehash()), "");
         linkEmail.entrypoint(encodedCommand);
         assertEq(linkEmail.isUsed(command.proof.fields.emailNullifier), true);
-        assertEq(linkEmail.emailAddress(bytes(command.ensName).namehash()), command.email);
+        assertEq(linkEmail.textRecord(bytes(command.ensName).namehash()), command.email);
     }
 
     function test_entrypoint_revertsWhenNullifierIsUsed() public {
         (LinkEmailCommand memory command, uint256[60] memory pubSignals) = TestFixtures.linkEmailCommand();
         bytes memory encodedCommand = linkEmail.encode(_toDynamicArray(pubSignals), command.proof.proof);
         linkEmail.entrypoint(encodedCommand);
-        vm.expectRevert(abi.encodeWithSelector(LinkEmailVerifier.NullifierUsed.selector));
+        vm.expectRevert(abi.encodeWithSelector(LinkTextRecordVerifier.NullifierUsed.selector));
         linkEmail.entrypoint(encodedCommand);
     }
 
