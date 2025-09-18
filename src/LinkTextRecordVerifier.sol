@@ -6,6 +6,12 @@ import { ITextRecordVerifier } from "./interfaces/ITextRecordVerifier.sol";
 import { IVerifier } from "./interfaces/IVerifier.sol";
 import { EnsUtils } from "./utils/EnsUtils.sol";
 
+struct TextRecord {
+    string ensName;
+    string value;
+    bytes32 nullifier;
+}
+
 /**
  * @title LinkTextRecordVerifier
  * @notice Verifies a LinkTextRecordCommand and set the mapping of namehash(ensName) to text record.
@@ -13,12 +19,6 @@ import { EnsUtils } from "./utils/EnsUtils.sol";
  */
 abstract contract LinkTextRecordVerifier is IEntryPoint, ITextRecordVerifier {
     using EnsUtils for bytes;
-
-    struct TextRecord {
-        string ensName;
-        string value;
-        bytes32 nullifier;
-    }
 
     bytes32 private immutable _KEY;
 

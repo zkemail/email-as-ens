@@ -6,11 +6,19 @@ import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
 import { EmailAuthVerifier, DecodedFields, EmailAuthProof } from "./EmailAuthVerifier.sol";
+import { TextRecord } from "../LinkTextRecordVerifier.sol";
+
+/**
+ * @notice Enum representing the indices of command parameters in the command template
+ * @dev Used to specify which parameter to extract from the command string
+ * @param ENS_NAME = 0
+ */
+enum CommandParamIndex {
+    ENS_NAME
+}
 
 struct LinkEmailCommand {
-    string email;
-    string ensName;
-    bytes32 nullifier;
+    TextRecord textRecord;
     EmailAuthProof proof;
 }
 
@@ -51,7 +59,7 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
     {
         DecodedFields memory fields = command.proof.fields;
         return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
-            && Strings.equal(command.email, command.proof.fields.emailAddress)
+            && Strings.equal(command.textRecord.value, command.proof.fields.emailAddress)
             && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
     }
 
@@ -69,16 +77,25 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
         DecodedFields memory decodedFields = _unpackPubSignals(pubSignals);
 
         return LinkEmailCommand({
-            email: decodedFields.emailAddress,
-            ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), decodedFields.maskedCommand, 0)),
-            nullifier: decodedFields.emailNullifier,
+            textRecord: TextRecord({
+                // ensName is extracted from the command
+                ensName: string(
+                    CommandUtils.extractCommandParamByIndex(
+                        _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.ENS_NAME)
+                    )
+                ),
+                // emailAddress is the value
+                value: decodedFields.emailAddress,
+                // emailNullifier is the nullifier
+                nullifier: decodedFields.emailNullifier
+            }),
             proof: EmailAuthProof({ fields: decodedFields, proof: proof })
         });
     }
 
     function _getMaskedCommand(LinkEmailCommand memory command) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](1);
-        commandParams[0] = abi.encode(command.ensName);
+        commandParams[0] = abi.encode(command.textRecord.ensName);
         return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
 

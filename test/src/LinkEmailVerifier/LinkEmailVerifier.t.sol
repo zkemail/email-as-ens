@@ -28,10 +28,10 @@ contract LinkEmailVerifierTest is Test {
         (LinkEmailCommand memory command, uint256[60] memory pubSignals) = TestFixtures.linkEmailCommand();
 
         bytes memory encodedCommand = linkEmail.encode(_toDynamicArray(pubSignals), command.proof.proof);
-        assertEq(linkEmail.textRecord(bytes(command.ensName).namehash()), "");
+        assertEq(linkEmail.textRecord(bytes(command.textRecord.ensName).namehash()), "");
         linkEmail.entrypoint(encodedCommand);
         assertEq(linkEmail.isUsed(command.proof.fields.emailNullifier), true);
-        assertEq(linkEmail.textRecord(bytes(command.ensName).namehash()), command.email);
+        assertEq(linkEmail.textRecord(bytes(command.textRecord.ensName).namehash()), command.textRecord.value);
     }
 
     function test_entrypoint_revertsWhenNullifierIsUsed() public {
@@ -46,14 +46,19 @@ contract LinkEmailVerifierTest is Test {
         (LinkEmailCommand memory command, uint256[60] memory pubSignals) = TestFixtures.linkEmailCommand();
         bytes memory encodedCommand = linkEmail.encode(_toDynamicArray(pubSignals), command.proof.proof);
         linkEmail.entrypoint(encodedCommand);
-        assertEq(linkEmail.verifyTextRecord(bytes(command.ensName).namehash(), "email", command.email), true);
+        assertEq(
+            linkEmail.verifyTextRecord(bytes(command.textRecord.ensName).namehash(), "email", command.textRecord.value),
+            true
+        );
     }
 
     function test_verifyTextRecord_returnsFalseWhenTextRecordIsIncorrect() public {
         (LinkEmailCommand memory command, uint256[60] memory pubSignals) = TestFixtures.linkEmailCommand();
         bytes memory encodedCommand = linkEmail.encode(_toDynamicArray(pubSignals), command.proof.proof);
         linkEmail.entrypoint(encodedCommand);
-        assertEq(linkEmail.verifyTextRecord(bytes(command.ensName).namehash(), "email", "incorrect@e.com"), false);
+        assertEq(
+            linkEmail.verifyTextRecord(bytes(command.textRecord.ensName).namehash(), "email", "incorrect@e.com"), false
+        );
     }
 
     function _toDynamicArray(uint256[60] memory pubSignals) internal pure returns (uint256[] memory) {

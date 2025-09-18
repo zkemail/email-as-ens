@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import { ProveAndClaimCommand } from "../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 import { LinkEmailCommand } from "../../src/verifiers/LinkEmailCommandVerifier.sol";
 import { DecodedFields, EmailAuthProof } from "../../src/verifiers/EmailAuthVerifier.sol";
+import { TextRecord } from "../../src/LinkTextRecordVerifier.sol";
 
 /**
  * @title TestFixtures
@@ -272,9 +273,11 @@ library TestFixtures {
         EmailAuthProof memory proof = EmailAuthProof({ fields: fields, proof: abi.encode(pA, pB, pC) });
 
         command = LinkEmailCommand({
-            email: "thezdev1@gmail.com",
-            ensName: "zkfriendly.eth",
-            nullifier: hex"0CEF36D2E53A61D038B0F46466F7C1E4E5D62636FC3ACAB471C8AC6A0558F705",
+            textRecord: TextRecord({
+                ensName: "zkfriendly.eth",
+                value: "thezdev1@gmail.com",
+                nullifier: hex"0CEF36D2E53A61D038B0F46466F7C1E4E5D62636FC3ACAB471C8AC6A0558F705"
+            }),
             proof: proof
         });
 

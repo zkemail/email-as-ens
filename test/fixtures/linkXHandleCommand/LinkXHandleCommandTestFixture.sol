@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Vm } from "forge-std/Vm.sol";
 import { LinkXHandleCommand, PubSignals } from "../../../src/verifiers/LinkXHandleCommandVerifier.sol";
+import { TextRecord } from "../../../src/LinkTextRecordVerifier.sol";
 
 address constant _VM_ADDR = address(uint160(uint256(keccak256("hevm cheat code"))));
 Vm constant vm = Vm(_VM_ADDR);
@@ -16,9 +17,11 @@ library LinkXHandleCommandTestFixture {
         string memory path = string.concat(vm.projectRoot(), "/test/fixtures/linkXHandleCommand/files/");
 
         command = LinkXHandleCommand({
-            xHandle: "thezdev1",
-            ensName: "zkfriendly.eth",
-            nullifier: 0x85fb869a94511ccbaaf108f91f59b407f36f89025341ed6536cbe2d0d338b7a1,
+            textRecord: TextRecord({
+                ensName: "zkfriendly.eth",
+                value: "thezdev1",
+                nullifier: 0x85fb869a94511ccbaaf108f91f59b407f36f89025341ed6536cbe2d0d338b7a1
+            }),
             proofFields: _getProofFields(path),
             pubSignals: _getExpectedPubSignals(path)
         });

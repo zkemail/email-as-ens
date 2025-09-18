@@ -39,14 +39,14 @@ contract IsValidTest is Test {
 
     function test_returnsFalseForWrongENSName() public view {
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        command.ensName = "wrong.eth";
+        command.textRecord.ensName = "wrong.eth";
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }
 
     function test_returnsFalseForWrongXHandle() public view {
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        command.xHandle = "wrong";
+        command.textRecord.value = "wrong";
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }

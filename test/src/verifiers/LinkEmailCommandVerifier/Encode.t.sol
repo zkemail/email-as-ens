@@ -29,8 +29,8 @@ contract EncodeTest is _EmailAuthVerifierTest {
         bytes memory encodedData = _verifier.encode(publicSignals, command.proof.proof);
         LinkEmailCommand memory decodedCommand = abi.decode(encodedData, (LinkEmailCommand));
 
-        assertEq(decodedCommand.ensName, command.ensName);
-        assertEq(decodedCommand.email, command.email);
+        assertEq(decodedCommand.textRecord.ensName, command.textRecord.ensName);
+        assertEq(decodedCommand.textRecord.value, command.textRecord.value);
         _assertDecodedFieldsEq(decodedCommand.proof.fields, command.proof.fields);
     }
 }

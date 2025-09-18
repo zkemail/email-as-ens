@@ -36,7 +36,7 @@ contract IsValidTest is Test {
 
     function test_returnsFalseForInvalidCommand() public view {
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        command.ensName = "wrong.eth";
+        command.textRecord.ensName = "wrong.eth";
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }

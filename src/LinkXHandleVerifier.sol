@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { LinkTextRecordVerifier } from "./LinkTextRecordVerifier.sol";
+import { LinkTextRecordVerifier, TextRecord } from "./LinkTextRecordVerifier.sol";
 import { LinkXHandleCommand } from "./verifiers/LinkXHandleCommandVerifier.sol";
 
 /**
@@ -19,6 +19,6 @@ contract LinkXHandleVerifier is LinkTextRecordVerifier {
     function _extractTextRecord(bytes memory data) internal pure override returns (TextRecord memory) {
         LinkXHandleCommand memory command = abi.decode(data, (LinkXHandleCommand));
 
-        return TextRecord({ ensName: command.ensName, value: command.xHandle, nullifier: command.nullifier });
+        return command.textRecord;
     }
 }

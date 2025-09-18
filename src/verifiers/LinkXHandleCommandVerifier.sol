@@ -7,6 +7,16 @@ import { NoirUtils } from "../utils/NoirUtils.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes32 } from "../utils/Bytes32.sol";
+import { TextRecord } from "../LinkTextRecordVerifier.sol";
+
+/**
+ * @notice Enum representing the indices of command parameters in the command template
+ * @dev Used to specify which parameter to extract from the command string
+ * @param ENS_NAME = 0
+ */
+enum CommandParamIndex {
+    ENS_NAME
+}
 
 struct PubSignals {
     bytes32 pubkeyHash;
@@ -18,9 +28,7 @@ struct PubSignals {
 }
 
 struct LinkXHandleCommand {
-    string xHandle;
-    string ensName;
-    bytes32 nullifier;
+    TextRecord textRecord;
     bytes32[] proofFields;
     PubSignals pubSignals;
 }
@@ -99,7 +107,7 @@ contract LinkXHandleCommandVerifier {
 
         // proof needs to be in non-standard packed mode (abi.encodePacked)
         return IHonkVerifier(HONK_VERIFIER).verify(abi.encodePacked(command.proofFields), _packPubSignals(pubSignals))
-            && Strings.equal(command.xHandle, pubSignals.xHandleCapture1)
+            && Strings.equal(command.textRecord.value, pubSignals.xHandleCapture1)
             && Strings.equal(_getcommand(command), pubSignals.command);
     }
 
@@ -158,10 +166,18 @@ contract LinkXHandleCommandVerifier {
     {
         PubSignals memory pubSignals = _unpackPubSignals(encodedPubSignals);
         return LinkXHandleCommand({
-            xHandle: pubSignals.xHandleCapture1,
-            ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), pubSignals.command, 0)),
-            // header hash is used as nullifier
-            nullifier: pubSignals.headerHash,
+            textRecord: TextRecord({
+                // ensName is extracted from the command
+                ensName: string(
+                    CommandUtils.extractCommandParamByIndex(
+                        _getTemplate(), pubSignals.command, uint256(CommandParamIndex.ENS_NAME)
+                    )
+                ),
+                // x handle is the value
+                value: pubSignals.xHandleCapture1,
+                // header hash is used as nullifier
+                nullifier: pubSignals.headerHash
+            }),
             proofFields: proofFields,
             pubSignals: pubSignals
         });
@@ -169,7 +185,7 @@ contract LinkXHandleCommandVerifier {
 
     function _getcommand(LinkXHandleCommand memory command) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](1);
-        commandParams[0] = abi.encode(command.ensName);
+        commandParams[0] = abi.encode(command.textRecord.ensName);
 
         return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
