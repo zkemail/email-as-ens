@@ -73,8 +73,6 @@ library LinkXHandleCommandTestFixture {
         for (uint256 i = 0; i < 440; i++) {
             proofFields[i] = proofFixed[i];
         }
-
-        // 4) Return the proof
         return proofFields;
     }
 
@@ -87,5 +85,29 @@ library LinkXHandleCommandTestFixture {
         bytes memory publicInputsFieldsData =
             vm.parseJson(vm.readFile(string.concat(dirPath, "public_inputs_fields.json")), ".");
         return abi.decode(publicInputsFieldsData, (bytes32[]));
+    }
+
+    /**
+     * @notice Reads the public inputs from a `public_inputs_fields.json` file (array of field / bytes32 values)
+     * @param dirPath Path to the directory containing the `public_inputs_fields.json` file
+     * @return publicInputs The public inputs fields
+     */
+    function _getPublicInputsFieldsFromBinary(string memory dirPath)
+        private
+        view
+        returns (bytes32[] memory publicInputs)
+    {
+        // 1) Read the raw bytes
+        bytes memory publicInputsFieldsData = vm.readFileBinary(string.concat(dirPath, "public_inputs"));
+
+        // 2) Decode the blob into fixed bytes32[154]
+        (bytes32[154] memory publicInputsFixed) = abi.decode(publicInputsFieldsData, (bytes32[154]));
+
+        // 3) Convert to dynamic bytes32[]
+        publicInputs = new bytes32[](154);
+        for (uint256 i = 0; i < 154; i++) {
+            publicInputs[i] = publicInputsFixed[i];
+        }
+        return publicInputs;
     }
 }
