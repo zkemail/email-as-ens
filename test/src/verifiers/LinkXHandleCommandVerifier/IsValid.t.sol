@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
-import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandHonkVerifier.sol";
+import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/files/HonkVerifier.sol";
 import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import {
     LinkXHandleCommand, LinkXHandleCommandVerifier
