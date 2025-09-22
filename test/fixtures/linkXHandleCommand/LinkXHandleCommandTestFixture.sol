@@ -61,7 +61,7 @@ library LinkXHandleCommandTestFixture {
      * @param dirPath Path to the directory containing the `proof` file
      * @return proofFields The proof fields
      */
-    function _getProof(string memory dirPath) private view returns (bytes32[] memory proofFields) {
+    function _getProofFieldsFromBinary(string memory dirPath) private view returns (bytes32[] memory proofFields) {
         // 1) Read the raw bytes
         bytes memory packed = vm.readFileBinary(string.concat(dirPath, "proof"));
 
