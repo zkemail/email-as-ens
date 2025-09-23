@@ -18,4 +18,20 @@ contract PackHeaderHashTest is Test {
         assertEq(result[0], 0x00000000000000000000000000000000DEADBEEFDEADBEEFDEADBEEFDEADBEEF);
         assertEq(result[1], 0x00000000000000000000000000000000000102030405060708090A0B0C0D0E0F);
     }
+
+    function test_correctlyPacks_zero() public view {
+        bytes32 headerHash = 0x0000000000000000000000000000000000000000000000000000000000000000;
+
+        bytes32[] memory result = _helper.callPackHeaderHash(headerHash);
+        assertEq(result[0], 0x0000000000000000000000000000000000000000000000000000000000000000);
+        assertEq(result[1], 0x0000000000000000000000000000000000000000000000000000000000000000);
+    }
+
+    function test_correctlyPacks_max() public view {
+        bytes32 headerHash = bytes32(type(uint256).max);
+
+        bytes32[] memory result = _helper.callPackHeaderHash(headerHash);
+        assertEq(result[0], 0x00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+        assertEq(result[1], 0x00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF);
+    }
 }
