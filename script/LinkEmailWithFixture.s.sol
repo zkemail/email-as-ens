@@ -6,12 +6,13 @@ import { LinkEmailVerifier } from "../src/LinkEmailVerifier.sol";
 import { LinkEmailCommand } from "../src/verifiers/LinkEmailCommandVerifier.sol";
 import { TestFixtures } from "../test/fixtures/TestFixtures.sol";
 
-contract LinkWithFixtureScript is Script {
-    address public constant LINK_EMAIL_VERIFIER = 0xe902Bc5bcc1dc15dbDF27FfE346c31c4F8FD37DF; // link email verifier
-        // sepolia
+contract LinkEmailWithFixtureScript is Script {
+    // sepolia
+    address public constant LINK_EMAIL_VERIFIER = 0x1e6786bCB1848d801c26b115af0f4c23F08B442c;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+
         LinkEmailVerifier verifier = LinkEmailVerifier(LINK_EMAIL_VERIFIER);
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
 

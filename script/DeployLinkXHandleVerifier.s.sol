@@ -7,6 +7,7 @@ import { LinkXHandleCommandVerifier } from "../src/verifiers/LinkXHandleCommandV
 import { HonkVerifier } from "../test/fixtures/linkXHandleCommand/files/HonkVerifier.sol";
 
 contract DeployLinkXHandleVerifierScript is Script {
+    // sepolia
     address public constant DKIM_REGISTRY = 0xe24c24Ab94c93D5754De1cbE61b777e47cc57723;
 
     function run() external {
