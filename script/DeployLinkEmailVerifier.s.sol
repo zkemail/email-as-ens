@@ -6,7 +6,7 @@ import { LinkEmailVerifier } from "../src/LinkEmailVerifier.sol";
 import { LinkEmailCommandVerifier } from "../src/verifiers/LinkEmailCommandVerifier.sol";
 import { Groth16Verifier } from "../test/fixtures/Groth16Verifier.sol";
 
-contract LinkEmailVerifierScript is Script {
+contract DeployLinkEmailVerifierScript is Script {
     address public constant DKIM_REGISTRY = 0xe24c24Ab94c93D5754De1cbE61b777e47cc57723;
 
     function run() external {
