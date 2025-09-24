@@ -2,18 +2,14 @@
 pragma solidity ^0.8.30;
 
 import { Vm } from "forge-std/Vm.sol";
-import { LinkXHandleCommand, PubSignals } from "../../../src/verifiers/LinkXHandleCommandVerifier.sol";
+import { LinkXHandleCommand, PublicInputs } from "../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { TextRecord } from "../../../src/LinkTextRecordVerifier.sol";
 
 address constant _VM_ADDR = address(uint160(uint256(keccak256("hevm cheat code"))));
 Vm constant vm = Vm(_VM_ADDR);
 
 library LinkXHandleCommandTestFixture {
-    function getFixture()
-        internal
-        view
-        returns (LinkXHandleCommand memory command, bytes32[] memory publicInputsFields)
-    {
+    function getFixture() internal view returns (LinkXHandleCommand memory command, bytes32[] memory publicInputs) {
         string memory path = string.concat(vm.projectRoot(), "/test/fixtures/linkXHandleCommand/files/");
 
         command = LinkXHandleCommand({
@@ -22,27 +18,27 @@ library LinkXHandleCommandTestFixture {
                 value: "thezdev1",
                 nullifier: 0x85fb869a94511ccbaaf108f91f59b407f36f89025341ed6536cbe2d0d338b7a1
             }),
-            proofFields: _getProofFields(path),
-            pubSignals: _getExpectedPubSignals(path)
+            proof: abi.encodePacked(_getProofFields(path)),
+            publicInputs: _getExpectedPublicInputs(path)
         });
 
         return (command, _getPublicInputsFields(path));
     }
 
     /**
-     * @notice Reads the expected pub signals from a `expected_pub_signals.json` file (PubSignals struct object)
-     * @param dirPath Path to the directory containing the `expected_pub_signals.json` file
-     * @return pubSignals The PubSignals struct object
+     * @notice Reads the expected pub signals from a `expected_public_inputs.json` file (PublicInputs struct object)
+     * @param dirPath Path to the directory containing the `expected_public_inputs.json` file
+     * @return publicInputs The PublicInputs struct object
      */
-    function _getExpectedPubSignals(string memory dirPath) private view returns (PubSignals memory pubSignals) {
-        string memory pubSignalsFile = vm.readFile(string.concat(dirPath, "expected_pub_signals.json"));
-        return PubSignals({
-            pubkeyHash: abi.decode(vm.parseJson(pubSignalsFile, ".pubkeyHash"), (bytes32)),
-            headerHash: abi.decode(vm.parseJson(pubSignalsFile, ".headerHash"), (bytes32)),
-            proverAddress: abi.decode(vm.parseJson(pubSignalsFile, ".proverAddress"), (string)),
-            command: abi.decode(vm.parseJson(pubSignalsFile, ".command"), (string)),
-            xHandleCapture1: abi.decode(vm.parseJson(pubSignalsFile, ".xHandleCapture1"), (string)),
-            senderDomainCapture1: abi.decode(vm.parseJson(pubSignalsFile, ".senderDomainCapture1"), (string))
+    function _getExpectedPublicInputs(string memory dirPath) private view returns (PublicInputs memory publicInputs) {
+        string memory publicInputsFile = vm.readFile(string.concat(dirPath, "expected_public_inputs.json"));
+        return PublicInputs({
+            pubkeyHash: abi.decode(vm.parseJson(publicInputsFile, ".pubkeyHash"), (bytes32)),
+            headerHash: abi.decode(vm.parseJson(publicInputsFile, ".headerHash"), (bytes32)),
+            proverAddress: abi.decode(vm.parseJson(publicInputsFile, ".proverAddress"), (string)),
+            command: abi.decode(vm.parseJson(publicInputsFile, ".command"), (string)),
+            xHandleCapture1: abi.decode(vm.parseJson(publicInputsFile, ".xHandleCapture1"), (string)),
+            senderDomainCapture1: abi.decode(vm.parseJson(publicInputsFile, ".senderDomainCapture1"), (string))
         });
     }
 

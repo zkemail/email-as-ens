@@ -36,26 +36,26 @@ library EnsUtils {
 
     /**
      * @notice Packs a public key (as bytes) into field elements
-     * @param pubKeyBytes The public key bytes (encoded as uint256[17])
+     * @param pubKeyBytes The public key bytes (encoded as bytes32[17])
      * @return fields The packed field elements
      */
-    function packPubKey(bytes memory pubKeyBytes) internal pure returns (uint256[] memory fields) {
+    function packPubKey(bytes memory pubKeyBytes) internal pure returns (bytes32[] memory fields) {
         uint256[17] memory pubKeyChunks = abi.decode(pubKeyBytes, (uint256[17]));
-        fields = new uint256[](17);
+        fields = new bytes32[](17);
         for (uint256 i = 0; i < 17; i++) {
-            fields[i] = pubKeyChunks[i];
+            fields[i] = bytes32(pubKeyChunks[i]);
         }
         return fields;
     }
 
     /**
-     * @notice Extracts public key from public signals
-     * @param pubSignals Array of public signals
+     * @notice Extracts public key from public inputs fields
+     * @param publicInputs Array of public inputs
      * @param startIndex Starting index of public key
      * @return pubKeyBytes The public key bytes
      */
     function unpackPubKey(
-        uint256[] calldata pubSignals,
+        bytes32[] memory publicInputs,
         uint256 startIndex
     )
         internal
@@ -64,7 +64,7 @@ library EnsUtils {
     {
         uint256[17] memory pubKeyChunks;
         for (uint256 i = 0; i < pubKeyChunks.length; i++) {
-            pubKeyChunks[i] = pubSignals[startIndex + i];
+            pubKeyChunks[i] = uint256(publicInputs[startIndex + i]);
         }
         pubKeyBytes = abi.encode(pubKeyChunks);
         return pubKeyBytes;

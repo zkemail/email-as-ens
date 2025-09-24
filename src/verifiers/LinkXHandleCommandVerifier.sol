@@ -8,6 +8,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes32 } from "../utils/Bytes32.sol";
 import { TextRecord } from "../LinkTextRecordVerifier.sol";
+import { IVerifier } from "../interfaces/IVerifier.sol";
 
 /**
  * @notice Enum representing the indices of command parameters in the command template
@@ -18,7 +19,7 @@ enum CommandParamIndex {
     ENS_NAME
 }
 
-struct PubSignals {
+struct PublicInputs {
     bytes32 pubkeyHash;
     bytes32 headerHash;
     string proverAddress;
@@ -29,11 +30,11 @@ struct PubSignals {
 
 struct LinkXHandleCommand {
     TextRecord textRecord;
-    bytes32[] proofFields;
-    PubSignals pubSignals;
+    bytes proof;
+    PublicInputs publicInputs;
 }
 
-contract LinkXHandleCommandVerifier {
+contract LinkXHandleCommandVerifier is IVerifier {
     using Bytes32 for bytes32[];
 
     // #1: pubkey_hash -> 1 field -> idx 0
@@ -54,12 +55,12 @@ contract LinkXHandleCommandVerifier {
     uint256 public constant SENDER_DOMAIN_CAPTURE_1_OFFSET = 89;
     uint256 public constant SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS = 65;
 
-    uint256 public constant PUBLIC_SIGNALS_LENGTH = 154;
+    uint256 public constant PUBLIC_INPUTS_LENGTH = 154;
 
     address public immutable HONK_VERIFIER;
     address public immutable DKIM_REGISTRY;
 
-    error InvalidPubSignalsLength();
+    error InvalidPublicInputsLength();
 
     error InvalidDkimKeyHash();
 
@@ -73,23 +74,23 @@ contract LinkXHandleCommandVerifier {
         DKIM_REGISTRY = _dkimRegistry;
     }
 
-    function verify(bytes memory data) external view returns (bool) {
-        return _isValid(abi.decode(data, (LinkXHandleCommand)));
-    }
-
     function dkimRegistryAddress() external view returns (address) {
         return DKIM_REGISTRY;
     }
 
     function encode(
-        bytes32[] calldata proofFields,
-        bytes32[] calldata pubSignals
+        bytes calldata proof,
+        bytes32[] calldata publicInputs
     )
         external
-        pure
+        view
         returns (bytes memory encodedCommand)
     {
-        return abi.encode(_buildLinkXHandleCommand(pubSignals, proofFields));
+        return abi.encode(_buildLinkXHandleCommand(proof, publicInputs));
+    }
+
+    function verify(bytes memory data) external view returns (bool) {
+        return _isValid(abi.decode(data, (LinkXHandleCommand)));
     }
 
     function _isValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) internal view returns (bool) {
@@ -100,56 +101,52 @@ contract LinkXHandleCommandVerifier {
     function _isValid(LinkXHandleCommand memory command)
         internal
         view
-        onlyValidDkimKeyHash(command.pubSignals.senderDomainCapture1, command.pubSignals.pubkeyHash)
+        onlyValidDkimKeyHash(command.publicInputs.senderDomainCapture1, command.publicInputs.pubkeyHash)
         returns (bool)
     {
-        PubSignals memory pubSignals = command.pubSignals;
+        PublicInputs memory publicInputs = command.publicInputs;
 
-        // proof needs to be in non-standard packed mode (abi.encodePacked)
-        return IHonkVerifier(HONK_VERIFIER).verify(abi.encodePacked(command.proofFields), _packPubSignals(pubSignals))
-            && Strings.equal(command.textRecord.value, pubSignals.xHandleCapture1)
-            && Strings.equal(_getcommand(command), pubSignals.command);
+        return IHonkVerifier(HONK_VERIFIER).verify(command.proof, _packPublicInputs(publicInputs))
+            && Strings.equal(command.textRecord.value, publicInputs.xHandleCapture1)
+            && Strings.equal(_getCommand(command), publicInputs.command);
     }
 
-    function _packPubSignals(PubSignals memory decodedFields)
-        internal
-        pure
-        returns (bytes32[] memory publicInputsFields)
-    {
-        publicInputsFields = new bytes32[](PUBLIC_SIGNALS_LENGTH);
-        publicInputsFields[PUBKEY_HASH_OFFSET] = decodedFields.pubkeyHash;
-        publicInputsFields.splice(HEADER_HASH_OFFSET, NoirUtils.packHeaderHash(decodedFields.headerHash));
-        publicInputsFields.splice(
-            PROVER_ADDRESS_OFFSET, NoirUtils.packFieldsArray(decodedFields.proverAddress, PROVER_ADDRESS_NUM_FIELDS)
+    function _packPublicInputs(PublicInputs memory publicInputs) internal pure returns (bytes32[] memory fields) {
+        fields = new bytes32[](PUBLIC_INPUTS_LENGTH);
+        fields[PUBKEY_HASH_OFFSET] = publicInputs.pubkeyHash;
+        fields.splice(HEADER_HASH_OFFSET, NoirUtils.packHeaderHash(publicInputs.headerHash));
+        fields.splice(
+            PROVER_ADDRESS_OFFSET, NoirUtils.packFieldsArray(publicInputs.proverAddress, PROVER_ADDRESS_NUM_FIELDS)
         );
-        publicInputsFields.splice(COMMAND_OFFSET, NoirUtils.packFieldsArray(decodedFields.command, COMMAND_NUM_FIELDS));
-        publicInputsFields.splice(
+        fields.splice(COMMAND_OFFSET, NoirUtils.packFieldsArray(publicInputs.command, COMMAND_NUM_FIELDS));
+        fields.splice(
             X_HANDLE_CAPTURE_1_OFFSET,
-            NoirUtils.packBoundedVecU8(decodedFields.xHandleCapture1, X_HANDLE_CAPTURE_1_NUM_FIELDS)
+            NoirUtils.packBoundedVecU8(publicInputs.xHandleCapture1, X_HANDLE_CAPTURE_1_NUM_FIELDS)
         );
-        publicInputsFields.splice(
+        fields.splice(
             SENDER_DOMAIN_CAPTURE_1_OFFSET,
-            NoirUtils.packBoundedVecU8(decodedFields.senderDomainCapture1, SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS)
+            NoirUtils.packBoundedVecU8(publicInputs.senderDomainCapture1, SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS)
         );
+        return fields;
     }
 
-    function _unpackPubSignals(bytes32[] calldata encoded) internal pure returns (PubSignals memory decoded) {
-        if (encoded.length != PUBLIC_SIGNALS_LENGTH) revert InvalidPubSignalsLength();
+    function _unpackPublicInputs(bytes32[] calldata fields) internal pure returns (PublicInputs memory publicInputs) {
+        if (fields.length != PUBLIC_INPUTS_LENGTH) revert InvalidPublicInputsLength();
 
-        return PubSignals({
-            pubkeyHash: encoded[PUBKEY_HASH_OFFSET],
+        return PublicInputs({
+            pubkeyHash: fields[PUBKEY_HASH_OFFSET],
             headerHash: NoirUtils.unpackHeaderHash(
-                encoded.slice(HEADER_HASH_OFFSET, HEADER_HASH_OFFSET + HEADER_HASH_NUM_FIELDS)
+                fields.slice(HEADER_HASH_OFFSET, HEADER_HASH_OFFSET + HEADER_HASH_NUM_FIELDS)
             ),
             proverAddress: NoirUtils.unpackFieldsArray(
-                encoded.slice(PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_OFFSET + PROVER_ADDRESS_NUM_FIELDS)
+                fields.slice(PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_OFFSET + PROVER_ADDRESS_NUM_FIELDS)
             ),
-            command: NoirUtils.unpackFieldsArray(encoded.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS)),
+            command: NoirUtils.unpackFieldsArray(fields.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS)),
             xHandleCapture1: NoirUtils.unpackBoundedVecU8(
-                encoded.slice(X_HANDLE_CAPTURE_1_OFFSET, X_HANDLE_CAPTURE_1_OFFSET + X_HANDLE_CAPTURE_1_NUM_FIELDS)
+                fields.slice(X_HANDLE_CAPTURE_1_OFFSET, X_HANDLE_CAPTURE_1_OFFSET + X_HANDLE_CAPTURE_1_NUM_FIELDS)
             ),
             senderDomainCapture1: NoirUtils.unpackBoundedVecU8(
-                encoded.slice(
+                fields.slice(
                     SENDER_DOMAIN_CAPTURE_1_OFFSET, SENDER_DOMAIN_CAPTURE_1_OFFSET + SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS
                 )
             )
@@ -157,33 +154,33 @@ contract LinkXHandleCommandVerifier {
     }
 
     function _buildLinkXHandleCommand(
-        bytes32[] calldata encodedPubSignals,
-        bytes32[] calldata proofFields
+        bytes calldata proof,
+        bytes32[] calldata publicInputsFields
     )
         private
         pure
         returns (LinkXHandleCommand memory command)
     {
-        PubSignals memory pubSignals = _unpackPubSignals(encodedPubSignals);
+        PublicInputs memory publicInputs = _unpackPublicInputs(publicInputsFields);
         return LinkXHandleCommand({
             textRecord: TextRecord({
                 // ensName is extracted from the command
                 ensName: string(
                     CommandUtils.extractCommandParamByIndex(
-                        _getTemplate(), pubSignals.command, uint256(CommandParamIndex.ENS_NAME)
+                        _getTemplate(), publicInputs.command, uint256(CommandParamIndex.ENS_NAME)
                     )
                 ),
                 // x handle is the value
-                value: pubSignals.xHandleCapture1,
+                value: publicInputs.xHandleCapture1,
                 // header hash is used as nullifier
-                nullifier: pubSignals.headerHash
+                nullifier: publicInputs.headerHash
             }),
-            proofFields: proofFields,
-            pubSignals: pubSignals
+            proof: proof,
+            publicInputs: publicInputs
         });
     }
 
-    function _getcommand(LinkXHandleCommand memory command) private pure returns (string memory) {
+    function _getCommand(LinkXHandleCommand memory command) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(command.textRecord.ensName);
 

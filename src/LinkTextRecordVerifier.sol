@@ -65,8 +65,8 @@ abstract contract LinkTextRecordVerifier is IEntryPoint, ITextRecordVerifier {
      * @inheritdoc IEntryPoint
      * @dev Delegates encoding to the configured VERIFIER contract
      */
-    function encode(uint256[] calldata publicSignals, bytes calldata proof) external view returns (bytes memory) {
-        return IVerifier(VERIFIER).encode(publicSignals, proof);
+    function encode(bytes calldata proof, bytes32[] calldata publicInputs) external view returns (bytes memory) {
+        return IVerifier(VERIFIER).encode(proof, publicInputs);
     }
 
     /**

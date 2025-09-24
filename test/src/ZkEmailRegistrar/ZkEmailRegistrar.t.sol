@@ -36,7 +36,11 @@ contract ZkEmailRegistrarTest is Test {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
         verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(dkim));
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
+        dkim.setValid(
+            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+            command.emailAuthProof.publicInputs.publicKeyHash,
+            true
+        );
 
         // setup ENS registry
         vm.startPrank(owner);
@@ -52,7 +56,8 @@ contract ZkEmailRegistrarTest is Test {
 
     function test_proveAndClaim_passesForValidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
+        bytes memory expectedEnsName =
+            abi.encodePacked(bytes(command.emailAuthProof.publicInputs.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = expectedEnsName.namehash();
         bytes32 resolverNode = bytes(command.resolver).namehash();
 
@@ -81,7 +86,8 @@ contract ZkEmailRegistrarTest is Test {
 
     function test_proveAndClaim_preventsDoubleUseOfNullifier() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
+        bytes memory expectedEnsName =
+            abi.encodePacked(bytes(command.emailAuthProof.publicInputs.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = expectedEnsName.namehash();
         bytes32 resolverNode = bytes(command.resolver).namehash();
 
@@ -107,7 +113,8 @@ contract ZkEmailRegistrarTest is Test {
 
     function test_setRecord_setsRecordCorrectlyIfOwner() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
+        bytes memory expectedEnsName =
+            abi.encodePacked(bytes(command.emailAuthProof.publicInputs.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = expectedEnsName.namehash();
         bytes32 resolverNode = bytes(command.resolver).namehash();
 
@@ -141,7 +148,7 @@ contract ZkEmailRegistrarTest is Test {
 
     function test_proveAndClaim_revertsForInvalidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        command.proof.fields.emailAddress = "bob@example.com";
+        command.emailAuthProof.publicInputs.emailAddress = "bob@example.com";
         vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.InvalidCommand.selector));
         registrar.entrypoint(abi.encode(command));
     }

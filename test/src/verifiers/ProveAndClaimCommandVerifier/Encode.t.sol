@@ -17,18 +17,17 @@ contract EncodeTest is _EmailAuthVerifierTest {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
         _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(dkim));
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
+        dkim.setValid(
+            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+            command.emailAuthProof.publicInputs.publicKeyHash,
+            true
+        );
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
-        (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals) = TestFixtures.claimEnsCommand();
+        (ProveAndClaimCommand memory command, bytes32[] memory expectedPublicInputs) = TestFixtures.claimEnsCommand();
 
-        uint256[] memory publicSignals = new uint256[](60);
-        for (uint256 i = 0; i < 60; i++) {
-            publicSignals[i] = expectedPubSignals[i];
-        }
-
-        bytes memory encodedData = _verifier.encode(publicSignals, command.proof.proof);
+        bytes memory encodedData = _verifier.encode(command.emailAuthProof.proof, expectedPublicInputs);
         ProveAndClaimCommand memory decodedCommand = abi.decode(encodedData, (ProveAndClaimCommand));
 
         assertEq(decodedCommand.resolver, command.resolver);
@@ -36,6 +35,6 @@ contract EncodeTest is _EmailAuthVerifierTest {
         for (uint256 i = 0; i < decodedCommand.emailParts.length; i++) {
             assertEq(decodedCommand.emailParts[i], command.emailParts[i]);
         }
-        _assertDecodedFieldsEq(decodedCommand.proof.fields, command.proof.fields);
+        _assertPublicInputsEq(decodedCommand.emailAuthProof.publicInputs, command.emailAuthProof.publicInputs);
     }
 }

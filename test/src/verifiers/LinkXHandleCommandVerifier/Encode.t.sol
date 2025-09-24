@@ -7,7 +7,7 @@ import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import {
     LinkXHandleCommand,
     LinkXHandleCommandVerifier,
-    PubSignals
+    PublicInputs
 } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { _EmailAuthVerifierTest } from "../EmailAuthVerifier/_EmailAuthVerifierTest.sol";
 
@@ -19,30 +19,26 @@ contract EncodeTest is _EmailAuthVerifierTest {
         _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
         // configure DKIM mock with valid domain+key
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        dkim.setValid(keccak256(bytes(command.pubSignals.senderDomainCapture1)), command.pubSignals.pubkeyHash, true);
+        dkim.setValid(
+            keccak256(bytes(command.publicInputs.senderDomainCapture1)), command.publicInputs.pubkeyHash, true
+        );
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
-        (LinkXHandleCommand memory command, bytes32[] memory expectedPubSignals) =
+        (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
             LinkXHandleCommandTestFixture.getFixture();
 
-        bytes memory encodedData = _verifier.encode(command.proofFields, expectedPubSignals);
+        bytes memory encodedData = _verifier.encode(command.proof, expectedPublicInputs);
         LinkXHandleCommand memory decodedCommand = abi.decode(encodedData, (LinkXHandleCommand));
 
-        _assertPubSignalsEq(decodedCommand.pubSignals, command.pubSignals);
+        _assertEq(decodedCommand.publicInputs, command.publicInputs);
     }
 
-    function _assertPubSignalsEq(
-        PubSignals memory decodedPubSignals,
-        PubSignals memory expectedPubSignals
-    )
-        internal
-        pure
-    {
-        assertEq(decodedPubSignals.pubkeyHash, expectedPubSignals.pubkeyHash, "Pubkey hash mismatch");
-        assertEq(decodedPubSignals.headerHash, expectedPubSignals.headerHash, "Header hash mismatch");
-        assertEq(decodedPubSignals.proverAddress, expectedPubSignals.proverAddress, "Prover address mismatch");
-        assertEq(decodedPubSignals.command, expectedPubSignals.command, "Command mismatch");
-        assertEq(decodedPubSignals.xHandleCapture1, expectedPubSignals.xHandleCapture1, "X handle capture 1 mismatch");
+    function _assertEq(PublicInputs memory publicInputs, PublicInputs memory expectedPublicInputs) internal pure {
+        assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "Pubkey hash mismatch");
+        assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "Header hash mismatch");
+        assertEq(publicInputs.proverAddress, expectedPublicInputs.proverAddress, "Prover address mismatch");
+        assertEq(publicInputs.command, expectedPublicInputs.command, "Command mismatch");
+        assertEq(publicInputs.xHandleCapture1, expectedPublicInputs.xHandleCapture1, "X handle capture 1 mismatch");
     }
 }

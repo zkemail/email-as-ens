@@ -6,7 +6,7 @@ import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleComm
 import { LinkXHandleCommand } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { LinkXHandleCommandVerifierHelper } from "./_LinkXHandleCommandVerifierHelper.sol";
 
-contract BuildPubSignalsTest is Test {
+contract BuildPublicInputsTest is Test {
     LinkXHandleCommandVerifierHelper internal _verifier;
 
     function setUp() public {
@@ -14,13 +14,13 @@ contract BuildPubSignalsTest is Test {
     }
 
     function test_correctlyBuildsSignalsForLinkXHandleCommand() public view {
-        (LinkXHandleCommand memory command, bytes32[] memory expectedPubSignals) =
+        (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
             LinkXHandleCommandTestFixture.getFixture();
-        bytes32[] memory pubSignals = _verifier.packPubSignals(command.pubSignals);
-        _assertPubSignals(pubSignals, expectedPubSignals);
+        bytes32[] memory publicInputs = _verifier.packPublicInputs(command.publicInputs);
+        _assertEq(publicInputs, expectedPublicInputs);
     }
 
-    function _assertPubSignals(bytes32[] memory pubSignals, bytes32[] memory expectedPubSignals) internal pure {
-        assertEq(keccak256(abi.encode(pubSignals)), keccak256(abi.encode(expectedPubSignals)));
+    function _assertEq(bytes32[] memory fields, bytes32[] memory expectedFields) internal pure {
+        assertEq(keccak256(abi.encode(fields)), keccak256(abi.encode(expectedFields)));
     }
 }

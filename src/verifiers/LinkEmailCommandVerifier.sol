@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import { CircuitUtils } from "../utils/CircuitUtils.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
-import { EmailAuthVerifier, DecodedFields, EmailAuthProof } from "./EmailAuthVerifier.sol";
+import { EmailAuthVerifier, EmailAuthProof, PublicInputs } from "./EmailAuthVerifier.sol";
 import { TextRecord } from "../LinkTextRecordVerifier.sol";
 
 /**
@@ -19,7 +19,7 @@ enum CommandParamIndex {
 
 struct LinkEmailCommand {
     TextRecord textRecord;
-    EmailAuthProof proof;
+    EmailAuthProof emailAuthProof;
 }
 
 contract LinkEmailCommandVerifier is EmailAuthVerifier {
@@ -40,56 +40,58 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
      * @inheritdoc EmailAuthVerifier
      */
     function encode(
-        uint256[] calldata pubSignals,
-        bytes calldata proof
+        bytes calldata proof,
+        bytes32[] calldata publicInputs
     )
         external
         pure
         override
         returns (bytes memory encodedCommand)
     {
-        return abi.encode(_buildLinkEmailCommand(pubSignals, proof));
+        return abi.encode(_buildLinkEmailCommand(proof, publicInputs));
     }
 
     function _isValid(LinkEmailCommand memory command)
         internal
         view
-        onlyValidDkimKeyHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
+        onlyValidDkimKeyHash(
+            command.emailAuthProof.publicInputs.domainName,
+            command.emailAuthProof.publicInputs.publicKeyHash
+        )
         returns (bool)
     {
-        DecodedFields memory fields = command.proof.fields;
-        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
-            && Strings.equal(command.textRecord.value, command.proof.fields.emailAddress)
-            && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
+        PublicInputs memory publicInputs = command.emailAuthProof.publicInputs;
+        return _verifyEmailProof(GORTH16_VERIFIER, command.emailAuthProof)
+            && Strings.equal(command.textRecord.value, publicInputs.emailAddress)
+            && Strings.equal(_getMaskedCommand(command), publicInputs.maskedCommand);
     }
 
     /**
-     * @notice Reconstructs a LinkEmailCommand struct from public signals and proof bytes.
+     * @notice Reconstructs a LinkEmailCommand struct from proof bytes and public inputs fields.
      */
     function _buildLinkEmailCommand(
-        uint256[] calldata pubSignals,
-        bytes memory proof
+        bytes memory proof,
+        bytes32[] calldata publicInputsFields
     )
         private
         pure
         returns (LinkEmailCommand memory command)
     {
-        DecodedFields memory decodedFields = _unpackPubSignals(pubSignals);
-
+        PublicInputs memory publicInputs = _unpackPublicInputs(publicInputsFields);
         return LinkEmailCommand({
             textRecord: TextRecord({
                 // ensName is extracted from the command
                 ensName: string(
                     CommandUtils.extractCommandParamByIndex(
-                        _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.ENS_NAME)
+                        _getTemplate(), publicInputs.maskedCommand, uint256(CommandParamIndex.ENS_NAME)
                     )
                 ),
                 // emailAddress is the value
-                value: decodedFields.emailAddress,
+                value: publicInputs.emailAddress,
                 // emailNullifier is the nullifier
-                nullifier: decodedFields.emailNullifier
+                nullifier: publicInputs.emailNullifier
             }),
-            proof: EmailAuthProof({ fields: decodedFields, proof: proof })
+            emailAuthProof: EmailAuthProof({ proof: proof, publicInputs: publicInputs })
         });
     }
 

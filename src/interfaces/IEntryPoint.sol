@@ -17,14 +17,14 @@ interface IEntryPoint {
 
     /**
      * @notice Encodes the public signals and proof into bytes compatible with the entrypoint function
-     * @param publicSignals The public signals for the ZK proof
      * @param proof The ZK proof bytes
+     * @param publicInputs The public inputs for the ZK proof
      * @return The ABI-encoded data constructed from the public signals and proof
      * @dev It allows off-chain services (like a relayer) to construct the data payload
      *      required by the `entrypoint` function without coupling to the verifier's internal
      *      encoding logic.
      */
-    function encode(uint256[] calldata publicSignals, bytes calldata proof) external view returns (bytes memory);
+    function encode(bytes calldata proof, bytes32[] calldata publicInputs) external view returns (bytes memory);
 
     /**
      * @notice Returns the address of the DKIM registry

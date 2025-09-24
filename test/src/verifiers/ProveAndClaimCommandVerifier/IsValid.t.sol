@@ -17,15 +17,19 @@ contract IsValidTest is Test {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
         _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(dkim));
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
+        dkim.setValid(
+            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+            command.emailAuthProof.publicInputs.publicKeyHash,
+            true
+        );
     }
 
     function test_returnsFalseForInvalidProof() public view {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
         (uint256[2] memory pA, uint256[2][2] memory pB, uint256[2] memory pC) =
-            abi.decode(command.proof.proof, (uint256[2], uint256[2][2], uint256[2]));
+            abi.decode(command.emailAuthProof.proof, (uint256[2], uint256[2][2], uint256[2]));
         pA[0] = _verifier.Q();
-        command.proof.proof = abi.encode(pA, pB, pC);
+        command.emailAuthProof.proof = abi.encode(pA, pB, pC);
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }
@@ -41,7 +45,7 @@ contract IsValidTest is Test {
         string[] memory emailParts = new string[](2);
         emailParts[0] = "bob@example";
         emailParts[1] = "com";
-        command.proof.fields.emailAddress = "bob@example.com";
+        command.emailAuthProof.publicInputs.emailAddress = "bob@example.com";
         command.emailParts = emailParts;
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);

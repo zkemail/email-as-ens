@@ -15,22 +15,21 @@ contract EncodeTest is _EmailAuthVerifierTest {
         _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), address(dkim));
         // configure DKIM mock with valid domain+key
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
+        dkim.setValid(
+            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+            command.emailAuthProof.publicInputs.publicKeyHash,
+            true
+        );
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
-        (LinkEmailCommand memory command, uint256[60] memory expectedPubSignals) = TestFixtures.linkEmailCommand();
+        (LinkEmailCommand memory command, bytes32[] memory expectedPublicInputs) = TestFixtures.linkEmailCommand();
 
-        uint256[] memory publicSignals = new uint256[](60);
-        for (uint256 i = 0; i < 60; i++) {
-            publicSignals[i] = expectedPubSignals[i];
-        }
-
-        bytes memory encodedData = _verifier.encode(publicSignals, command.proof.proof);
+        bytes memory encodedData = _verifier.encode(command.emailAuthProof.proof, expectedPublicInputs);
         LinkEmailCommand memory decodedCommand = abi.decode(encodedData, (LinkEmailCommand));
 
         assertEq(decodedCommand.textRecord.ensName, command.textRecord.ensName);
         assertEq(decodedCommand.textRecord.value, command.textRecord.value);
-        _assertDecodedFieldsEq(decodedCommand.proof.fields, command.proof.fields);
+        _assertPublicInputsEq(decodedCommand.emailAuthProof.publicInputs, command.emailAuthProof.publicInputs);
     }
 }
