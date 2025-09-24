@@ -13,6 +13,7 @@ contract LinkEmailVerifierScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(deployerPrivateKey);
+
         LinkEmailCommandVerifier commandVerifier =
             new LinkEmailCommandVerifier(address(new Groth16Verifier()), DKIM_REGISTRY);
         LinkEmailVerifier verifier = new LinkEmailVerifier(address(commandVerifier));
