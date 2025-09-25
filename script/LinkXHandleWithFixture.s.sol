@@ -5,19 +5,26 @@ import { Script } from "forge-std/Script.sol";
 import { LinkXHandleVerifier } from "../src/LinkXHandleVerifier.sol";
 import { LinkXHandleCommand } from "../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { LinkXHandleCommandTestFixture } from "../test/fixtures/LinkXHandleCommand/LinkXHandleCommandTestFixture.sol";
+import { DKIMRegistryMock } from "../test/fixtures/DKIMRegistryMock.sol";
 
 contract LinkXHandleWithFixtureScript is Script {
+    // sepolia mock
+    address public constant DKIM_REGISTRY = 0xec22Ad55d5D26F1DAB8D020FEBb423C03f535D40;
     // sepolia
-    address public constant LINK_X_HANDLE_VERIFIER = 0x13AF3e033a33Cd96e40cd7ceeE496d25947DbfD7;
+    address public constant LINK_X_HANDLE_VERIFIER = 0x8cd219dEb66E9f7d20eB489EA464751F8F26Ea07;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         LinkXHandleVerifier verifier = LinkXHandleVerifier(LINK_X_HANDLE_VERIFIER);
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
+        bytes32 domainHash = keccak256(bytes(command.publicInputs.senderDomainCapture1));
 
         vm.startBroadcast(deployerPrivateKey);
+
+        DKIMRegistryMock(DKIM_REGISTRY).setValid(domainHash, command.publicInputs.pubkeyHash, true);
         verifier.entrypoint(abi.encode(command));
+
         vm.stopBroadcast();
     }
 }
