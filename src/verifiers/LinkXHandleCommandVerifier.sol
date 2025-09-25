@@ -74,23 +74,32 @@ contract LinkXHandleCommandVerifier is IVerifier {
         DKIM_REGISTRY = _dkimRegistry;
     }
 
+    /**
+     * @inheritdoc IVerifier
+     */
     function dkimRegistryAddress() external view returns (address) {
         return DKIM_REGISTRY;
     }
 
+    /**
+     * @inheritdoc IVerifier
+     */
+    function verify(bytes memory data) external view returns (bool) {
+        return _isValid(abi.decode(data, (LinkXHandleCommand)));
+    }
+
+    /**
+     * @inheritdoc IVerifier
+     */
     function encode(
         bytes calldata proof,
         bytes32[] calldata publicInputs
     )
         external
-        view
+        pure
         returns (bytes memory encodedCommand)
     {
         return abi.encode(_buildLinkXHandleCommand(proof, publicInputs));
-    }
-
-    function verify(bytes memory data) external view returns (bool) {
-        return _isValid(abi.decode(data, (LinkXHandleCommand)));
     }
 
     function _isValidDkimKeyHash(string memory domainName, bytes32 dkimKeyHash) internal view returns (bool) {
