@@ -9,8 +9,8 @@ import { HonkVerifier } from "../test/fixtures/linkXHandleCommand/files/HonkVeri
 contract DeployLinkXHandleVerifierScript is Script {
     // sepolia
     // address public constant DKIM_REGISTRY = 0xe24c24Ab94c93D5754De1cbE61b777e47cc57723;
-    // sepolia mock
-    address public constant DKIM_REGISTRY = 0xec22Ad55d5D26F1DAB8D020FEBb423C03f535D40;
+    // sepolia always valid dkim registry
+    address public constant DKIM_REGISTRY = 0xc4f628496b8c474096650C8f9023954643cC614F;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
