@@ -11,19 +11,20 @@ contract LinkEmailWithFixtureScript is Script {
     // sepolia mock
     address public constant DKIM_REGISTRY = 0xec22Ad55d5D26F1DAB8D020FEBb423C03f535D40;
     // sepolia
-    address public constant LINK_EMAIL_VERIFIER = 0x5B32859B0294fcaD4Ca13e1b0C5105d2e8cEa096;
+    address public constant LINK_EMAIL_VERIFIER = 0x64da043037E77971C9Cea2C49a54F8A5872B8f1A;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         LinkEmailVerifier verifier = LinkEmailVerifier(LINK_EMAIL_VERIFIER);
-        (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
+        (LinkEmailCommand memory command, bytes32[] memory expectedPublicInputs) = TestFixtures.linkEmailCommand();
         bytes32 domainHash = keccak256(bytes(command.emailAuthProof.publicInputs.domainName));
 
         vm.startBroadcast(deployerPrivateKey);
 
         DKIMRegistryMock(DKIM_REGISTRY).setValid(domainHash, command.emailAuthProof.publicInputs.publicKeyHash, true);
-        verifier.entrypoint(abi.encode(command));
+        bytes memory encodedCommand = verifier.encode(command.emailAuthProof.proof, expectedPublicInputs);
+        verifier.entrypoint(encodedCommand);
 
         vm.stopBroadcast();
     }
