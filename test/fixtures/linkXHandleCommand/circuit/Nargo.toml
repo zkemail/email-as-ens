@@ -1,0 +1,9 @@
+[package]
+name = "link_x_handle_command"
+type = "bin"
+authors = []
+compiler_version = ">=1.0.0"
+
+[dependencies]
+zkemail = { tag = "main", git = "https://github.com/zkemail/zkemail.nr", directory = "lib" }
+zkregex = { tag = "2.2.0", git = "https://github.com/zkemail/zk-regex", directory = "noir" }

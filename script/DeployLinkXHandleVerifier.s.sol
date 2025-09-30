@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import { Script, console } from "forge-std/Script.sol";
 import { LinkXHandleVerifier } from "../src/LinkXHandleVerifier.sol";
 import { LinkXHandleCommandVerifier } from "../src/verifiers/LinkXHandleCommandVerifier.sol";
-import { HonkVerifier } from "../test/fixtures/linkXHandleCommand/files/HonkVerifier.sol";
+import { HonkVerifier } from "../test/fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
 
 contract DeployLinkXHandleVerifierScript is Script {
     // sepolia

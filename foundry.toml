@@ -25,3 +25,7 @@ number_underscore = "thousands"
 quote_style = "double"
 tab_width = 4
 wrap_comments = true
+ignore = [
+  # ignore circuit generated files
+  "test/fixtures/linkXHandleCommand/circuit/target/*.sol",
+]

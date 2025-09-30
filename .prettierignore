@@ -7,6 +7,9 @@ coverage/
 node_modules/
 out/
 
+# circuit generated files
+test/fixtures/linkXHandleCommand/circuit/target
+
 # files
 .env
 bun.lock

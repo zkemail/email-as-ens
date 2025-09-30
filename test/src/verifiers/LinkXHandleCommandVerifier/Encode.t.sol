@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
-import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/files/HonkVerifier.sol";
+import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
 import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import {
     LinkXHandleCommand,
