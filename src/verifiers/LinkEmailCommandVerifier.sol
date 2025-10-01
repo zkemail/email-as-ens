@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { CircuitUtils } from "../utils/CircuitUtils.sol";
+import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { CircuitUtils } from "../utils/CircuitUtils.sol";
+import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
 import { IVerifier } from "../interfaces/IVerifier.sol";
