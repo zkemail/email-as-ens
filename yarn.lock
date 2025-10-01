@@ -247,7 +247,7 @@
   version "1.0.0"
   resolved "https://codeload.github.com/zkemail/email-tx-builder/tar.gz/7be3897ada47e6a2a6d33f4a69e4dd1fded937f4"
 
-"@zk-email/zk-email-verify@github:zkemail/zk-email-verify#891afc444597ffab1ee1529f3089d6db0926b323":
+"@zk-email/zk-email-verify@github:zkemail/zk-email-verify#bence/circuit-utils-changes":
   version "6.2.0"
   resolved "https://codeload.github.com/zkemail/zk-email-verify/tar.gz/891afc444597ffab1ee1529f3089d6db0926b323"
 

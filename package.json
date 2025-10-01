@@ -31,7 +31,7 @@
     "@openzeppelin/community-contracts": "github:OpenZeppelin/openzeppelin-community-contracts#303697f",
     "@openzeppelin/contracts": "5.4.0",
     "@openzeppelin/contracts-upgradeable": "5.4.0",
-    "@zk-email/zk-email-verify": "github:zkemail/zk-email-verify#891afc444597ffab1ee1529f3089d6db0926b323",
+    "@zk-email/zk-email-verify": "github:zkemail/zk-email-verify#bence/circuit-utils-changes",
     "@zk-email/email-tx-builder": "github:zkemail/email-tx-builder#7be3897ada47e6a2a6d33f4a69e4dd1fded937f4",
     "solidity-stringutils": "github:zkemail/layer-zero-string-utils.git"
   },
