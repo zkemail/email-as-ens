@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
+import { CircomUtils } from "@zk-email/contracts/utils/CircomUtils.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
 import { IVerifier } from "../interfaces/IVerifier.sol";
@@ -182,15 +182,15 @@ abstract contract EmailAuthVerifier is IVerifier {
      */
     function _packPublicInputs(PublicInputs memory publicInputs) internal pure returns (bytes32[] memory fields) {
         fields = new bytes32[](PUBLIC_INPUTS_LENGTH);
-        fields.splice(DOMAIN_NAME_OFFSET, CircuitUtils.packString(publicInputs.domainName, DOMAIN_NAME_SIZE));
+        fields.splice(DOMAIN_NAME_OFFSET, CircomUtils.packString(publicInputs.domainName, DOMAIN_NAME_SIZE));
         fields[PUBLIC_KEY_HASH_OFFSET] = publicInputs.publicKeyHash;
         fields[EMAIL_NULLIFIER_OFFSET] = publicInputs.emailNullifier;
         fields[TIMESTAMP_OFFSET] = bytes32(publicInputs.timestamp);
-        fields.splice(MASKED_COMMAND_OFFSET, CircuitUtils.packString(publicInputs.maskedCommand, MASKED_COMMAND_SIZE));
+        fields.splice(MASKED_COMMAND_OFFSET, CircomUtils.packString(publicInputs.maskedCommand, MASKED_COMMAND_SIZE));
         fields[ACCOUNT_SALT_OFFSET] = publicInputs.accountSalt;
-        fields.splice(IS_CODE_EXIST_OFFSET, CircuitUtils.packBool(publicInputs.isCodeExist));
+        fields.splice(IS_CODE_EXIST_OFFSET, CircomUtils.packBool(publicInputs.isCodeExist));
         fields.splice(MISCELLANEOUS_DATA_OFFSET, EnsUtils.packPubKey(publicInputs.miscellaneousData));
-        fields.splice(EMAIL_ADDRESS_OFFSET, CircuitUtils.packString(publicInputs.emailAddress, EMAIL_ADDRESS_SIZE));
+        fields.splice(EMAIL_ADDRESS_OFFSET, CircomUtils.packString(publicInputs.emailAddress, EMAIL_ADDRESS_SIZE));
 
         return fields;
     }
@@ -201,18 +201,18 @@ abstract contract EmailAuthVerifier is IVerifier {
      * @return publicInputs The PublicInputs struct, with each field extracted from the public inputs fields
      */
     function _unpackPublicInputs(bytes32[] calldata fields) internal pure returns (PublicInputs memory publicInputs) {
-        if (fields.length != PUBLIC_INPUTS_LENGTH) revert CircuitUtils.InvalidPublicInputsLength();
+        if (fields.length != PUBLIC_INPUTS_LENGTH) revert CircomUtils.InvalidPublicInputsLength();
 
         return PublicInputs({
-            domainName: CircuitUtils.unpackString(fields, DOMAIN_NAME_OFFSET, DOMAIN_NAME_SIZE),
+            domainName: CircomUtils.unpackString(fields, DOMAIN_NAME_OFFSET, DOMAIN_NAME_SIZE),
             publicKeyHash: fields[PUBLIC_KEY_HASH_OFFSET],
             emailNullifier: fields[EMAIL_NULLIFIER_OFFSET],
             timestamp: uint256(fields[TIMESTAMP_OFFSET]),
-            maskedCommand: CircuitUtils.unpackString(fields, MASKED_COMMAND_OFFSET, MASKED_COMMAND_SIZE),
+            maskedCommand: CircomUtils.unpackString(fields, MASKED_COMMAND_OFFSET, MASKED_COMMAND_SIZE),
             accountSalt: fields[ACCOUNT_SALT_OFFSET],
-            isCodeExist: CircuitUtils.unpackBool(fields, IS_CODE_EXIST_OFFSET),
+            isCodeExist: CircomUtils.unpackBool(fields, IS_CODE_EXIST_OFFSET),
             miscellaneousData: EnsUtils.unpackPubKey(fields, MISCELLANEOUS_DATA_OFFSET),
-            emailAddress: CircuitUtils.unpackString(fields, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_SIZE)
+            emailAddress: CircomUtils.unpackString(fields, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_SIZE)
         });
     }
 }

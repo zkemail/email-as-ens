@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
+import { CircomUtils } from "@zk-email/contracts/utils/CircomUtils.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
@@ -29,7 +29,7 @@ struct ProveAndClaimCommand {
 contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     using Bytes for bytes;
     using Strings for string;
-    using CircuitUtils for bytes;
+    using CircomUtils for bytes;
     using CommandUtils for bytes;
 
     constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }

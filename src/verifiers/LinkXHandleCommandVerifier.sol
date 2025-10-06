@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
-import { NoirUtils } from "../utils/NoirUtils.sol";
+import { NoirUtils } from "@zk-email/contracts/utils/NoirUtils.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes32 } from "../utils/Bytes32.sol";
