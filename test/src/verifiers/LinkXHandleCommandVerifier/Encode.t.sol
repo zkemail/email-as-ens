@@ -35,10 +35,12 @@ contract EncodeTest is _EmailAuthVerifierTest {
     }
 
     function _assertEq(PublicInputs memory publicInputs, PublicInputs memory expectedPublicInputs) internal pure {
-        assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "Pubkey hash mismatch");
-        assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "Header hash mismatch");
-        assertEq(publicInputs.proverAddress, expectedPublicInputs.proverAddress, "Prover address mismatch");
-        assertEq(publicInputs.command, expectedPublicInputs.command, "Command mismatch");
-        assertEq(publicInputs.xHandleCapture1, expectedPublicInputs.xHandleCapture1, "X handle capture 1 mismatch");
+        assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "pubkeyHash mismatch");
+        assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "headerHash mismatch");
+        assertEq(publicInputs.proverAddress, expectedPublicInputs.proverAddress, "proverAddress mismatch");
+        assertEq(publicInputs.command, expectedPublicInputs.command, "command mismatch");
+        assertEq(publicInputs.xHandleCapture1, expectedPublicInputs.xHandleCapture1, "xHandle mismatch");
+        assertEq(publicInputs.senderDomainCapture1, expectedPublicInputs.senderDomainCapture1, "senderDomain mismatch");
+        assertEq(publicInputs.nullifier, expectedPublicInputs.nullifier, "nullifier mismatch");
     }
 }
