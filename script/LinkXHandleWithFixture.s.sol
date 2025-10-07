@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import { Script } from "forge-std/Script.sol";
 import { LinkXHandleVerifier } from "../src/LinkXHandleVerifier.sol";
 import { LinkXHandleCommand } from "../src/verifiers/LinkXHandleCommandVerifier.sol";
-import { LinkXHandleCommandTestFixture } from "../test/fixtures/LinkXHandleCommand/LinkXHandleCommandTestFixture.sol";
+import { LinkXHandleCommandTestFixture } from "../test/fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
 import { DKIMRegistryMock } from "../test/fixtures/DKIMRegistryMock.sol";
 
 contract LinkXHandleWithFixtureScript is Script {
