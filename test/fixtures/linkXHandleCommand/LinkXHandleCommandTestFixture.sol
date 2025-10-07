@@ -4,22 +4,28 @@ pragma solidity ^0.8.30;
 import { Vm } from "forge-std/Vm.sol";
 import { LinkXHandleCommand, PublicInputs } from "../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { TextRecord } from "../../../src/LinkTextRecordVerifier.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 address constant _VM_ADDR = address(uint160(uint256(keccak256("hevm cheat code"))));
 Vm constant vm = Vm(_VM_ADDR);
 
 library LinkXHandleCommandTestFixture {
+    using Strings for string;
+
     function getFixture() internal view returns (LinkXHandleCommand memory command, bytes32[] memory publicInputs) {
         string memory path = string.concat(vm.projectRoot(), "/test/fixtures/linkXHandleCommand/");
 
+        PublicInputs memory expectedPublicInputs =
+            _getExpectedPublicInputs(string.concat(path, "files/expected_public_inputs.json"));
+
         command = LinkXHandleCommand({
             textRecord: TextRecord({
-                ensName: "zkfriendly.eth",
-                value: "thezdev1",
-                nullifier: 0x85fb869a94511ccbaaf108f91f59b407f36f89025341ed6536cbe2d0d338b7a1
+                ensName: _getLastWord(expectedPublicInputs.command),
+                value: expectedPublicInputs.xHandleCapture1,
+                nullifier: expectedPublicInputs.nullifier
             }),
             proof: abi.encodePacked(_getProofFieldsFromBinary(string.concat(path, "circuit/target/proof"))),
-            publicInputs: _getExpectedPublicInputs(string.concat(path, "files/expected_public_inputs.json"))
+            publicInputs: expectedPublicInputs
         });
 
         return (command, _getPublicInputsFieldsFromBinary(string.concat(path, "circuit/target/public_inputs")));
@@ -105,5 +111,29 @@ library LinkXHandleCommandTestFixture {
             publicInputs[i] = publicInputsFixed[i];
         }
         return publicInputs;
+    }
+
+    function _getLastWord(string memory input) private pure returns (string memory) {
+        bytes memory strBytes = bytes(input);
+        uint256 len = strBytes.length;
+        uint256 start = len;
+
+        // Iterate backwards to find the last space character
+        for (uint256 i = len; i > 0; i--) {
+            if (strBytes[i - 1] == 0x20) {
+                // 0x20 is the ASCII for space
+                start = i;
+                break;
+            }
+        }
+
+        // Copy the last word to a new bytes array
+        uint256 wordLen = len - start;
+        bytes memory lastWordBytes = new bytes(wordLen);
+        for (uint256 i = 0; i < wordLen; i++) {
+            lastWordBytes[i] = strBytes[start + i];
+        }
+
+        return string(lastWordBytes);
     }
 }
