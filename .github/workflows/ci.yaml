@@ -93,6 +93,11 @@ jobs:
       - name: Generate coverage report
         run: yarn coverage
 
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Check coverage threshold
         uses: ./.github/actions/check-coverage
         with:
