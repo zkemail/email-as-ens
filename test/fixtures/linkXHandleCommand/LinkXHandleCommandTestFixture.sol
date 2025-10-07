@@ -10,7 +10,7 @@ Vm constant vm = Vm(_VM_ADDR);
 
 library LinkXHandleCommandTestFixture {
     function getFixture() internal view returns (LinkXHandleCommand memory command, bytes32[] memory publicInputs) {
-        string memory path = string.concat(vm.projectRoot(), "/test/fixtures/linkXHandleCommand/files/");
+        string memory path = string.concat(vm.projectRoot(), "/test/fixtures/linkXHandleCommand/");
 
         command = LinkXHandleCommand({
             textRecord: TextRecord({
@@ -18,20 +18,20 @@ library LinkXHandleCommandTestFixture {
                 value: "thezdev1",
                 nullifier: 0x85fb869a94511ccbaaf108f91f59b407f36f89025341ed6536cbe2d0d338b7a1
             }),
-            proof: abi.encodePacked(_getProofFields(path)),
-            publicInputs: _getExpectedPublicInputs(path)
+            proof: abi.encodePacked(_getProofFieldsFromBinary(string.concat(path, "circuit/target/proof"))),
+            publicInputs: _getExpectedPublicInputs(string.concat(path, "files/expected_public_inputs.json"))
         });
 
-        return (command, _getPublicInputsFields(path));
+        return (command, _getPublicInputsFieldsFromBinary(string.concat(path, "circuit/target/public_inputs")));
     }
 
     /**
      * @notice Reads the expected pub signals from a `expected_public_inputs.json` file (PublicInputs struct object)
-     * @param dirPath Path to the directory containing the `expected_public_inputs.json` file
+     * @param path Path to the file  with the expected public inputs
      * @return publicInputs The PublicInputs struct object
      */
-    function _getExpectedPublicInputs(string memory dirPath) private view returns (PublicInputs memory publicInputs) {
-        string memory publicInputsFile = vm.readFile(string.concat(dirPath, "expected_public_inputs.json"));
+    function _getExpectedPublicInputs(string memory path) private view returns (PublicInputs memory publicInputs) {
+        string memory publicInputsFile = vm.readFile(path);
         return PublicInputs({
             pubkeyHash: abi.decode(vm.parseJson(publicInputsFile, ".pubkeyHash"), (bytes32)),
             headerHash: abi.decode(vm.parseJson(publicInputsFile, ".headerHash"), (bytes32)),
@@ -44,22 +44,22 @@ library LinkXHandleCommandTestFixture {
 
     /**
      * @notice Reads the proof from a `proof_fields.json` file (array of field / bytes32 values)
-     * @param dirPath Path to the directory containing the `proof_fields.json` file
+     * @param path Path to the file with the proof fields
      * @return proofFields The proof fields
      */
-    function _getProofFields(string memory dirPath) private view returns (bytes32[] memory proofFields) {
-        bytes memory proofFieldsData = vm.parseJson(vm.readFile(string.concat(dirPath, "proof_fields.json")), ".");
+    function _getProofFields(string memory path) private view returns (bytes32[] memory proofFields) {
+        bytes memory proofFieldsData = vm.parseJson(vm.readFile(path), ".");
         return abi.decode(proofFieldsData, (bytes32[]));
     }
 
     /**
      * @notice Reads the proof from a `proof` file (raw bytes of the proof)
-     * @param dirPath Path to the directory containing the `proof` file
+     * @param path Path to the file with the proof fields
      * @return proofFields The proof fields
      */
-    function _getProofFieldsFromBinary(string memory dirPath) private view returns (bytes32[] memory proofFields) {
+    function _getProofFieldsFromBinary(string memory path) private view returns (bytes32[] memory proofFields) {
         // 1) Read the raw bytes
-        bytes memory packed = vm.readFileBinary(string.concat(dirPath, "proof"));
+        bytes memory packed = vm.readFileBinary(path);
 
         // 2) Decode the blob into fixed bytes32[440]
         (bytes32[440] memory proofFixed) = abi.decode(packed, (bytes32[440]));
@@ -74,27 +74,26 @@ library LinkXHandleCommandTestFixture {
 
     /**
      * @notice Reads the public inputs from a `public_inputs_fields.json` file (array of field / bytes32 values)
-     * @param dirPath Path to the directory containing the `public_inputs_fields.json` file
+     * @param path Path to the file with the public inputs fields
      * @return publicInputs The public inputs fields
      */
-    function _getPublicInputsFields(string memory dirPath) private view returns (bytes32[] memory publicInputs) {
-        bytes memory publicInputsFieldsData =
-            vm.parseJson(vm.readFile(string.concat(dirPath, "public_inputs_fields.json")), ".");
+    function _getPublicInputsFields(string memory path) private view returns (bytes32[] memory publicInputs) {
+        bytes memory publicInputsFieldsData = vm.parseJson(vm.readFile(path), ".");
         return abi.decode(publicInputsFieldsData, (bytes32[]));
     }
 
     /**
      * @notice Reads the public inputs from a `public_inputs_fields.json` file (array of field / bytes32 values)
-     * @param dirPath Path to the directory containing the `public_inputs_fields.json` file
+     * @param path Path to the file with the public inputs fields
      * @return publicInputs The public inputs fields
      */
-    function _getPublicInputsFieldsFromBinary(string memory dirPath)
+    function _getPublicInputsFieldsFromBinary(string memory path)
         private
         view
         returns (bytes32[] memory publicInputs)
     {
         // 1) Read the raw bytes
-        bytes memory publicInputsFieldsData = vm.readFileBinary(string.concat(dirPath, "public_inputs"));
+        bytes memory publicInputsFieldsData = vm.readFileBinary(path);
 
         // 2) Decode the blob into fixed bytes32[154]
         (bytes32[154] memory publicInputsFixed) = abi.decode(publicInputsFieldsData, (bytes32[154]));
