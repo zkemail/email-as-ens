@@ -97,11 +97,11 @@ library LinkXHandleCommandTestFixture {
         bytes memory publicInputsFieldsData = vm.readFileBinary(path);
 
         // 2) Decode the blob into fixed bytes32[154]
-        (bytes32[154] memory publicInputsFixed) = abi.decode(publicInputsFieldsData, (bytes32[154]));
+        (bytes32[155] memory publicInputsFixed) = abi.decode(publicInputsFieldsData, (bytes32[155]));
 
         // 3) Convert to dynamic bytes32[]
-        publicInputs = new bytes32[](154);
-        for (uint256 i = 0; i < 154; i++) {
+        publicInputs = new bytes32[](155);
+        for (uint256 i = 0; i < 155; i++) {
             publicInputs[i] = publicInputsFixed[i];
         }
         return publicInputs;
