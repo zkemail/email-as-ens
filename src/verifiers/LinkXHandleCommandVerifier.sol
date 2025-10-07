@@ -187,8 +187,7 @@ contract LinkXHandleCommandVerifier is IVerifier {
                 ),
                 // x handle is the value
                 value: publicInputs.xHandleCapture1,
-                // header hash is used as nullifier
-                nullifier: publicInputs.headerHash
+                nullifier: publicInputs.nullifier
             }),
             proof: proof,
             publicInputs: publicInputs
