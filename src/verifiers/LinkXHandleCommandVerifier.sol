@@ -26,6 +26,7 @@ struct PublicInputs {
     string command;
     string xHandleCapture1;
     string senderDomainCapture1;
+    bytes32 nullifier;
 }
 
 struct LinkXHandleCommand {
@@ -54,8 +55,11 @@ contract LinkXHandleCommandVerifier is IVerifier {
     // #6: sender_domain_capture_1 64 fields + 1 field (length) -> idx 89-153
     uint256 public constant SENDER_DOMAIN_CAPTURE_1_OFFSET = 89;
     uint256 public constant SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS = 65;
+    // #7: nullifier -> 1 field -> idx 154
+    uint256 public constant NULLIFIER_OFFSET = 154;
+    uint256 public constant NULLIFIER_NUM_FIELDS = 1;
 
-    uint256 public constant PUBLIC_INPUTS_LENGTH = 154;
+    uint256 public constant PUBLIC_INPUTS_LENGTH = 155;
 
     address public immutable HONK_VERIFIER;
     address public immutable DKIM_REGISTRY;
@@ -136,6 +140,7 @@ contract LinkXHandleCommandVerifier is IVerifier {
             SENDER_DOMAIN_CAPTURE_1_OFFSET,
             NoirUtils.packBoundedVecU8(publicInputs.senderDomainCapture1, SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS)
         );
+        fields[NULLIFIER_OFFSET] = publicInputs.nullifier;
         return fields;
     }
 
@@ -158,7 +163,8 @@ contract LinkXHandleCommandVerifier is IVerifier {
                 fields.slice(
                     SENDER_DOMAIN_CAPTURE_1_OFFSET, SENDER_DOMAIN_CAPTURE_1_OFFSET + SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS
                 )
-            )
+            ),
+            nullifier: fields[NULLIFIER_OFFSET]
         });
     }
 

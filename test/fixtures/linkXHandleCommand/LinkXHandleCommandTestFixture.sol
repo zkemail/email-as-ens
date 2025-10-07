@@ -38,7 +38,8 @@ library LinkXHandleCommandTestFixture {
             proverAddress: abi.decode(vm.parseJson(publicInputsFile, ".proverAddress"), (string)),
             command: abi.decode(vm.parseJson(publicInputsFile, ".command"), (string)),
             xHandleCapture1: abi.decode(vm.parseJson(publicInputsFile, ".xHandleCapture1"), (string)),
-            senderDomainCapture1: abi.decode(vm.parseJson(publicInputsFile, ".senderDomainCapture1"), (string))
+            senderDomainCapture1: abi.decode(vm.parseJson(publicInputsFile, ".senderDomainCapture1"), (string)),
+            nullifier: abi.decode(vm.parseJson(publicInputsFile, ".nullifier"), (bytes32))
         });
     }
 

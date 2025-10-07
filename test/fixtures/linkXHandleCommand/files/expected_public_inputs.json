@@ -4,5 +4,6 @@
   "proverAddress": "",
   "command": "Link my x handle to zkfriendly.eth",
   "xHandleCapture1": "thezdev1",
-  "senderDomainCapture1": "x.com"
+  "senderDomainCapture1": "x.com",
+  "nullifier": "0x1a51fc11ec97e1002f9e814f6530526ce2a79c3a63d705a4cbe8f5c09abcb51c"
 }
