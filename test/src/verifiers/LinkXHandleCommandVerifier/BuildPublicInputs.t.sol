@@ -10,7 +10,9 @@ contract BuildPublicInputsTest is Test {
     LinkXHandleCommandVerifierHelper internal _verifier;
 
     function setUp() public {
-        _verifier = new LinkXHandleCommandVerifierHelper();
+        address honkVerifier = makeAddr("honkVerifier");
+        address dkimRegistry = makeAddr("dkimRegistry");
+        _verifier = new LinkXHandleCommandVerifierHelper(honkVerifier, dkimRegistry);
     }
 
     function test_correctlyBuildsSignalsForLinkXHandleCommand() public view {

@@ -7,11 +7,16 @@ import { IVerifier } from "../../../src/interfaces/IVerifier.sol";
 
 contract DkimRegistryAddressTest is Test {
     ZkEmailRegistrarHelper public helper;
+
+    bytes32 public rootNode;
     address public verifier;
+    address public ens;
 
     function setUp() public {
+        rootNode = keccak256("rootNode");
         verifier = makeAddr("verifier");
-        helper = new ZkEmailRegistrarHelper(keccak256("rootNode"), verifier, makeAddr("ens"));
+        ens = makeAddr("ens");
+        helper = new ZkEmailRegistrarHelper(rootNode, verifier, ens);
     }
 
     function test_callsVerifierDkimRegistryAddress() public {
@@ -26,13 +31,13 @@ contract DkimRegistryAddressTest is Test {
     }
 
     function test_returnsCorrectAddress() public {
-        address dkimRegistryAddress = makeAddr("dkimRegistry");
+        address dkimRegistry = makeAddr("dkimRegistry");
 
         bytes memory calldataBytes = abi.encodeCall(IVerifier.dkimRegistryAddress, ());
-        bytes memory returnDataBytes = abi.encode(dkimRegistryAddress);
+        bytes memory returnDataBytes = abi.encode(dkimRegistry);
 
         vm.mockCall(verifier, calldataBytes, returnDataBytes);
         address result = helper.dkimRegistryAddress();
-        assertEq(result, dkimRegistryAddress);
+        assertEq(result, dkimRegistry);
     }
 }

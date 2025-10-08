@@ -102,9 +102,9 @@ abstract contract EmailAuthVerifier is IVerifier {
         _;
     }
 
-    constructor(address _groth16Verifier, address _dkimRegistry) {
-        GORTH16_VERIFIER = _groth16Verifier;
-        DKIM_REGISTRY = _dkimRegistry;
+    constructor(address groth16Verifier, address dkimRegistry) {
+        GORTH16_VERIFIER = groth16Verifier;
+        DKIM_REGISTRY = dkimRegistry;
     }
 
     /**

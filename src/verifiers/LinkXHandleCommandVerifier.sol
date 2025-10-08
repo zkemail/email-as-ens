@@ -74,9 +74,9 @@ contract LinkXHandleCommandVerifier is IVerifier {
         _;
     }
 
-    constructor(address _honkVerifier, address _dkimRegistry) {
-        HONK_VERIFIER = _honkVerifier;
-        DKIM_REGISTRY = _dkimRegistry;
+    constructor(address honkVerifier, address dkimRegistry) {
+        HONK_VERIFIER = honkVerifier;
+        DKIM_REGISTRY = dkimRegistry;
     }
 
     /**
