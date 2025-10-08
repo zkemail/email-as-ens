@@ -6,7 +6,7 @@ import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleComm
 import { LinkXHandleCommand } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { LinkXHandleCommandVerifierHelper } from "./_LinkXHandleCommandVerifierHelper.sol";
 
-contract BuildPublicInputsTest is Test {
+contract PackPublicInputsTest is Test {
     LinkXHandleCommandVerifierHelper internal _verifier;
 
     function setUp() public {
@@ -15,7 +15,7 @@ contract BuildPublicInputsTest is Test {
         _verifier = new LinkXHandleCommandVerifierHelper(honkVerifier, dkimRegistry);
     }
 
-    function test_correctlyBuildsSignalsForLinkXHandleCommand() public view {
+    function test_correctlyPacksPublicInputsForLinkXHandleCommand() public view {
         (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
             LinkXHandleCommandTestFixture.getFixture();
         bytes32[] memory publicInputs = _verifier.packPublicInputs(command.publicInputs);
