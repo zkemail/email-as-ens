@@ -57,26 +57,35 @@ abstract contract EmailAuthVerifier is IVerifier {
 
     // #1: domain_name CEIL(255 bytes / 31 bytes per field) = 9 fields -> idx 0-8
     uint256 public constant DOMAIN_NAME_OFFSET = 0;
-    uint256 public constant DOMAIN_NAME_SIZE = 255;
+    uint256 public constant DOMAIN_NAME_NUM_FIELDS = 9;
+    uint256 public constant DOMAIN_NAME_PADDED_SIZE = 255;
     // #2: public_key_hash 32 bytes -> 1 field -> idx 9
     uint256 public constant PUBLIC_KEY_HASH_OFFSET = 9;
+    uint256 public constant PUBLIC_KEY_HASH_NUM_FIELDS = 1;
     // #3: email_nullifier 32 bytes -> 1 field -> idx 10
     uint256 public constant EMAIL_NULLIFIER_OFFSET = 10;
+    uint256 public constant EMAIL_NULLIFIER_NUM_FIELDS = 1;
     // #4: timestamp 32 bytes -> 1 field -> idx 11
     uint256 public constant TIMESTAMP_OFFSET = 11;
+    uint256 public constant TIMESTAMP_NUM_FIELDS = 1;
     // #5: masked_command CEIL(605 bytes / 31 bytes per field) = 20 fields -> idx 12-31
     uint256 public constant MASKED_COMMAND_OFFSET = 12;
     uint256 public constant MASKED_COMMAND_SIZE = 605;
+    uint256 public constant MASKED_COMMAND_NUM_FIELDS = 20;
     // #6: account_salt 32 bytes -> 1 field -> idx 32
     uint256 public constant ACCOUNT_SALT_OFFSET = 32;
+    uint256 public constant ACCOUNT_SALT_NUM_FIELDS = 1;
     // #7: is_code_exist 1 byte -> 1 field -> idx 33
     uint256 public constant IS_CODE_EXIST_OFFSET = 33;
+    uint256 public constant IS_CODE_EXIST_NUM_FIELDS = 1;
     // #8: pubkey -> 17 fields -> idx 34-50
     uint256 public constant MISCELLANEOUS_DATA_OFFSET = 34;
     uint256 public constant MISCELLANEOUS_DATA_SIZE = 17;
+    uint256 public constant MISCELLANEOUS_DATA_NUM_FIELDS = 17;
     // #9: email_address CEIL(256 bytes / 31 bytes per field) = 9 fields -> idx 51-59
     uint256 public constant EMAIL_ADDRESS_OFFSET = 51;
-    uint256 public constant EMAIL_ADDRESS_SIZE = 256;
+    uint256 public constant EMAIL_ADDRESS_PADDED_SIZE = 256;
+    uint256 public constant EMAIL_ADDRESS_NUM_FIELDS = 9;
 
     uint256 public constant PUBLIC_INPUTS_LENGTH = 60;
 
@@ -182,15 +191,22 @@ abstract contract EmailAuthVerifier is IVerifier {
      */
     function _packPublicInputs(PublicInputs memory publicInputs) internal pure returns (bytes32[] memory fields) {
         fields = new bytes32[](PUBLIC_INPUTS_LENGTH);
-        fields.splice(DOMAIN_NAME_OFFSET, CircomUtils.packString(publicInputs.domainName, DOMAIN_NAME_SIZE));
+        fields.splice(
+            DOMAIN_NAME_OFFSET, CircomUtils.packFieldsArray(bytes(publicInputs.domainName), DOMAIN_NAME_PADDED_SIZE)
+        );
         fields[PUBLIC_KEY_HASH_OFFSET] = publicInputs.publicKeyHash;
         fields[EMAIL_NULLIFIER_OFFSET] = publicInputs.emailNullifier;
         fields[TIMESTAMP_OFFSET] = bytes32(publicInputs.timestamp);
-        fields.splice(MASKED_COMMAND_OFFSET, CircomUtils.packString(publicInputs.maskedCommand, MASKED_COMMAND_SIZE));
+        fields.splice(
+            MASKED_COMMAND_OFFSET, CircomUtils.packFieldsArray(bytes(publicInputs.maskedCommand), MASKED_COMMAND_SIZE)
+        );
         fields[ACCOUNT_SALT_OFFSET] = publicInputs.accountSalt;
         fields.splice(IS_CODE_EXIST_OFFSET, CircomUtils.packBool(publicInputs.isCodeExist));
         fields.splice(MISCELLANEOUS_DATA_OFFSET, EnsUtils.packPubKey(publicInputs.miscellaneousData));
-        fields.splice(EMAIL_ADDRESS_OFFSET, CircomUtils.packString(publicInputs.emailAddress, EMAIL_ADDRESS_SIZE));
+        fields.splice(
+            EMAIL_ADDRESS_OFFSET,
+            CircomUtils.packFieldsArray(bytes(publicInputs.emailAddress), EMAIL_ADDRESS_PADDED_SIZE)
+        );
 
         return fields;
     }
@@ -204,15 +220,33 @@ abstract contract EmailAuthVerifier is IVerifier {
         if (fields.length != PUBLIC_INPUTS_LENGTH) revert CircomUtils.InvalidPublicInputsLength();
 
         return PublicInputs({
-            domainName: CircomUtils.unpackString(fields, DOMAIN_NAME_OFFSET, DOMAIN_NAME_SIZE),
+            domainName: string(
+                CircomUtils.unpackFieldsArray(
+                    // solhint-disable-next-line max-line-length
+                    fields.slice(DOMAIN_NAME_OFFSET, DOMAIN_NAME_OFFSET + DOMAIN_NAME_NUM_FIELDS),
+                    DOMAIN_NAME_PADDED_SIZE
+                )
+            ),
             publicKeyHash: fields[PUBLIC_KEY_HASH_OFFSET],
             emailNullifier: fields[EMAIL_NULLIFIER_OFFSET],
             timestamp: uint256(fields[TIMESTAMP_OFFSET]),
-            maskedCommand: CircomUtils.unpackString(fields, MASKED_COMMAND_OFFSET, MASKED_COMMAND_SIZE),
+            maskedCommand: string(
+                CircomUtils.unpackFieldsArray(
+                    fields.slice(MASKED_COMMAND_OFFSET, MASKED_COMMAND_OFFSET + MASKED_COMMAND_NUM_FIELDS),
+                    MASKED_COMMAND_SIZE
+                )
+            ),
             accountSalt: fields[ACCOUNT_SALT_OFFSET],
-            isCodeExist: CircomUtils.unpackBool(fields, IS_CODE_EXIST_OFFSET),
+            isCodeExist: CircomUtils.unpackBool(
+                fields.slice(IS_CODE_EXIST_OFFSET, IS_CODE_EXIST_OFFSET + IS_CODE_EXIST_NUM_FIELDS)
+            ),
             miscellaneousData: EnsUtils.unpackPubKey(fields, MISCELLANEOUS_DATA_OFFSET),
-            emailAddress: CircomUtils.unpackString(fields, EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_SIZE)
+            emailAddress: string(
+                CircomUtils.unpackFieldsArray(
+                    fields.slice(EMAIL_ADDRESS_OFFSET, EMAIL_ADDRESS_OFFSET + EMAIL_ADDRESS_NUM_FIELDS),
+                    EMAIL_ADDRESS_PADDED_SIZE
+                )
+            )
         });
     }
 }

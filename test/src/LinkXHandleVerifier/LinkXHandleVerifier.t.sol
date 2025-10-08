@@ -20,9 +20,7 @@ contract LinkXHandleVerifierTest is Test {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
         verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        dkim.setValid(
-            keccak256(bytes(command.publicInputs.senderDomainCapture1)), command.publicInputs.pubkeyHash, true
-        );
+        dkim.setValid(keccak256(bytes(command.publicInputs.senderDomain)), command.publicInputs.pubkeyHash, true);
         linkXHandle = new LinkXHandleVerifierHelper(address(verifier));
     }
 

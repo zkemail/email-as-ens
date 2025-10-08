@@ -20,9 +20,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
         _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
         // configure DKIM mock with valid domain+key
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        dkim.setValid(
-            keccak256(bytes(command.publicInputs.senderDomainCapture1)), command.publicInputs.pubkeyHash, true
-        );
+        dkim.setValid(keccak256(bytes(command.publicInputs.senderDomain)), command.publicInputs.pubkeyHash, true);
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
@@ -48,8 +46,8 @@ contract EncodeTest is _EmailAuthVerifierTest {
         assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "headerHash mismatch");
         assertEq(publicInputs.proverAddress, expectedPublicInputs.proverAddress, "proverAddress mismatch");
         assertEq(publicInputs.command, expectedPublicInputs.command, "command mismatch");
-        assertEq(publicInputs.xHandleCapture1, expectedPublicInputs.xHandleCapture1, "xHandle mismatch");
-        assertEq(publicInputs.senderDomainCapture1, expectedPublicInputs.senderDomainCapture1, "senderDomain mismatch");
+        assertEq(publicInputs.xHandle, expectedPublicInputs.xHandle, "xHandle mismatch");
+        assertEq(publicInputs.senderDomain, expectedPublicInputs.senderDomain, "senderDomain mismatch");
         assertEq(publicInputs.nullifier, expectedPublicInputs.nullifier, "nullifier mismatch");
     }
 }

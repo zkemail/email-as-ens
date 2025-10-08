@@ -249,7 +249,7 @@
 
 "@zk-email/zk-email-verify@github:zkemail/zk-email-verify#bence/circuit-utils-changes":
   version "6.2.0"
-  resolved "https://codeload.github.com/zkemail/zk-email-verify/tar.gz/2f37398a674e1e9226c6e8b865b61b1e1a78a8c5"
+  resolved "https://codeload.github.com/zkemail/zk-email-verify/tar.gz/350c8a75399ee700799443e39f1e18665f60049a"
 
 JSONStream@^1.3.5:
   version "1.3.5"

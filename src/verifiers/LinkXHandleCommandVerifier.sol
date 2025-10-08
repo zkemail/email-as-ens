@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { NoirUtils } from "@zk-email/contracts/utils/NoirUtils.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
-import { Bytes32 } from "../utils/Bytes32.sol";
-import { TextRecord } from "../LinkTextRecordVerifier.sol";
+import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
 import { IVerifier } from "../interfaces/IVerifier.sol";
+import { Bytes32 } from "../utils/Bytes32.sol";
+import { EnsUtils } from "../utils/EnsUtils.sol";
+import { TextRecord } from "../LinkTextRecordVerifier.sol";
 
 /**
  * @notice Enum representing the indices of command parameters in the command template
@@ -22,10 +23,10 @@ enum CommandParamIndex {
 struct PublicInputs {
     bytes32 pubkeyHash;
     bytes32 headerHash;
-    string proverAddress;
+    address proverAddress;
     string command;
-    string xHandleCapture1;
-    string senderDomainCapture1;
+    string xHandle;
+    string senderDomain;
     bytes32 nullifier;
 }
 
@@ -50,11 +51,11 @@ contract LinkXHandleCommandVerifier is IVerifier {
     uint256 public constant COMMAND_OFFSET = 4;
     uint256 public constant COMMAND_NUM_FIELDS = 20;
     // #5: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 24-88
-    uint256 public constant X_HANDLE_CAPTURE_1_OFFSET = 24;
-    uint256 public constant X_HANDLE_CAPTURE_1_NUM_FIELDS = 65;
+    uint256 public constant X_HANDLE_OFFSET = 24;
+    uint256 public constant X_HANDLE_NUM_FIELDS = 65;
     // #6: sender_domain_capture_1 64 fields + 1 field (length) -> idx 89-153
-    uint256 public constant SENDER_DOMAIN_CAPTURE_1_OFFSET = 89;
-    uint256 public constant SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS = 65;
+    uint256 public constant SENDER_DOMAIN_OFFSET = 89;
+    uint256 public constant SENDER_DOMAIN_NUM_FIELDS = 65;
     // #7: nullifier -> 1 field -> idx 154
     uint256 public constant NULLIFIER_OFFSET = 154;
     uint256 public constant NULLIFIER_NUM_FIELDS = 1;
@@ -114,31 +115,28 @@ contract LinkXHandleCommandVerifier is IVerifier {
     function _isValid(LinkXHandleCommand memory command)
         internal
         view
-        onlyValidDkimKeyHash(command.publicInputs.senderDomainCapture1, command.publicInputs.pubkeyHash)
+        onlyValidDkimKeyHash(command.publicInputs.senderDomain, command.publicInputs.pubkeyHash)
         returns (bool)
     {
         PublicInputs memory publicInputs = command.publicInputs;
 
         return IHonkVerifier(HONK_VERIFIER).verify(command.proof, _packPublicInputs(publicInputs))
-            && Strings.equal(command.textRecord.value, publicInputs.xHandleCapture1)
+            && Strings.equal(command.textRecord.value, publicInputs.xHandle)
             && Strings.equal(_getCommand(command), publicInputs.command);
     }
 
     function _packPublicInputs(PublicInputs memory publicInputs) internal pure returns (bytes32[] memory fields) {
         fields = new bytes32[](PUBLIC_INPUTS_LENGTH);
         fields[PUBKEY_HASH_OFFSET] = publicInputs.pubkeyHash;
-        fields.splice(HEADER_HASH_OFFSET, NoirUtils.packHeaderHash(publicInputs.headerHash));
+        fields.splice(HEADER_HASH_OFFSET, EnsUtils.packHeaderHash(publicInputs.headerHash));
         fields.splice(
-            PROVER_ADDRESS_OFFSET, NoirUtils.packFieldsArray(publicInputs.proverAddress, PROVER_ADDRESS_NUM_FIELDS)
+            PROVER_ADDRESS_OFFSET,
+            NoirUtils.packFieldsArray(abi.encodePacked(publicInputs.proverAddress), PROVER_ADDRESS_NUM_FIELDS)
         );
-        fields.splice(COMMAND_OFFSET, NoirUtils.packFieldsArray(publicInputs.command, COMMAND_NUM_FIELDS));
+        fields.splice(COMMAND_OFFSET, NoirUtils.packFieldsArray(bytes(publicInputs.command), COMMAND_NUM_FIELDS));
+        fields.splice(X_HANDLE_OFFSET, NoirUtils.packBoundedVecU8(bytes(publicInputs.xHandle), X_HANDLE_NUM_FIELDS));
         fields.splice(
-            X_HANDLE_CAPTURE_1_OFFSET,
-            NoirUtils.packBoundedVecU8(publicInputs.xHandleCapture1, X_HANDLE_CAPTURE_1_NUM_FIELDS)
-        );
-        fields.splice(
-            SENDER_DOMAIN_CAPTURE_1_OFFSET,
-            NoirUtils.packBoundedVecU8(publicInputs.senderDomainCapture1, SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS)
+            SENDER_DOMAIN_OFFSET, NoirUtils.packBoundedVecU8(bytes(publicInputs.senderDomain), SENDER_DOMAIN_NUM_FIELDS)
         );
         fields[NULLIFIER_OFFSET] = publicInputs.nullifier;
         return fields;
@@ -149,19 +147,26 @@ contract LinkXHandleCommandVerifier is IVerifier {
 
         return PublicInputs({
             pubkeyHash: fields[PUBKEY_HASH_OFFSET],
-            headerHash: NoirUtils.unpackHeaderHash(
+            headerHash: EnsUtils.unpackHeaderHash(
                 fields.slice(HEADER_HASH_OFFSET, HEADER_HASH_OFFSET + HEADER_HASH_NUM_FIELDS)
             ),
-            proverAddress: NoirUtils.unpackFieldsArray(
-                fields.slice(PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_OFFSET + PROVER_ADDRESS_NUM_FIELDS)
+            proverAddress: address(
+                uint160(
+                    bytes20(
+                        NoirUtils.unpackFieldsArray(
+                            fields.slice(PROVER_ADDRESS_OFFSET, PROVER_ADDRESS_OFFSET + PROVER_ADDRESS_NUM_FIELDS)
+                        )
+                    )
+                )
             ),
-            command: NoirUtils.unpackFieldsArray(fields.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS)),
-            xHandleCapture1: NoirUtils.unpackBoundedVecU8(
-                fields.slice(X_HANDLE_CAPTURE_1_OFFSET, X_HANDLE_CAPTURE_1_OFFSET + X_HANDLE_CAPTURE_1_NUM_FIELDS)
+            // solhint-disable-next-line max-line-length
+            command: string(NoirUtils.unpackFieldsArray(fields.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS))),
+            xHandle: string(
+                NoirUtils.unpackBoundedVecU8(fields.slice(X_HANDLE_OFFSET, X_HANDLE_OFFSET + X_HANDLE_NUM_FIELDS))
             ),
-            senderDomainCapture1: NoirUtils.unpackBoundedVecU8(
-                fields.slice(
-                    SENDER_DOMAIN_CAPTURE_1_OFFSET, SENDER_DOMAIN_CAPTURE_1_OFFSET + SENDER_DOMAIN_CAPTURE_1_NUM_FIELDS
+            senderDomain: string(
+                NoirUtils.unpackBoundedVecU8(
+                    fields.slice(SENDER_DOMAIN_OFFSET, SENDER_DOMAIN_OFFSET + SENDER_DOMAIN_NUM_FIELDS)
                 )
             ),
             nullifier: fields[NULLIFIER_OFFSET]
@@ -186,7 +191,7 @@ contract LinkXHandleCommandVerifier is IVerifier {
                     )
                 ),
                 // x handle is the value
-                value: publicInputs.xHandleCapture1,
+                value: publicInputs.xHandle,
                 nullifier: publicInputs.nullifier
             }),
             proof: proof,

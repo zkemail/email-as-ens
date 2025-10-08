@@ -17,9 +17,7 @@ contract IsValidTest is Test {
         _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
         // configure DKIM mock with valid domain+key
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        dkim.setValid(
-            keccak256(bytes(command.publicInputs.senderDomainCapture1)), command.publicInputs.pubkeyHash, true
-        );
+        dkim.setValid(keccak256(bytes(command.publicInputs.senderDomain)), command.publicInputs.pubkeyHash, true);
     }
 
     // when verifier fails it reverts not returns false

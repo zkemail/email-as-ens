@@ -21,7 +21,7 @@ library LinkXHandleCommandTestFixture {
         command = LinkXHandleCommand({
             textRecord: TextRecord({
                 ensName: _getLastWord(expectedPublicInputs.command),
-                value: expectedPublicInputs.xHandleCapture1,
+                value: expectedPublicInputs.xHandle,
                 nullifier: expectedPublicInputs.nullifier
             }),
             proof: abi.encodePacked(_getProofFieldsFromBinary(string.concat(path, "circuit/target/proof"))),
@@ -41,10 +41,10 @@ library LinkXHandleCommandTestFixture {
         return PublicInputs({
             pubkeyHash: abi.decode(vm.parseJson(publicInputsFile, ".pubkeyHash"), (bytes32)),
             headerHash: abi.decode(vm.parseJson(publicInputsFile, ".headerHash"), (bytes32)),
-            proverAddress: abi.decode(vm.parseJson(publicInputsFile, ".proverAddress"), (string)),
+            proverAddress: abi.decode(vm.parseJson(publicInputsFile, ".proverAddress"), (address)),
             command: abi.decode(vm.parseJson(publicInputsFile, ".command"), (string)),
-            xHandleCapture1: abi.decode(vm.parseJson(publicInputsFile, ".xHandleCapture1"), (string)),
-            senderDomainCapture1: abi.decode(vm.parseJson(publicInputsFile, ".senderDomainCapture1"), (string)),
+            xHandle: abi.decode(vm.parseJson(publicInputsFile, ".xHandle"), (string)),
+            senderDomain: abi.decode(vm.parseJson(publicInputsFile, ".senderDomain"), (string)),
             nullifier: abi.decode(vm.parseJson(publicInputsFile, ".nullifier"), (bytes32))
         });
     }

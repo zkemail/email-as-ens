@@ -18,7 +18,7 @@ contract LinkXHandleWithFixtureScript is Script {
 
         LinkXHandleVerifier verifier = LinkXHandleVerifier(LINK_X_HANDLE_VERIFIER);
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        bytes32 domainHash = keccak256(bytes(command.publicInputs.senderDomainCapture1));
+        bytes32 domainHash = keccak256(bytes(command.publicInputs.senderDomain));
 
         vm.startBroadcast(deployerPrivateKey);
 
