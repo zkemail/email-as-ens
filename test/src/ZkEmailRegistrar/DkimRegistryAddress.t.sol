@@ -2,16 +2,16 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { ZkEmailRegistrar } from "../../../src/ZkEmailRegistrar.sol";
+import { ZkEmailRegistrarHelper } from "./_ZkEmailRegistrarHelper.sol";
 import { IVerifier } from "../../../src/interfaces/IVerifier.sol";
 
 contract DkimRegistryAddressTest is Test {
-    ZkEmailRegistrar public registrar;
+    ZkEmailRegistrarHelper public helper;
     address public verifier;
 
     function setUp() public {
         verifier = makeAddr("verifier");
-        registrar = new ZkEmailRegistrar(keccak256("rootNode"), verifier, makeAddr("ens"));
+        helper = new ZkEmailRegistrarHelper(keccak256("rootNode"), verifier, makeAddr("ens"));
     }
 
     function test_callsVerifierDkimRegistryAddress() public {
@@ -22,7 +22,7 @@ contract DkimRegistryAddressTest is Test {
 
         vm.mockCall(verifier, calldataBytes, returnDataBytes);
         vm.expectCall(verifier, calldataBytes);
-        registrar.dkimRegistryAddress();
+        helper.dkimRegistryAddress();
     }
 
     function test_returnsCorrectAddress() public {
@@ -32,7 +32,7 @@ contract DkimRegistryAddressTest is Test {
         bytes memory returnDataBytes = abi.encode(dkimRegistryAddress);
 
         vm.mockCall(verifier, calldataBytes, returnDataBytes);
-        address result = registrar.dkimRegistryAddress();
+        address result = helper.dkimRegistryAddress();
         assertEq(result, dkimRegistryAddress);
     }
 }

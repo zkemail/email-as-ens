@@ -11,7 +11,7 @@ contract BuildPublicInputsTest is Test {
     EmailAuthVerifierHelper internal _verifier;
 
     function setUp() public {
-        _verifier = new EmailAuthVerifierHelper();
+        _verifier = new EmailAuthVerifierHelper(makeAddr("groth16Verifier"), makeAddr("dkimRegistry"));
     }
 
     function test_correctlyBuildsSignalsForClaimEnsCommand() public view {
