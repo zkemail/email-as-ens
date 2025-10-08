@@ -12,6 +12,14 @@ contract EnsUtilsHelper {
         return EnsUtils.namehash(name, offset);
     }
 
+    function callPackHeaderHash(bytes32 headerHash) external pure returns (bytes32[] memory) {
+        return EnsUtils.packHeaderHash(headerHash);
+    }
+
+    function callUnpackHeaderHash(bytes32[] memory fields) external pure returns (bytes32) {
+        return EnsUtils.unpackHeaderHash(fields);
+    }
+
     function callPackPubKey(bytes memory pubKeyBytes) external pure returns (bytes32[] memory fields) {
         return EnsUtils.packPubKey(pubKeyBytes);
     }
