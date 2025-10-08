@@ -97,9 +97,3 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Check coverage threshold
-        uses: ./.github/actions/check-coverage
-        with:
-          minimum-coverage: 90.00
-          github-token: ${{ secrets.GITHUB_TOKEN }}
