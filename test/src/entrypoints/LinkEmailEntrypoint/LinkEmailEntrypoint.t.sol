@@ -2,19 +2,19 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { TestFixtures } from "../../fixtures/TestFixtures.sol";
-import { LinkEmailCommand, LinkEmailCommandVerifier } from "../../../src/verifiers/LinkEmailCommandVerifier.sol";
-import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";
-import { DKIMRegistryMock } from "../../fixtures/DKIMRegistryMock.sol";
-import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
-import { LinkEmailVerifierHelper } from "./_LinkEmailVerifierHelper.sol";
-import { LinkTextRecordVerifier } from "../../../src/LinkTextRecordVerifier.sol";
+import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
+import { LinkEmailCommand, LinkEmailCommandVerifier } from "../../../../src/verifiers/LinkEmailCommandVerifier.sol";
+import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
+import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
+import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";
+import { LinkEmailEntrypointHelper } from "./_LinkEmailEntrypointHelper.sol";
+import { LinkTextRecordEntrypoint } from "../../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
 
-contract LinkEmailVerifierTest is Test {
+contract LinkEmailEntrypointTest is Test {
     using EnsUtils for bytes;
 
     LinkEmailCommandVerifier public verifier;
-    LinkEmailVerifierHelper public linkEmail;
+    LinkEmailEntrypointHelper public linkEmail;
 
     function setUp() public {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
@@ -25,7 +25,7 @@ contract LinkEmailVerifierTest is Test {
             command.emailAuthProof.publicInputs.publicKeyHash,
             true
         );
-        linkEmail = new LinkEmailVerifierHelper(address(verifier));
+        linkEmail = new LinkEmailEntrypointHelper(address(verifier));
     }
 
     function test_entrypoint_correctlyEncodesAndValidatesCommand() public {
@@ -42,7 +42,7 @@ contract LinkEmailVerifierTest is Test {
         (LinkEmailCommand memory command, bytes32[] memory expectedPublicInputs) = TestFixtures.linkEmailCommand();
         bytes memory encodedCommand = linkEmail.encode(command.emailAuthProof.proof, expectedPublicInputs);
         linkEmail.entrypoint(encodedCommand);
-        vm.expectRevert(abi.encodeWithSelector(LinkTextRecordVerifier.NullifierUsed.selector));
+        vm.expectRevert(abi.encodeWithSelector(LinkTextRecordEntrypoint.NullifierUsed.selector));
         linkEmail.entrypoint(encodedCommand);
     }
 

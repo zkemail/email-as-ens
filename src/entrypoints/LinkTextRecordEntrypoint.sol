@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
-import { ITextRecordVerifier } from "./interfaces/ITextRecordVerifier.sol";
-import { IVerifier } from "./interfaces/IVerifier.sol";
-import { EnsUtils } from "./utils/EnsUtils.sol";
+import { IEntryPoint } from "../interfaces/IEntryPoint.sol";
+import { ITextRecordVerifier } from "../interfaces/ITextRecordVerifier.sol";
+import { IVerifier } from "../interfaces/IVerifier.sol";
+import { EnsUtils } from "../utils/EnsUtils.sol";
 
 struct TextRecord {
     string ensName;
@@ -13,11 +13,11 @@ struct TextRecord {
 }
 
 /**
- * @title LinkTextRecordVerifier
+ * @title LinkTextRecordEntrypoint
  * @notice Verifies a LinkTextRecordCommand and set the mapping of namehash(ensName) to text record.
  * @dev The verifier can be updated via the entrypoint function.
  */
-abstract contract LinkTextRecordVerifier is IEntryPoint, ITextRecordVerifier {
+abstract contract LinkTextRecordEntrypoint is IEntryPoint, ITextRecordVerifier {
     using EnsUtils for bytes;
 
     bytes32 private immutable _KEY;

@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Vm } from "forge-std/Vm.sol";
 import { LinkXHandleCommand, PublicInputs } from "../../../src/verifiers/LinkXHandleCommandVerifier.sol";
-import { TextRecord } from "../../../src/LinkTextRecordVerifier.sol";
+import { TextRecord } from "../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 address constant _VM_ADDR = address(uint160(uint256(keccak256("hevm cheat code"))));

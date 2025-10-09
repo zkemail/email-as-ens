@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { Script } from "forge-std/Script.sol";
-import { LinkEmailVerifier } from "../src/LinkEmailVerifier.sol";
+import { LinkEmailEntrypoint } from "../src/entrypoints/LinkEmailEntrypoint.sol";
 import { LinkEmailCommand } from "../src/verifiers/LinkEmailCommandVerifier.sol";
 import { DKIMRegistryMock } from "../test/fixtures/DKIMRegistryMock.sol";
 import { TestFixtures } from "../test/fixtures/TestFixtures.sol";
@@ -16,7 +16,7 @@ contract LinkEmailWithFixtureScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        LinkEmailVerifier verifier = LinkEmailVerifier(LINK_EMAIL_VERIFIER);
+        LinkEmailEntrypoint verifier = LinkEmailEntrypoint(LINK_EMAIL_VERIFIER);
         (LinkEmailCommand memory command, bytes32[] memory expectedPublicInputs) = TestFixtures.linkEmailCommand();
         bytes32 domainHash = keccak256(bytes(command.emailAuthProof.publicInputs.domainName));
 

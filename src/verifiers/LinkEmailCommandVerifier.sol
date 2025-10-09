@@ -6,7 +6,7 @@ import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUt
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { EmailAuthVerifier, EmailAuthProof, PublicInputs } from "./EmailAuthVerifier.sol";
-import { TextRecord } from "../LinkTextRecordVerifier.sol";
+import { TextRecord } from "../entrypoints/LinkTextRecordEntrypoint.sol";
 
 /**
  * @notice Enum representing the indices of command parameters in the command template

@@ -9,7 +9,7 @@ import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
 import { IVerifier } from "../interfaces/IVerifier.sol";
 import { Bytes32 } from "../utils/Bytes32.sol";
 import { EnsUtils } from "../utils/EnsUtils.sol";
-import { TextRecord } from "../LinkTextRecordVerifier.sol";
+import { TextRecord } from "../entrypoints/LinkTextRecordEntrypoint.sol";
 
 /**
  * @notice Enum representing the indices of command parameters in the command template

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { Script } from "forge-std/Script.sol";
-import { LinkXHandleVerifier } from "../src/LinkXHandleVerifier.sol";
+import { LinkXHandleEntrypoint } from "../src/entrypoints/LinkXHandleEntrypoint.sol";
 import { LinkXHandleCommand } from "../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { LinkXHandleCommandTestFixture } from "../test/fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
 import { DKIMRegistryMock } from "../test/fixtures/DKIMRegistryMock.sol";
@@ -16,7 +16,7 @@ contract LinkXHandleWithFixtureScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-        LinkXHandleVerifier verifier = LinkXHandleVerifier(LINK_X_HANDLE_VERIFIER);
+        LinkXHandleEntrypoint verifier = LinkXHandleEntrypoint(LINK_X_HANDLE_VERIFIER);
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
         bytes32 domainHash = keccak256(bytes(command.publicInputs.senderDomain));
 

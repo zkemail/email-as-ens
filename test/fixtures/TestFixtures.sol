@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import { ProveAndClaimCommand } from "../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 import { LinkEmailCommand } from "../../src/verifiers/LinkEmailCommandVerifier.sol";
 import { EmailAuthProof, PublicInputs } from "../../src/verifiers/EmailAuthVerifier.sol";
-import { TextRecord } from "../../src/LinkTextRecordVerifier.sol";
+import { TextRecord } from "../../src/entrypoints/LinkTextRecordEntrypoint.sol";
 
 /**
  * @title TestFixtures
