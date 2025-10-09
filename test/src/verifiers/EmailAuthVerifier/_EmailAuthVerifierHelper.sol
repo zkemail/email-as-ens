@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { EmailAuthVerifier, DecodedFields } from "../../../../src/verifiers/EmailAuthVerifier.sol";
+import { EmailAuthVerifier, PublicInputs } from "../../../../src/verifiers/EmailAuthVerifier.sol";
 
 contract EmailAuthVerifierHelper is EmailAuthVerifier {
-    constructor() EmailAuthVerifier(address(0), address(0)) { }
+    constructor(address groth16Verifier, address dkimRegistry) EmailAuthVerifier(groth16Verifier, dkimRegistry) { }
 
-    function encode(uint256[] calldata, bytes calldata) external pure override returns (bytes memory) {
+    function encode(bytes calldata, bytes32[] calldata) external pure override returns (bytes memory) {
         return "";
     }
 
@@ -14,7 +14,7 @@ contract EmailAuthVerifierHelper is EmailAuthVerifier {
         return false;
     }
 
-    function packPubSignals(DecodedFields memory decodedFields) public pure returns (uint256[60] memory) {
-        return _packPubSignals(decodedFields);
+    function packPublicInputs(PublicInputs memory decodedFields) public pure returns (bytes32[] memory) {
+        return _packPublicInputs(decodedFields);
     }
 }

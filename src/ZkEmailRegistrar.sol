@@ -65,8 +65,8 @@ contract ZkEmailRegistrar is IEntryPoint {
      * @inheritdoc IEntryPoint
      * @dev Delegates encoding to the configured VERIFIER contract
      */
-    function encode(uint256[] memory publicSignals, bytes memory proof) external view returns (bytes memory) {
-        return IVerifier(VERIFIER).encode(publicSignals, proof);
+    function encode(bytes calldata proof, bytes32[] calldata publicInputs) external view returns (bytes memory) {
+        return IVerifier(VERIFIER).encode(proof, publicInputs);
     }
 
     /**
@@ -89,7 +89,7 @@ contract ZkEmailRegistrar is IEntryPoint {
     }
 
     function _validate(ProveAndClaimCommand memory command) internal {
-        bytes32 emailNullifier = command.proof.fields.emailNullifier;
+        bytes32 emailNullifier = command.emailAuthProof.publicInputs.emailNullifier;
         if (_isUsed[emailNullifier]) {
             revert NullifierUsed();
         }

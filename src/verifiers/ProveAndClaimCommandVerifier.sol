@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import { CircomUtils } from "@zk-email/contracts/utils/CircomUtils.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
-import { EmailAuthVerifier, DecodedFields, EmailAuthProof } from "./EmailAuthVerifier.sol";
+import { EmailAuthVerifier, EmailAuthProof, PublicInputs } from "./EmailAuthVerifier.sol";
 import { EnsUtils } from "../utils/EnsUtils.sol";
 
 /**
@@ -23,13 +23,13 @@ struct ProveAndClaimCommand {
     string resolver;
     string[] emailParts;
     address owner;
-    EmailAuthProof proof;
+    EmailAuthProof emailAuthProof;
 }
 
 contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     using Bytes for bytes;
     using Strings for string;
-    using CircuitUtils for bytes;
+    using CircomUtils for bytes;
     using CommandUtils for bytes;
 
     constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
@@ -45,25 +45,28 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
      * @inheritdoc EmailAuthVerifier
      */
     function encode(
-        uint256[] calldata pubSignals,
-        bytes calldata proof
+        bytes calldata proof,
+        bytes32[] calldata publicInputs
     )
         external
         pure
         override
         returns (bytes memory encodedCommand)
     {
-        return abi.encode(_buildProveAndClaimCommand(pubSignals, proof));
+        return abi.encode(_buildProveAndClaimCommand(proof, publicInputs));
     }
 
     function _isValid(ProveAndClaimCommand memory command)
         internal
         view
-        onlyValidDkimKeyHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
+        onlyValidDkimKeyHash(
+            command.emailAuthProof.publicInputs.domainName,
+            command.emailAuthProof.publicInputs.publicKeyHash
+        )
         returns (bool)
     {
-        DecodedFields memory fields = command.proof.fields;
-        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
+        PublicInputs memory fields = command.emailAuthProof.publicInputs;
+        return _verifyEmailProof(GORTH16_VERIFIER, command.emailAuthProof)
             && EnsUtils.verifyEmailParts(command.emailParts, fields.emailAddress)
             && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
     }
@@ -72,26 +75,26 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
      * @notice Reconstructs a ProveAndClaimCommand struct from public signals and proof bytes.
      */
     function _buildProveAndClaimCommand(
-        uint256[] calldata pubSignals,
-        bytes memory proof
+        bytes memory proof,
+        bytes32[] calldata publicInputsFields
     )
         private
         pure
         returns (ProveAndClaimCommand memory command)
     {
-        DecodedFields memory decodedFields = _unpackPubSignals(pubSignals);
+        PublicInputs memory publicInputs = _unpackPublicInputs(publicInputsFields);
 
         return ProveAndClaimCommand({
             resolver: CommandUtils.extractCommandParamByIndex(
-                _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.RESOLVER)
+                _getTemplate(), publicInputs.maskedCommand, uint256(CommandParamIndex.RESOLVER)
             ),
-            emailParts: EnsUtils.extractEmailParts(decodedFields.emailAddress),
+            emailParts: EnsUtils.extractEmailParts(publicInputs.emailAddress),
             owner: Strings.parseAddress(
                 CommandUtils.extractCommandParamByIndex(
-                    _getTemplate(), decodedFields.maskedCommand, uint256(CommandParamIndex.OWNER)
+                    _getTemplate(), publicInputs.maskedCommand, uint256(CommandParamIndex.OWNER)
                 )
             ),
-            proof: EmailAuthProof({ fields: decodedFields, proof: proof })
+            emailAuthProof: EmailAuthProof({ publicInputs: publicInputs, proof: proof })
         });
     }
 

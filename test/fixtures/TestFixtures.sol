@@ -3,7 +3,8 @@ pragma solidity ^0.8.30;
 
 import { ProveAndClaimCommand } from "../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 import { LinkEmailCommand } from "../../src/verifiers/LinkEmailCommandVerifier.sol";
-import { DecodedFields, EmailAuthProof } from "../../src/verifiers/EmailAuthVerifier.sol";
+import { EmailAuthProof, PublicInputs } from "../../src/verifiers/EmailAuthVerifier.sol";
+import { TextRecord } from "../../src/entrypoints/LinkTextRecordEntrypoint.sol";
 
 /**
  * @title TestFixtures
@@ -24,7 +25,7 @@ library TestFixtures {
     /**
      * @notice Provides a complete test case for ENS claim verification
      * @return command A fully populated ProveAndClaimCommand struct with test data
-     * @return expectedPubSignals The expected 60-element public signals array for verification
+     * @return expectedPublicInputs The expected 60-element public inputs fields array for verification
      * @dev This function returns test data representing a claim for "thezdev1[at]gmail.com" to be
      *      mapped to ENS name ownership by address 0xafBD210c60dD651892a61804A989eEF7bD63CBA0.
      *
@@ -37,7 +38,7 @@ library TestFixtures {
      *      - Nullifier to prevent replay attacks
      *      - RSA public key components encoded in miscellaneousData
      *
-     *      The expectedPubSignals array contains field elements representing:
+     *      The expectedPublicInputs array contains field elements representing:
      *      1. Domain name "gmail.com" (packed into 9 fields)
      *      2. DKIM signer hash (1 field)
      *      3. Email nullifier (1 field)
@@ -64,7 +65,7 @@ library TestFixtures {
     function claimEnsCommand()
         internal
         pure
-        returns (ProveAndClaimCommand memory command, uint256[60] memory expectedPubSignals)
+        returns (ProveAndClaimCommand memory command, bytes32[] memory expectedPublicInputs)
     {
         // RSA public key modulus decomposed into 17 field elements for ZK circuit compatibility
         // This represents Gmail's DKIM public key used for signature verification
@@ -116,7 +117,7 @@ library TestFixtures {
         emailParts[0] = "thezdev1$gmail";
         emailParts[1] = "com";
 
-        DecodedFields memory fields = DecodedFields({
+        PublicInputs memory fields = PublicInputs({
             domainName: "gmail.com",
             publicKeyHash: hex"0ea9c777dc7110e5a9e89b13f0cfc540e3845ba120b2b6dc24024d61488d4788",
             emailNullifier: hex"04DE80D5184510B6208D6456C091FF3E177F28C2DE49B7B7618B6EF147B817EF",
@@ -129,17 +130,17 @@ library TestFixtures {
             emailAddress: "thezdev1@gmail.com"
         });
 
-        EmailAuthProof memory proof = EmailAuthProof({ fields: fields, proof: abi.encode(pA, pB, pC) });
+        EmailAuthProof memory emailAuthProof = EmailAuthProof({ publicInputs: fields, proof: abi.encode(pA, pB, pC) });
 
         // Complete ProveAndClaimCommand struct with test data for "thezdev1@gmail.com"
         command = ProveAndClaimCommand({
             emailParts: emailParts,
             resolver: "resolver.eth",
             owner: 0xafBD210c60dD651892a61804A989eEF7bD63CBA0,
-            proof: proof
+            emailAuthProof: emailAuthProof
         });
 
-        expectedPubSignals = [
+        uint256[60] memory expectedPublicInputsFields = [
             2_018_721_414_038_404_820_327,
             0,
             0,
@@ -202,13 +203,18 @@ library TestFixtures {
             0
         ];
 
-        return (command, expectedPubSignals);
+        expectedPublicInputs = new bytes32[](60);
+        for (uint256 i = 0; i < 60; i++) {
+            expectedPublicInputs[i] = bytes32(expectedPublicInputsFields[i]);
+        }
+
+        return (command, expectedPublicInputs);
     }
 
     function linkEmailCommand()
         internal
         pure
-        returns (LinkEmailCommand memory command, uint256[60] memory expectedPubSignals)
+        returns (LinkEmailCommand memory command, bytes32[] memory expectedPublicInputs)
     {
         // RSA public key modulus decomposed into 17 field elements for ZK circuit compatibility
         // This represents Gmail's DKIM public key used for signature verification
@@ -257,7 +263,7 @@ library TestFixtures {
             10_974_005_087_812_821_683_028_658_419_683_444_499_946_740_682_173_447_741_820_877_084_771_970_288_594
         ];
 
-        DecodedFields memory fields = DecodedFields({
+        PublicInputs memory fields = PublicInputs({
             domainName: "gmail.com",
             publicKeyHash: hex"0EA9C777DC7110E5A9E89B13F0CFC540E3845BA120B2B6DC24024D61488D4788",
             emailNullifier: hex"0CEF36D2E53A61D038B0F46466F7C1E4E5D62636FC3ACAB471C8AC6A0558F705",
@@ -269,11 +275,18 @@ library TestFixtures {
             emailAddress: "thezdev1@gmail.com"
         });
 
-        EmailAuthProof memory proof = EmailAuthProof({ fields: fields, proof: abi.encode(pA, pB, pC) });
+        EmailAuthProof memory emailAuthProof = EmailAuthProof({ publicInputs: fields, proof: abi.encode(pA, pB, pC) });
 
-        command = LinkEmailCommand({ email: "thezdev1@gmail.com", ensName: "zkfriendly.eth", proof: proof });
+        command = LinkEmailCommand({
+            textRecord: TextRecord({
+                ensName: "zkfriendly.eth",
+                value: "thezdev1@gmail.com",
+                nullifier: hex"0CEF36D2E53A61D038B0F46466F7C1E4E5D62636FC3ACAB471C8AC6A0558F705"
+            }),
+            emailAuthProof: emailAuthProof
+        });
 
-        expectedPubSignals = [
+        uint256[60] memory expectedPublicInputsFields = [
             2_018_721_414_038_404_820_327,
             0,
             0,
@@ -336,6 +349,11 @@ library TestFixtures {
             0
         ];
 
-        return (command, expectedPubSignals);
+        expectedPublicInputs = new bytes32[](60);
+        for (uint256 i = 0; i < 60; i++) {
+            expectedPublicInputs[i] = bytes32(expectedPublicInputsFields[i]);
+        }
+
+        return (command, expectedPublicInputs);
     }
 }

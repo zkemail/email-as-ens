@@ -15,7 +15,7 @@ import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { ZkEmailRegistrarHelper } from "./_ZkEmailRegistrarHelper.sol";
 
-contract ZkEmailRegistrarTest is Test {
+contract ProveAndClaimTest is Test {
     using Bytes for bytes;
     using EnsUtils for bytes;
 
@@ -36,7 +36,11 @@ contract ZkEmailRegistrarTest is Test {
         DKIMRegistryMock dkim = new DKIMRegistryMock();
         verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(dkim));
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        dkim.setValid(keccak256(bytes(command.proof.fields.domainName)), command.proof.fields.publicKeyHash, true);
+        dkim.setValid(
+            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+            command.emailAuthProof.publicInputs.publicKeyHash,
+            true
+        );
 
         // setup ENS registry
         vm.startPrank(owner);
@@ -50,9 +54,10 @@ contract ZkEmailRegistrarTest is Test {
         ens.setSubnodeOwner(ETH_NODE, keccak256(bytes("zk")), address(registrar));
     }
 
-    function test_proveAndClaim_passesForValidCommand() public {
+    function test_passesForValidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
+        bytes memory expectedEnsName =
+            abi.encodePacked(bytes(command.emailAuthProof.publicInputs.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = expectedEnsName.namehash();
         bytes32 resolverNode = bytes(command.resolver).namehash();
 
@@ -79,9 +84,10 @@ contract ZkEmailRegistrarTest is Test {
         assertEq(ownerAfterInRegistrar, command.owner);
     }
 
-    function test_proveAndClaim_preventsDoubleUseOfNullifier() public {
+    function test_revertsWhen_doubleUseOfNullifier() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
+        bytes memory expectedEnsName =
+            abi.encodePacked(bytes(command.emailAuthProof.publicInputs.emailAddress), bytes(".zk.eth"));
         bytes32 expectedNode = expectedEnsName.namehash();
         bytes32 resolverNode = bytes(command.resolver).namehash();
 
@@ -99,68 +105,11 @@ contract ZkEmailRegistrarTest is Test {
         registrar.entrypoint(abi.encode(command)); // fails the second time
     }
 
-    function test_setRecord_revertsForNonOwner() public {
-        bytes32 node = abi.encodePacked(bytes("zk.eth")).namehash();
-        vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.NotOwner.selector));
-        registrar.setRecord(node, owner, address(0), 0);
-    }
-
-    function test_setRecord_setsRecordCorrectlyIfOwner() public {
+    function test_revertsWhen_invalidCommand() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        bytes memory expectedEnsName = abi.encodePacked(bytes(command.proof.fields.emailAddress), bytes(".zk.eth"));
-        bytes32 expectedNode = expectedEnsName.namehash();
-        bytes32 resolverNode = bytes(command.resolver).namehash();
-
-        address initialResolver = makeAddr("initialResolver");
-        address resolverResolver = makeAddr("resolverResolver");
-        _mockAndExpect(initialResolver, abi.encodeCall(IResolver.setAddr, (expectedNode, command.owner)), "");
-        _mockAndExpect(initialResolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, true)), "");
-        _mockAndExpect(initialResolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
-        _mockAndExpect(address(ens), abi.encodeCall(ENS.resolver, (resolverNode)), abi.encode(resolverResolver));
-        _mockAndExpect(resolverResolver, abi.encodeCall(IResolver.addr, (resolverNode)), abi.encode(initialResolver));
-
-        registrar.entrypoint(abi.encode(command));
-
-        address resolverBefore = ens.resolver(expectedNode);
-        assertEq(resolverBefore, initialResolver);
-
-        address newResolver = makeAddr("newResolver");
-        address newOwner = makeAddr("newOwner");
-
-        _mockAndExpect(newResolver, abi.encodeCall(IResolver.approve, (expectedNode, command.owner, false)), "");
-        _mockAndExpect(newResolver, abi.encodeCall(IResolver.approve, (expectedNode, newOwner, true)), "");
-        vm.prank(command.owner);
-        registrar.setRecord(expectedNode, newOwner, newResolver, 0);
-
-        // check that the record has been set correctly
-        address ownerAfter = ens.owner(expectedNode); // should still be registrar
-        address ownerAfterInRegistrar = registrar.owner(expectedNode);
-        assertEq(ownerAfter, address(registrar));
-        assertEq(ownerAfterInRegistrar, newOwner);
-    }
-
-    function test_proveAndClaim_revertsForInvalidCommand() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        command.proof.fields.emailAddress = "bob@example.com";
+        command.emailAuthProof.publicInputs.emailAddress = "bob@example.com";
         vm.expectRevert(abi.encodeWithSelector(ZkEmailRegistrar.InvalidCommand.selector));
         registrar.entrypoint(abi.encode(command));
-    }
-
-    function test_setup() public view {
-        address rootOwner = ens.owner(ROOT_NODE);
-        address ethOwner = ens.owner(ETH_NODE);
-        address zkOwner = ens.owner(ZKEMAIL_NODE);
-
-        assertEq(rootOwner, owner);
-        assertEq(ethOwner, owner);
-        assertEq(zkOwner, address(registrar));
-    }
-
-    function test_nameHash_returnsCorrectHash() public pure {
-        bytes memory nameBytes = "thezdev3$gmail.com.zk.eth";
-        bytes32 expectedHash = 0xd3f54039086a0b9a16feda37bd0cb0dc73ef8ed3449303620fd902e2d1e38c54;
-        bytes32 actualHash = nameBytes.namehash();
-        assertEq(actualHash, expectedHash);
     }
 
     function _mockAndExpect(address target, bytes memory call, bytes memory ret) internal {

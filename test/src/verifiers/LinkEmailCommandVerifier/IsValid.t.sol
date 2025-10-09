@@ -15,16 +15,19 @@ contract IsValidTest is Test {
         _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), address(dkim));
         // configure DKIM mock with valid domain+key
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        bytes32 domainHash = keccak256(bytes(command.proof.fields.domainName));
-        dkim.setValid(domainHash, command.proof.fields.publicKeyHash, true);
+        dkim.setValid(
+            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+            command.emailAuthProof.publicInputs.publicKeyHash,
+            true
+        );
     }
 
     function test_returnsFalseForInvalidProof() public view {
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
         (uint256[2] memory pA, uint256[2][2] memory pB, uint256[2] memory pC) =
-            abi.decode(command.proof.proof, (uint256[2], uint256[2][2], uint256[2]));
+            abi.decode(command.emailAuthProof.proof, (uint256[2], uint256[2][2], uint256[2]));
         pA[0] = _verifier.Q();
-        command.proof.proof = abi.encode(pA, pB, pC);
+        command.emailAuthProof.proof = abi.encode(pA, pB, pC);
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }
@@ -37,7 +40,7 @@ contract IsValidTest is Test {
 
     function test_returnsFalseForInvalidCommand() public view {
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        command.ensName = "wrong.eth";
+        command.textRecord.ensName = "wrong.eth";
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }

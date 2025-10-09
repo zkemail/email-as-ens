@@ -1,22 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import { CircomUtils } from "@zk-email/contracts/utils/CircomUtils.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { CircuitUtils } from "@zk-email/contracts/CircuitUtils.sol";
-import { EmailAuthVerifier, DecodedFields, EmailAuthProof } from "./EmailAuthVerifier.sol";
+import { EmailAuthVerifier, EmailAuthProof, PublicInputs } from "./EmailAuthVerifier.sol";
+import { TextRecord } from "../entrypoints/LinkTextRecordEntrypoint.sol";
+
+/**
+ * @notice Enum representing the indices of command parameters in the command template
+ * @dev Used to specify which parameter to extract from the command string
+ * @param ENS_NAME = 0
+ */
+enum CommandParamIndex {
+    ENS_NAME
+}
 
 struct LinkEmailCommand {
-    string email;
-    string ensName;
-    EmailAuthProof proof;
+    TextRecord textRecord;
+    EmailAuthProof emailAuthProof;
 }
 
 contract LinkEmailCommandVerifier is EmailAuthVerifier {
     using Bytes for bytes;
     using Strings for string;
-    using CircuitUtils for bytes;
+    using CircomUtils for bytes;
 
     constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
 
@@ -31,52 +40,64 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
      * @inheritdoc EmailAuthVerifier
      */
     function encode(
-        uint256[] calldata pubSignals,
-        bytes calldata proof
+        bytes calldata proof,
+        bytes32[] calldata publicInputs
     )
         external
         pure
         override
         returns (bytes memory encodedCommand)
     {
-        return abi.encode(_buildLinkEmailCommand(pubSignals, proof));
+        return abi.encode(_buildLinkEmailCommand(proof, publicInputs));
     }
 
     function _isValid(LinkEmailCommand memory command)
         internal
         view
-        onlyValidDkimKeyHash(command.proof.fields.domainName, command.proof.fields.publicKeyHash)
+        onlyValidDkimKeyHash(
+            command.emailAuthProof.publicInputs.domainName,
+            command.emailAuthProof.publicInputs.publicKeyHash
+        )
         returns (bool)
     {
-        DecodedFields memory fields = command.proof.fields;
-        return _verifyEmailProof(command.proof, GORTH16_VERIFIER)
-            && Strings.equal(command.email, command.proof.fields.emailAddress)
-            && Strings.equal(_getMaskedCommand(command), fields.maskedCommand);
+        PublicInputs memory publicInputs = command.emailAuthProof.publicInputs;
+        return _verifyEmailProof(GORTH16_VERIFIER, command.emailAuthProof)
+            && Strings.equal(command.textRecord.value, publicInputs.emailAddress)
+            && Strings.equal(_getMaskedCommand(command), publicInputs.maskedCommand);
     }
 
     /**
-     * @notice Reconstructs a LinkEmailCommand struct from public signals and proof bytes.
+     * @notice Reconstructs a LinkEmailCommand struct from proof bytes and public inputs fields.
      */
     function _buildLinkEmailCommand(
-        uint256[] calldata pubSignals,
-        bytes memory proof
+        bytes memory proof,
+        bytes32[] calldata publicInputsFields
     )
         private
         pure
         returns (LinkEmailCommand memory command)
     {
-        DecodedFields memory decodedFields = _unpackPubSignals(pubSignals);
-
+        PublicInputs memory publicInputs = _unpackPublicInputs(publicInputsFields);
         return LinkEmailCommand({
-            email: decodedFields.emailAddress,
-            ensName: string(CommandUtils.extractCommandParamByIndex(_getTemplate(), decodedFields.maskedCommand, 0)),
-            proof: EmailAuthProof({ fields: decodedFields, proof: proof })
+            textRecord: TextRecord({
+                // ensName is extracted from the command
+                ensName: string(
+                    CommandUtils.extractCommandParamByIndex(
+                        _getTemplate(), publicInputs.maskedCommand, uint256(CommandParamIndex.ENS_NAME)
+                    )
+                ),
+                // emailAddress is the value
+                value: publicInputs.emailAddress,
+                // emailNullifier is the nullifier
+                nullifier: publicInputs.emailNullifier
+            }),
+            emailAuthProof: EmailAuthProof({ proof: proof, publicInputs: publicInputs })
         });
     }
 
     function _getMaskedCommand(LinkEmailCommand memory command) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](1);
-        commandParams[0] = abi.encode(command.ensName);
+        commandParams[0] = abi.encode(command.textRecord.ensName);
         return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
 

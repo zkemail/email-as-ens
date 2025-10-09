@@ -12,19 +12,27 @@ contract EnsUtilsHelper {
         return EnsUtils.namehash(name, offset);
     }
 
-    function callPackPubKey(bytes memory pubKeyBytes) external pure returns (uint256[] memory fields) {
+    function callPackHeaderHash(bytes32 headerHash) external pure returns (bytes32[] memory) {
+        return EnsUtils.packHeaderHash(headerHash);
+    }
+
+    function callUnpackHeaderHash(bytes32[] memory fields) external pure returns (bytes32) {
+        return EnsUtils.unpackHeaderHash(fields);
+    }
+
+    function callPackPubKey(bytes memory pubKeyBytes) external pure returns (bytes32[] memory fields) {
         return EnsUtils.packPubKey(pubKeyBytes);
     }
 
     function callUnpackPubKey(
-        uint256[] calldata pubSignals,
+        bytes32[] calldata publicInputs,
         uint256 startIndex
     )
         external
         pure
         returns (bytes memory pubKeyBytes)
     {
-        return EnsUtils.unpackPubKey(pubSignals, startIndex);
+        return EnsUtils.unpackPubKey(publicInputs, startIndex);
     }
 
     function callExtractEmailParts(string memory email) external pure returns (string[] memory) {

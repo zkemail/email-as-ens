@@ -10,6 +10,8 @@ library EnsUtils {
     using Bytes for bytes;
     using Strings for string;
 
+    error InvalidLength();
+
     function namehash(bytes memory name) internal pure returns (bytes32) {
         return namehash(name, 0);
     }
@@ -35,27 +37,58 @@ library EnsUtils {
     }
 
     /**
+     * @notice Split a 32-byte value into two 16-byte field elements, matching Noir packing:
+     *  - element[0] = first 16 bytes (MSB half) placed into the lower 16 bytes of the field (upper 16 zeroed)
+     *  - element[1] = last 16 bytes (LSB half)
+     * @param headerHash The 32-byte value to split
+     * @return fieldElements The two 16-byte field elements
+     */
+    function packHeaderHash(bytes32 headerHash) internal pure returns (bytes32[] memory fieldElements) {
+        fieldElements = new bytes32[](2);
+        uint256 h = uint256(headerHash);
+        // Move the MSB 16 bytes down to the low 16-byte position
+        fieldElements[0] = bytes32(h >> 128);
+        // Keep the LSB 16 bytes as-is
+        fieldElements[1] = bytes32(h & type(uint128).max);
+        return fieldElements;
+    }
+
+    /**
+     * @notice Reconstruct the 32-byte value from two 16-byte field elements produced by packHeaderHash
+     * @param fields The two 16-byte field elements (padded to 32 bytes)
+     * @return headerHash The reconstructed 32-byte value
+     */
+    function unpackHeaderHash(bytes32[] memory fields) internal pure returns (bytes32) {
+        if (fields.length != 2) revert InvalidLength();
+        // fields[0] stores the MSB half in its low 16 bytes; shift it back to the top
+        uint256 hi = uint256(fields[0]);
+        // fields[1] stores the LSB half; mask just in case upper bits were set
+        uint256 lo = uint256(fields[1]) & type(uint128).max;
+        return bytes32((hi << 128) | lo);
+    }
+
+    /**
      * @notice Packs a public key (as bytes) into field elements
-     * @param pubKeyBytes The public key bytes (encoded as uint256[17])
+     * @param pubKeyBytes The public key bytes (encoded as bytes32[17])
      * @return fields The packed field elements
      */
-    function packPubKey(bytes memory pubKeyBytes) internal pure returns (uint256[] memory fields) {
+    function packPubKey(bytes memory pubKeyBytes) internal pure returns (bytes32[] memory fields) {
         uint256[17] memory pubKeyChunks = abi.decode(pubKeyBytes, (uint256[17]));
-        fields = new uint256[](17);
+        fields = new bytes32[](17);
         for (uint256 i = 0; i < 17; i++) {
-            fields[i] = pubKeyChunks[i];
+            fields[i] = bytes32(pubKeyChunks[i]);
         }
         return fields;
     }
 
     /**
-     * @notice Extracts public key from public signals
-     * @param pubSignals Array of public signals
+     * @notice Extracts public key from public inputs fields
+     * @param publicInputs Array of public inputs
      * @param startIndex Starting index of public key
      * @return pubKeyBytes The public key bytes
      */
     function unpackPubKey(
-        uint256[] calldata pubSignals,
+        bytes32[] memory publicInputs,
         uint256 startIndex
     )
         internal
@@ -64,7 +97,7 @@ library EnsUtils {
     {
         uint256[17] memory pubKeyChunks;
         for (uint256 i = 0; i < pubKeyChunks.length; i++) {
-            pubKeyChunks[i] = pubSignals[startIndex + i];
+            pubKeyChunks[i] = uint256(publicInputs[startIndex + i]);
         }
         pubKeyBytes = abi.encode(pubKeyChunks);
         return pubKeyBytes;
