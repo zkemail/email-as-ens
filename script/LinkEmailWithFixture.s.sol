@@ -4,7 +4,6 @@ pragma solidity ^0.8.30;
 import { Script } from "forge-std/Script.sol";
 import { LinkEmailEntrypoint } from "../src/entrypoints/LinkEmailEntrypoint.sol";
 import { LinkEmailCommand } from "../src/verifiers/LinkEmailCommandVerifier.sol";
-import { DKIMRegistryMock } from "../test/fixtures/DKIMRegistryMock.sol";
 import { TestFixtures } from "../test/fixtures/TestFixtures.sol";
 
 contract LinkEmailWithFixtureScript is Script {
@@ -22,7 +21,6 @@ contract LinkEmailWithFixtureScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        DKIMRegistryMock(DKIM_REGISTRY).setValid(domainHash, command.emailAuthProof.publicInputs.publicKeyHash, true);
         bytes memory encodedCommand = verifier.encode(command.emailAuthProof.proof, expectedPublicInputs);
         verifier.entrypoint(encodedCommand);
 

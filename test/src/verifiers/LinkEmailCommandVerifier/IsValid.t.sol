@@ -4,21 +4,26 @@ pragma solidity ^0.8.30;
 import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
 import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
-import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
+import { TestUtils } from "../../../TestUtils.sol";
 import { LinkEmailCommand, LinkEmailCommandVerifier } from "../../../../src/verifiers/LinkEmailCommandVerifier.sol";
 
 contract IsValidTest is Test {
     LinkEmailCommandVerifier internal _verifier;
 
     function setUp() public {
-        DKIMRegistryMock dkim = new DKIMRegistryMock();
-        _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), address(dkim));
+        address dkimRegistry = makeAddr("dkimRegistry");
+        _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
         // configure DKIM mock with valid domain+key
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        dkim.setValid(
-            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
-            command.emailAuthProof.publicInputs.publicKeyHash,
-            true
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+                command.emailAuthProof.publicInputs.publicKeyHash
+            ),
+            abi.encode(true)
         );
     }
 

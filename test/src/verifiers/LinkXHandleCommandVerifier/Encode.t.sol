@@ -3,7 +3,8 @@ pragma solidity ^0.8.30;
 
 import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
-import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
+import { TestUtils } from "../../../TestUtils.sol";
 import {
     LinkXHandleCommand,
     LinkXHandleCommandVerifier,
@@ -16,11 +17,19 @@ contract EncodeTest is _EmailAuthVerifierTest {
     LinkXHandleCommandVerifier internal _verifier;
 
     function setUp() public {
-        DKIMRegistryMock dkim = new DKIMRegistryMock();
-        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
+        address dkimRegistry = makeAddr("dkimRegistry");
+        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), dkimRegistry);
         // configure DKIM mock with valid domain+key
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        dkim.setValid(keccak256(bytes(command.publicInputs.senderDomain)), command.publicInputs.pubkeyHash, true);
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.publicInputs.senderDomain)),
+                command.publicInputs.pubkeyHash
+            ),
+            abi.encode(true)
+        );
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {

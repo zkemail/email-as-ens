@@ -8,7 +8,7 @@ import {
 } from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
 import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";
-import { DKIMRegistryMock } from "../../fixtures/DKIMRegistryMock.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { IResolver, ZkEmailRegistrar } from "../../../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
@@ -33,13 +33,17 @@ contract ProveAndClaimTest is Test {
     ENSRegistry public ens;
 
     function setUp() public {
-        DKIMRegistryMock dkim = new DKIMRegistryMock();
-        verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(dkim));
+        address dkimRegistry = makeAddr("dkimRegistry");
+        verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        dkim.setValid(
-            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
-            command.emailAuthProof.publicInputs.publicKeyHash,
-            true
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+                command.emailAuthProof.publicInputs.publicKeyHash
+            ),
+            abi.encode(true)
         );
 
         // setup ENS registry
