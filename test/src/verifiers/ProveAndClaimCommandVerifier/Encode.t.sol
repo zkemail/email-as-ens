@@ -3,8 +3,6 @@ pragma solidity ^0.8.30;
 
 import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
 import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
-import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
-import { TestUtils } from "../../../TestUtils.sol";
 import {
     ProveAndClaimCommand,
     ProveAndClaimCommandVerifier
@@ -15,18 +13,11 @@ contract EncodeTest is _EmailAuthVerifierTest {
     ProveAndClaimCommandVerifier internal _verifier;
 
     function setUp() public {
-        address dkimRegistry = makeAddr("dkimRegistry");
-        _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        vm.mockCall(
-            dkimRegistry,
-            abi.encodeWithSelector(
-                IDKIMRegistry.isKeyHashValid.selector,
-                keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
-                command.emailAuthProof.publicInputs.publicKeyHash
-            ),
-            abi.encode(true)
+        address dkimRegistry = _createMockDkimRegistry(
+            command.emailAuthProof.publicInputs.domainName, command.emailAuthProof.publicInputs.publicKeyHash
         );
+        _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {

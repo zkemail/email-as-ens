@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { Test } from "forge-std/Test.sol";
+import { TestUtils } from "../../../TestUtils.sol";
 import { PublicInputs } from "../../../../src/verifiers/EmailAuthVerifier.sol";
 
-abstract contract _EmailAuthVerifierTest is Test {
+abstract contract _EmailAuthVerifierTest is TestUtils {
     function _assertPublicInputsEq(PublicInputs memory decoded, PublicInputs memory expected) internal pure {
         assertEq(decoded.domainName, expected.domainName, "domainName mismatch");
         assertEq(decoded.emailAddress, expected.emailAddress, "emailAddress mismatch");
