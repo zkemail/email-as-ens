@@ -1,21 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
 import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
 import {
     ProveAndClaimCommand,
     ProveAndClaimCommandVerifier
 } from "../../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
-import { TestUtils } from "../../../TestUtils.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
-contract IsValidTest is TestUtils {
+contract IsValidTest is Test {
     ProveAndClaimCommandVerifier internal _verifier;
 
     function setUp() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        address dkimRegistry = _createMockDkimRegistry(
-            command.emailAuthProof.publicInputs.domainName, command.emailAuthProof.publicInputs.publicKeyHash
+        address dkimRegistry = makeAddr("dkimRegistry");
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+                command.emailAuthProof.publicInputs.publicKeyHash
+            ),
+            abi.encode(true)
         );
         _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
     }

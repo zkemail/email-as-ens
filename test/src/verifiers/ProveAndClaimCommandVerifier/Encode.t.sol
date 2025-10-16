@@ -13,11 +13,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
     ProveAndClaimCommandVerifier internal _verifier;
 
     function setUp() public {
-        (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        address dkimRegistry = _createMockDkimRegistry(
-            command.emailAuthProof.publicInputs.domainName, command.emailAuthProof.publicInputs.publicKeyHash
-        );
-        _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
+        _verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), makeAddr("dkimRegistry"));
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {

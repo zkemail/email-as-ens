@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { TestFixtures } from "../../fixtures/TestFixtures.sol";
-import { TestUtils } from "../../TestUtils.sol";
+import { Test } from "forge-std/Test.sol";
 import {
     ProveAndClaimCommand, ProveAndClaimCommandVerifier
 } from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
@@ -13,8 +13,9 @@ import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSReg
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { ZkEmailRegistrarHelper } from "./_ZkEmailRegistrarHelper.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
-contract SetRecordTest is TestUtils {
+contract SetRecordTest is Test {
     using Bytes for bytes;
     using EnsUtils for bytes;
 
@@ -33,8 +34,15 @@ contract SetRecordTest is TestUtils {
 
     function setUp() public {
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        address dkimRegistry = _createMockDkimRegistry(
-            command.emailAuthProof.publicInputs.domainName, command.emailAuthProof.publicInputs.publicKeyHash
+        address dkimRegistry = makeAddr("dkimRegistry");
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+                command.emailAuthProof.publicInputs.publicKeyHash
+            ),
+            abi.encode(true)
         );
         verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
 
@@ -89,5 +97,10 @@ contract SetRecordTest is TestUtils {
         address ownerAfterInRegistrar = registrar.owner(expectedNode);
         assertEq(ownerAfter, address(registrar));
         assertEq(ownerAfterInRegistrar, newOwner);
+    }
+
+    function _mockAndExpect(address target, bytes memory call, bytes memory ret) internal {
+        vm.mockCall(target, call, ret);
+        vm.expectCall(target, call);
     }
 }

@@ -10,12 +10,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
     LinkEmailCommandVerifier internal _verifier;
 
     function setUp() public {
-        // configure DKIM mock with valid domain+key
-        (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        address dkimRegistry = _createMockDkimRegistry(
-            command.emailAuthProof.publicInputs.domainName, command.emailAuthProof.publicInputs.publicKeyHash
-        );
-        _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
+        _verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), makeAddr("dkimRegistry"));
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {

@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
 import { LinkEmailCommand, LinkEmailCommandVerifier } from "../../../../src/verifiers/LinkEmailCommandVerifier.sol";
 import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
 import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";
 import { LinkEmailEntrypointHelper } from "./_LinkEmailEntrypointHelper.sol";
 import { LinkTextRecordEntrypoint } from "../../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
-import { TestUtils } from "../../../TestUtils.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
-contract LinkEmailEntrypointTest is TestUtils {
+contract LinkEmailEntrypointTest is Test {
     using EnsUtils for bytes;
 
     LinkEmailCommandVerifier public verifier;
@@ -17,8 +18,15 @@ contract LinkEmailEntrypointTest is TestUtils {
 
     function setUp() public {
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        address dkimRegistry = _createMockDkimRegistry(
-            command.emailAuthProof.publicInputs.domainName, command.emailAuthProof.publicInputs.publicKeyHash
+        address dkimRegistry = makeAddr("dkimRegistry");
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+                command.emailAuthProof.publicInputs.publicKeyHash
+            ),
+            abi.encode(true)
         );
         verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
         linkEmail = new LinkEmailEntrypointHelper(address(verifier));

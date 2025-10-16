@@ -15,11 +15,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
     LinkXHandleCommandVerifier internal _verifier;
 
     function setUp() public {
-        // configure DKIM mock with valid domain+key
-        (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        address dkimRegistry =
-            _createMockDkimRegistry(command.publicInputs.senderDomain, command.publicInputs.pubkeyHash);
-        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), dkimRegistry);
+        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), makeAddr("dkimRegistry"));
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
