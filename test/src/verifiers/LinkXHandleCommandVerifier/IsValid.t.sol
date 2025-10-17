@@ -5,7 +5,8 @@ import { Test } from "forge-std/Test.sol";
 import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
 import {
-    LinkXHandleCommand, LinkXHandleCommandVerifier
+    LinkXHandleCommand,
+    LinkXHandleCommandVerifier
 } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 

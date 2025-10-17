@@ -3,7 +3,8 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import {
-    LinkXHandleCommand, LinkXHandleCommandVerifier
+    LinkXHandleCommand,
+    LinkXHandleCommandVerifier
 } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
 import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";

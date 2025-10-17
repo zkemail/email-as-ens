@@ -87,10 +87,7 @@ library EnsUtils {
      * @param startIndex Starting index of public key
      * @return pubKeyBytes The public key bytes
      */
-    function unpackPubKey(
-        bytes32[] memory publicInputs,
-        uint256 startIndex
-    )
+    function unpackPubKey(bytes32[] memory publicInputs, uint256 startIndex)
         internal
         pure
         returns (bytes memory pubKeyBytes)

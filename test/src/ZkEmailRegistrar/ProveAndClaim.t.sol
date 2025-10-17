@@ -4,7 +4,8 @@ pragma solidity ^0.8.30;
 import { TestFixtures } from "../../fixtures/TestFixtures.sol";
 import { Test } from "forge-std/Test.sol";
 import {
-    ProveAndClaimCommand, ProveAndClaimCommandVerifier
+    ProveAndClaimCommand,
+    ProveAndClaimCommandVerifier
 } from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
 import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";

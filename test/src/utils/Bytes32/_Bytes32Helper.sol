@@ -8,11 +8,7 @@ contract Bytes32Helper {
         return Bytes32.slice(array, start, end);
     }
 
-    function callSplice(
-        bytes32[] memory array,
-        uint256 start,
-        bytes32[] memory elements
-    )
+    function callSplice(bytes32[] memory array, uint256 start, bytes32[] memory elements)
         external
         pure
         returns (bytes32[] memory)

@@ -123,7 +123,7 @@ library TestFixtures {
             emailNullifier: hex"04DE80D5184510B6208D6456C091FF3E177F28C2DE49B7B7618B6EF147B817EF",
             timestamp: 0,
             maskedCommand: "Claim ENS name for address 0xafBD210c60dD651892a61804A989eEF7bD63CBA0"
-                " with resolver resolver.eth",
+            " with resolver resolver.eth",
             accountSalt: hex"11DD2E9EDE9B5BA105A03650FF6B74F3D4F19E75DD64C53C8DC8F7AB82403912",
             isCodeExist: false,
             miscellaneousData: abi.encode(pubkey),
