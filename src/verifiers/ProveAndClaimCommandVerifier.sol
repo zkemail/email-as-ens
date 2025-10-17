@@ -44,10 +44,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     /**
      * @inheritdoc EmailAuthVerifier
      */
-    function encode(
-        bytes calldata proof,
-        bytes32[] calldata publicInputs
-    )
+    function encode(bytes calldata proof, bytes32[] calldata publicInputs)
         external
         pure
         override
@@ -60,8 +57,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
         internal
         view
         onlyValidDkimKeyHash(
-            command.emailAuthProof.publicInputs.domainName,
-            command.emailAuthProof.publicInputs.publicKeyHash
+            command.emailAuthProof.publicInputs.domainName, command.emailAuthProof.publicInputs.publicKeyHash
         )
         returns (bool)
     {
@@ -74,10 +70,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     /**
      * @notice Reconstructs a ProveAndClaimCommand struct from public signals and proof bytes.
      */
-    function _buildProveAndClaimCommand(
-        bytes memory proof,
-        bytes32[] calldata publicInputsFields
-    )
+    function _buildProveAndClaimCommand(bytes memory proof, bytes32[] calldata publicInputsFields)
         private
         pure
         returns (ProveAndClaimCommand memory command)

@@ -6,7 +6,8 @@ import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleComm
 import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
 import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import {
-    LinkXHandleCommand, LinkXHandleCommandVerifier
+    LinkXHandleCommand,
+    LinkXHandleCommandVerifier
 } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 
 contract IsValidTest is Test {
