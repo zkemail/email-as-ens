@@ -17,7 +17,6 @@ contract LinkEmailWithFixtureScript is Script {
 
         LinkEmailEntrypoint verifier = LinkEmailEntrypoint(LINK_EMAIL_VERIFIER);
         (LinkEmailCommand memory command, bytes32[] memory expectedPublicInputs) = TestFixtures.linkEmailCommand();
-        bytes32 domainHash = keccak256(bytes(command.emailAuthProof.publicInputs.domainName));
 
         vm.startBroadcast(deployerPrivateKey);
 
