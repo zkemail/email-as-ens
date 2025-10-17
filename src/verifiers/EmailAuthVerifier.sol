@@ -210,7 +210,6 @@ abstract contract EmailAuthVerifier is IVerifier {
         return PublicInputs({
             domainName: string(
                 CircomUtils.unpackFieldsArray(
-                    // solhint-disable-next-line max-line-length
                     fields.slice(DOMAIN_NAME_OFFSET, DOMAIN_NAME_OFFSET + DOMAIN_NAME_NUM_FIELDS),
                     DOMAIN_NAME_PADDED_SIZE
                 )
