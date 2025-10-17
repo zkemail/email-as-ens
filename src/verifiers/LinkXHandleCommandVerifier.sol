@@ -156,7 +156,6 @@ contract LinkXHandleCommandVerifier is IVerifier {
                     )
                 )
             ),
-            // solhint-disable-next-line max-line-length
             command: string(
                 NoirUtils.unpackFieldsArray(fields.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS))
             ),
