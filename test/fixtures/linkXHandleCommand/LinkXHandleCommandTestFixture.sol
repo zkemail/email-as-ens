@@ -94,11 +94,7 @@ library LinkXHandleCommandTestFixture {
      * @param path Path to the file with the public inputs fields
      * @return publicInputs The public inputs fields
      */
-    function _getPublicInputsFieldsFromBinary(string memory path)
-        private
-        view
-        returns (bytes32[] memory publicInputs)
-    {
+    function _getPublicInputsFieldsFromBinary(string memory path) private view returns (bytes32[] memory publicInputs) {
         // 1) Read the raw bytes
         bytes memory publicInputsFieldsData = vm.readFileBinary(path);
 

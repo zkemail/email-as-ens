@@ -22,11 +22,7 @@ library Bytes32 {
         return result;
     }
 
-    function splice(
-        bytes32[] memory array,
-        uint256 start,
-        bytes32[] memory elements
-    )
+    function splice(bytes32[] memory array, uint256 start, bytes32[] memory elements)
         internal
         pure
         returns (bytes32[] memory)
