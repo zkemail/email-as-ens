@@ -22,7 +22,7 @@ library LinkXHandleCommandTestFixture {
             textRecord: TextRecord({
                 ensName: _getLastWord(expectedPublicInputs.command),
                 value: expectedPublicInputs.xHandle,
-                nullifier: expectedPublicInputs.nullifier
+                nullifier: expectedPublicInputs.emailNullifier
             }),
             proof: abi.encodePacked(_getProofFieldsFromBinary(string.concat(path, "circuit/target/proof"))),
             publicInputs: expectedPublicInputs
@@ -40,12 +40,12 @@ library LinkXHandleCommandTestFixture {
         string memory publicInputsFile = vm.readFile(path);
         return PublicInputs({
             pubkeyHash: abi.decode(vm.parseJson(publicInputsFile, ".pubkeyHash"), (bytes32)),
+            emailNullifier: abi.decode(vm.parseJson(publicInputsFile, ".emailNullifier"), (bytes32)),
             headerHash: abi.decode(vm.parseJson(publicInputsFile, ".headerHash"), (bytes32)),
             proverAddress: abi.decode(vm.parseJson(publicInputsFile, ".proverAddress"), (address)),
             command: abi.decode(vm.parseJson(publicInputsFile, ".command"), (string)),
             xHandle: abi.decode(vm.parseJson(publicInputsFile, ".xHandle"), (string)),
-            senderDomain: abi.decode(vm.parseJson(publicInputsFile, ".senderDomain"), (string)),
-            nullifier: abi.decode(vm.parseJson(publicInputsFile, ".nullifier"), (bytes32))
+            senderDomain: abi.decode(vm.parseJson(publicInputsFile, ".senderDomain"), (string))
         });
     }
 

@@ -42,7 +42,7 @@ contract LinkXHandleVerifierTest is Test {
         bytes memory encodedCommand = linkXHandle.encode(command.proof, expectedPublicInputs);
         assertEq(linkXHandle.textRecord(bytes(command.textRecord.ensName).namehash()), "");
         linkXHandle.entrypoint(encodedCommand);
-        assertEq(linkXHandle.isUsed(command.publicInputs.nullifier), true);
+        assertEq(linkXHandle.isUsed(command.publicInputs.emailNullifier), true);
         assertEq(linkXHandle.textRecord(bytes(command.textRecord.ensName).namehash()), command.textRecord.value);
     }
 

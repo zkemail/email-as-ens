@@ -22,12 +22,12 @@ enum CommandParamIndex {
 
 struct PublicInputs {
     bytes32 pubkeyHash;
+    bytes32 emailNullifier;
     bytes32 headerHash;
     address proverAddress;
     string command;
     string xHandle;
     string senderDomain;
-    bytes32 nullifier;
 }
 
 struct LinkXHandleCommand {
@@ -41,24 +41,24 @@ contract LinkXHandleCommandVerifier is IVerifier {
 
     // #1: pubkey_hash -> 1 field -> idx 0
     uint256 public constant PUBKEY_HASH_OFFSET = 0;
-    // #2: header_hash -> 2 fields -> idx 1-2
-    uint256 public constant HEADER_HASH_OFFSET = 1;
+    // #2: email_nullifier -> 1 field -> idx 1
+    uint256 public constant EMAIL_NULLIFIER_OFFSET = 1;
+    uint256 public constant EMAIL_NULLIFIER_NUM_FIELDS = 1;
+    // #3: header_hash -> 2 fields -> idx 2-3
+    uint256 public constant HEADER_HASH_OFFSET = 2;
     uint256 public constant HEADER_HASH_NUM_FIELDS = 2;
-    // #3: prover_address -> 1 field -> idx 3
-    uint256 public constant PROVER_ADDRESS_OFFSET = 3;
+    // #4: prover_address -> 1 field -> idx 4
+    uint256 public constant PROVER_ADDRESS_OFFSET = 4;
     uint256 public constant PROVER_ADDRESS_NUM_FIELDS = 1;
-    // #4: command 20 fields -> idx 4-23 (605 bytes)
-    uint256 public constant COMMAND_OFFSET = 4;
+    // #5: command 20 fields -> idx 5-24 (605 bytes)
+    uint256 public constant COMMAND_OFFSET = 5;
     uint256 public constant COMMAND_NUM_FIELDS = 20;
-    // #5: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 24-88
-    uint256 public constant X_HANDLE_OFFSET = 24;
+    // #6: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 25-89
+    uint256 public constant X_HANDLE_OFFSET = 25;
     uint256 public constant X_HANDLE_NUM_FIELDS = 65;
-    // #6: sender_domain_capture_1 64 fields + 1 field (length) -> idx 89-153
-    uint256 public constant SENDER_DOMAIN_OFFSET = 89;
+    // #7: sender_domain_capture_1 64 fields + 1 field (length) -> idx 90-154
+    uint256 public constant SENDER_DOMAIN_OFFSET = 90;
     uint256 public constant SENDER_DOMAIN_NUM_FIELDS = 65;
-    // #7: nullifier -> 1 field -> idx 154
-    uint256 public constant NULLIFIER_OFFSET = 154;
-    uint256 public constant NULLIFIER_NUM_FIELDS = 1;
 
     uint256 public constant PUBLIC_INPUTS_LENGTH = 155;
 
@@ -128,6 +128,7 @@ contract LinkXHandleCommandVerifier is IVerifier {
     function _packPublicInputs(PublicInputs memory publicInputs) internal pure returns (bytes32[] memory fields) {
         fields = new bytes32[](PUBLIC_INPUTS_LENGTH);
         fields[PUBKEY_HASH_OFFSET] = publicInputs.pubkeyHash;
+        fields[EMAIL_NULLIFIER_OFFSET] = publicInputs.emailNullifier;
         _copyTo(fields, HEADER_HASH_OFFSET, EnsUtils.packHeaderHash(publicInputs.headerHash));
         _copyTo(
             fields,
@@ -141,7 +142,6 @@ contract LinkXHandleCommandVerifier is IVerifier {
             SENDER_DOMAIN_OFFSET,
             NoirUtils.packBoundedVecU8(bytes(publicInputs.senderDomain), SENDER_DOMAIN_NUM_FIELDS)
         );
-        fields[NULLIFIER_OFFSET] = publicInputs.nullifier;
         return fields;
     }
 
@@ -150,6 +150,7 @@ contract LinkXHandleCommandVerifier is IVerifier {
 
         return PublicInputs({
             pubkeyHash: fields[PUBKEY_HASH_OFFSET],
+            emailNullifier: fields[EMAIL_NULLIFIER_OFFSET],
             headerHash: EnsUtils.unpackHeaderHash(
                 fields.slice(HEADER_HASH_OFFSET, HEADER_HASH_OFFSET + HEADER_HASH_NUM_FIELDS)
             ),
@@ -172,8 +173,7 @@ contract LinkXHandleCommandVerifier is IVerifier {
                 NoirUtils.unpackBoundedVecU8(
                     fields.slice(SENDER_DOMAIN_OFFSET, SENDER_DOMAIN_OFFSET + SENDER_DOMAIN_NUM_FIELDS)
                 )
-            ),
-            nullifier: fields[NULLIFIER_OFFSET]
+            )
         });
     }
 
@@ -196,7 +196,7 @@ contract LinkXHandleCommandVerifier is IVerifier {
                 ),
                 // x handle is the value
                 value: publicInputs.xHandle,
-                nullifier: publicInputs.nullifier
+                nullifier: publicInputs.emailNullifier
             }),
             proof: proof,
             publicInputs: publicInputs
