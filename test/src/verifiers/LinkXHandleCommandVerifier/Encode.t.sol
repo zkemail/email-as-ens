@@ -3,7 +3,6 @@ pragma solidity ^0.8.30;
 
 import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
-import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import {
     LinkXHandleCommand,
     LinkXHandleCommandVerifier,
@@ -16,11 +15,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
     LinkXHandleCommandVerifier internal _verifier;
 
     function setUp() public {
-        DKIMRegistryMock dkim = new DKIMRegistryMock();
-        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
-        // configure DKIM mock with valid domain+key
-        (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        dkim.setValid(keccak256(bytes(command.publicInputs.senderDomain)), command.publicInputs.pubkeyHash, true);
+        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), makeAddr("dkimRegistry"));
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
@@ -41,7 +36,13 @@ contract EncodeTest is _EmailAuthVerifierTest {
         assertEq(textRecord.nullifier, expectedTextRecord.nullifier, "nullifier mismatch");
     }
 
-    function _assertEq(PublicInputs memory publicInputs, PublicInputs memory expectedPublicInputs) internal pure {
+    function _assertEq(
+        PublicInputs memory publicInputs,
+        PublicInputs memory expectedPublicInputs
+    )
+        internal
+        pure
+    {
         assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "pubkeyHash mismatch");
         assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "headerHash mismatch");
         assertEq(publicInputs.proverAddress, expectedPublicInputs.proverAddress, "proverAddress mismatch");

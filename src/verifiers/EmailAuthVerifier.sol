@@ -115,14 +115,7 @@ abstract contract EmailAuthVerifier is IVerifier {
     /**
      * @inheritdoc IVerifier
      */
-    function encode(
-        bytes calldata proof,
-        bytes32[] calldata publicInputs
-    )
-        external
-        view
-        virtual
-        returns (bytes memory);
+    function encode(bytes calldata proof, bytes32[] calldata publicInputs) external view virtual returns (bytes memory);
 
     /**
      * @inheritdoc IVerifier
@@ -161,10 +154,8 @@ abstract contract EmailAuthVerifier is IVerifier {
             abi.decode(emailAuthProof.proof, (uint256[2], uint256[2][2], uint256[2]));
 
         // check if all values are less than Q (max value of bn128 curve)
-        bool validFieldElements = (
-            pA[0] < Q && pA[1] < Q && pB[0][0] < Q && pB[0][1] < Q && pB[1][0] < Q && pB[1][1] < Q && pC[0] < Q
-                && pC[1] < Q
-        );
+        bool validFieldElements = (pA[0] < Q && pA[1] < Q && pB[0][0] < Q && pB[0][1] < Q && pB[1][0] < Q
+                && pB[1][1] < Q && pC[0] < Q && pC[1] < Q);
 
         if (!validFieldElements) {
             return false;
@@ -227,7 +218,6 @@ abstract contract EmailAuthVerifier is IVerifier {
         return PublicInputs({
             domainName: string(
                 CircomUtils.unpackFieldsArray(
-                    // solhint-disable-next-line max-line-length
                     fields.slice(DOMAIN_NAME_OFFSET, DOMAIN_NAME_OFFSET + DOMAIN_NAME_NUM_FIELDS),
                     DOMAIN_NAME_PADDED_SIZE
                 )

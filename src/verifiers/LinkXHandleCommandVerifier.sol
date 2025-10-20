@@ -162,8 +162,9 @@ contract LinkXHandleCommandVerifier is IVerifier {
                     )
                 )
             ),
-            // solhint-disable-next-line max-line-length
-            command: string(NoirUtils.unpackFieldsArray(fields.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS))),
+            command: string(
+                NoirUtils.unpackFieldsArray(fields.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS))
+            ),
             xHandle: string(
                 NoirUtils.unpackBoundedVecU8(fields.slice(X_HANDLE_OFFSET, X_HANDLE_OFFSET + X_HANDLE_NUM_FIELDS))
             ),

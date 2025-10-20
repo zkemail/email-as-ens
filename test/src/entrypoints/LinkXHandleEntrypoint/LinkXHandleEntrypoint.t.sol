@@ -3,14 +3,15 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import {
-    LinkXHandleCommand, LinkXHandleCommandVerifier
+    LinkXHandleCommand,
+    LinkXHandleCommandVerifier
 } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
-import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";
 import { LinkXHandleEntrypointHelper } from "./_LinkXHandleEntrypointHelper.sol";
 import { LinkTextRecordEntrypoint } from "../../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
 import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
 contract LinkXHandleVerifierTest is Test {
     using EnsUtils for bytes;
@@ -19,10 +20,18 @@ contract LinkXHandleVerifierTest is Test {
     LinkXHandleEntrypointHelper public linkXHandle;
 
     function setUp() public {
-        DKIMRegistryMock dkim = new DKIMRegistryMock();
-        verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), address(dkim));
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        dkim.setValid(keccak256(bytes(command.publicInputs.senderDomain)), command.publicInputs.pubkeyHash, true);
+        address dkimRegistry = makeAddr("dkimRegistry");
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.publicInputs.senderDomain)),
+                command.publicInputs.pubkeyHash
+            ),
+            abi.encode(true)
+        );
+        verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), dkimRegistry);
         linkXHandle = new LinkXHandleEntrypointHelper(address(verifier));
     }
 

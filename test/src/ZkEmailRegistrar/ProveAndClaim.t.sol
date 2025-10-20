@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "../../fixtures/TestFixtures.sol";
+import { Test } from "forge-std/Test.sol";
 import {
-    ProveAndClaimCommand, ProveAndClaimCommandVerifier
+    ProveAndClaimCommand,
+    ProveAndClaimCommandVerifier
 } from "../../../src/verifiers/ProveAndClaimCommandVerifier.sol";
 import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
 import { Groth16Verifier } from "../../fixtures/Groth16Verifier.sol";
-import { DKIMRegistryMock } from "../../fixtures/DKIMRegistryMock.sol";
 import { IResolver, ZkEmailRegistrar } from "../../../src/ZkEmailRegistrar.sol";
 import { ENSRegistry } from "@ensdomains/ens-contracts/contracts/registry/ENSRegistry.sol";
 import { Bytes } from "@openzeppelin/contracts/utils/Bytes.sol";
 import { ENS } from "@ensdomains/ens-contracts/contracts/registry/ENS.sol";
 import { ZkEmailRegistrarHelper } from "./_ZkEmailRegistrarHelper.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
 contract ProveAndClaimTest is Test {
     using Bytes for bytes;
@@ -33,14 +34,18 @@ contract ProveAndClaimTest is Test {
     ENSRegistry public ens;
 
     function setUp() public {
-        DKIMRegistryMock dkim = new DKIMRegistryMock();
-        verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), address(dkim));
         (ProveAndClaimCommand memory command,) = TestFixtures.claimEnsCommand();
-        dkim.setValid(
-            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
-            command.emailAuthProof.publicInputs.publicKeyHash,
-            true
+        address dkimRegistry = makeAddr("dkimRegistry");
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+                command.emailAuthProof.publicInputs.publicKeyHash
+            ),
+            abi.encode(true)
         );
+        verifier = new ProveAndClaimCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
 
         // setup ENS registry
         vm.startPrank(owner);

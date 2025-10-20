@@ -5,10 +5,10 @@ import { Test } from "forge-std/Test.sol";
 import { TestFixtures } from "../../../fixtures/TestFixtures.sol";
 import { LinkEmailCommand, LinkEmailCommandVerifier } from "../../../../src/verifiers/LinkEmailCommandVerifier.sol";
 import { Groth16Verifier } from "../../../fixtures/Groth16Verifier.sol";
-import { DKIMRegistryMock } from "../../../fixtures/DKIMRegistryMock.sol";
 import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";
 import { LinkEmailEntrypointHelper } from "./_LinkEmailEntrypointHelper.sol";
 import { LinkTextRecordEntrypoint } from "../../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
 contract LinkEmailEntrypointTest is Test {
     using EnsUtils for bytes;
@@ -17,14 +17,18 @@ contract LinkEmailEntrypointTest is Test {
     LinkEmailEntrypointHelper public linkEmail;
 
     function setUp() public {
-        DKIMRegistryMock dkim = new DKIMRegistryMock();
-        verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), address(dkim));
         (LinkEmailCommand memory command,) = TestFixtures.linkEmailCommand();
-        dkim.setValid(
-            keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
-            command.emailAuthProof.publicInputs.publicKeyHash,
-            true
+        address dkimRegistry = makeAddr("dkimRegistry");
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.emailAuthProof.publicInputs.domainName)),
+                command.emailAuthProof.publicInputs.publicKeyHash
+            ),
+            abi.encode(true)
         );
+        verifier = new LinkEmailCommandVerifier(address(new Groth16Verifier()), dkimRegistry);
         linkEmail = new LinkEmailEntrypointHelper(address(verifier));
     }
 
