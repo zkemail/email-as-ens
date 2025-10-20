@@ -27,7 +27,12 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
     using Strings for string;
     using CircomUtils for bytes;
 
-    constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
+    constructor(
+        address _groth16Verifier,
+        address _dkimRegistry
+    )
+        EmailAuthVerifier(_groth16Verifier, _dkimRegistry)
+    { }
 
     /**
      * @inheritdoc EmailAuthVerifier
@@ -39,7 +44,10 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
     /**
      * @inheritdoc EmailAuthVerifier
      */
-    function encode(bytes calldata proof, bytes32[] calldata publicInputs)
+    function encode(
+        bytes calldata proof,
+        bytes32[] calldata publicInputs
+    )
         external
         pure
         override
@@ -65,7 +73,10 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
     /**
      * @notice Reconstructs a LinkEmailCommand struct from proof bytes and public inputs fields.
      */
-    function _buildLinkEmailCommand(bytes memory proof, bytes32[] calldata publicInputsFields)
+    function _buildLinkEmailCommand(
+        bytes memory proof,
+        bytes32[] calldata publicInputsFields
+    )
         private
         pure
         returns (LinkEmailCommand memory command)

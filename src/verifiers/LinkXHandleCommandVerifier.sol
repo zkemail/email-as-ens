@@ -96,7 +96,10 @@ contract LinkXHandleCommandVerifier is IVerifier {
     /**
      * @inheritdoc IVerifier
      */
-    function encode(bytes calldata proof, bytes32[] calldata publicInputs)
+    function encode(
+        bytes calldata proof,
+        bytes32[] calldata publicInputs
+    )
         external
         pure
         returns (bytes memory encodedCommand)
@@ -171,7 +174,10 @@ contract LinkXHandleCommandVerifier is IVerifier {
         });
     }
 
-    function _buildLinkXHandleCommand(bytes calldata proof, bytes32[] calldata publicInputsFields)
+    function _buildLinkXHandleCommand(
+        bytes calldata proof,
+        bytes32[] calldata publicInputsFields
+    )
         private
         pure
         returns (LinkXHandleCommand memory command)
