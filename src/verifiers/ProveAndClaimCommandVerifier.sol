@@ -32,7 +32,12 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     using CircomUtils for bytes;
     using CommandUtils for bytes;
 
-    constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
+    constructor(
+        address _groth16Verifier,
+        address _dkimRegistry
+    )
+        EmailAuthVerifier(_groth16Verifier, _dkimRegistry)
+    { }
 
     /**
      * @inheritdoc EmailAuthVerifier
@@ -44,7 +49,10 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     /**
      * @inheritdoc EmailAuthVerifier
      */
-    function encode(bytes calldata proof, bytes32[] calldata publicInputs)
+    function encode(
+        bytes calldata proof,
+        bytes32[] calldata publicInputs
+    )
         external
         pure
         override
@@ -70,7 +78,10 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     /**
      * @notice Reconstructs a ProveAndClaimCommand struct from public signals and proof bytes.
      */
-    function _buildProveAndClaimCommand(bytes memory proof, bytes32[] calldata publicInputsFields)
+    function _buildProveAndClaimCommand(
+        bytes memory proof,
+        bytes32[] calldata publicInputsFields
+    )
         private
         pure
         returns (ProveAndClaimCommand memory command)

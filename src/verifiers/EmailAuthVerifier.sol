@@ -141,7 +141,10 @@ abstract contract EmailAuthVerifier is IVerifier {
      * @param emailAuthProof The EmailAuthProof struct containing the proof and PublicInputs struct
      * @return isValid True if the proof is valid, false otherwise
      */
-    function _verifyEmailProof(address groth16Verifier, EmailAuthProof memory emailAuthProof)
+    function _verifyEmailProof(
+        address groth16Verifier,
+        EmailAuthProof memory emailAuthProof
+    )
         internal
         view
         returns (bool isValid)

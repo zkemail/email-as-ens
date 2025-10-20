@@ -24,7 +24,10 @@ contract EnsUtilsHelper {
         return EnsUtils.packPubKey(pubKeyBytes);
     }
 
-    function callUnpackPubKey(bytes32[] calldata publicInputs, uint256 startIndex)
+    function callUnpackPubKey(
+        bytes32[] calldata publicInputs,
+        uint256 startIndex
+    )
         external
         pure
         returns (bytes memory pubKeyBytes)
