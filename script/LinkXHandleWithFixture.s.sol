@@ -5,7 +5,6 @@ import { Script } from "forge-std/Script.sol";
 import { LinkXHandleEntrypoint } from "../src/entrypoints/LinkXHandleEntrypoint.sol";
 import { LinkXHandleCommand } from "../src/verifiers/LinkXHandleCommandVerifier.sol";
 import { LinkXHandleCommandTestFixture } from "../test/fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
-import { DKIMRegistryMock } from "../test/fixtures/DKIMRegistryMock.sol";
 
 contract LinkXHandleWithFixtureScript is Script {
     // sepolia mock
@@ -18,11 +17,9 @@ contract LinkXHandleWithFixtureScript is Script {
 
         LinkXHandleEntrypoint verifier = LinkXHandleEntrypoint(LINK_X_HANDLE_VERIFIER);
         (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
-        bytes32 domainHash = keccak256(bytes(command.publicInputs.senderDomain));
 
         vm.startBroadcast(deployerPrivateKey);
 
-        DKIMRegistryMock(DKIM_REGISTRY).setValid(domainHash, command.publicInputs.pubkeyHash, true);
         verifier.entrypoint(abi.encode(command));
 
         vm.stopBroadcast();
