@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import { Arrays } from "@openzeppelin/contracts/utils/Arrays.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { NoirUtils } from "@zk-email/contracts/utils/NoirUtils.sol";
 import { CommandUtils } from "@zk-email/email-tx-builder/src/libraries/CommandUtils.sol";
 import { IHonkVerifier } from "../interfaces/IHonkVerifier.sol";
 import { IVerifier } from "../interfaces/IVerifier.sol";
-import { Bytes32 } from "../utils/Bytes32.sol";
 import { EnsUtils } from "../utils/EnsUtils.sol";
 import { TextRecord } from "../entrypoints/LinkTextRecordEntrypoint.sol";
 
@@ -37,7 +37,7 @@ struct LinkXHandleCommand {
 }
 
 contract LinkXHandleCommandVerifier is IVerifier {
-    using Bytes32 for bytes32[];
+    using Arrays for bytes32[];
 
     // #1: pubkey_hash -> 1 field -> idx 0
     uint256 public constant PUBKEY_HASH_OFFSET = 0;
@@ -128,15 +128,18 @@ contract LinkXHandleCommandVerifier is IVerifier {
     function _packPublicInputs(PublicInputs memory publicInputs) internal pure returns (bytes32[] memory fields) {
         fields = new bytes32[](PUBLIC_INPUTS_LENGTH);
         fields[PUBKEY_HASH_OFFSET] = publicInputs.pubkeyHash;
-        fields.splice(HEADER_HASH_OFFSET, EnsUtils.packHeaderHash(publicInputs.headerHash));
-        fields.splice(
+        _copyTo(fields, HEADER_HASH_OFFSET, EnsUtils.packHeaderHash(publicInputs.headerHash));
+        _copyTo(
+            fields,
             PROVER_ADDRESS_OFFSET,
             NoirUtils.packFieldsArray(abi.encodePacked(publicInputs.proverAddress), PROVER_ADDRESS_NUM_FIELDS)
         );
-        fields.splice(COMMAND_OFFSET, NoirUtils.packFieldsArray(bytes(publicInputs.command), COMMAND_NUM_FIELDS));
-        fields.splice(X_HANDLE_OFFSET, NoirUtils.packBoundedVecU8(bytes(publicInputs.xHandle), X_HANDLE_NUM_FIELDS));
-        fields.splice(
-            SENDER_DOMAIN_OFFSET, NoirUtils.packBoundedVecU8(bytes(publicInputs.senderDomain), SENDER_DOMAIN_NUM_FIELDS)
+        _copyTo(fields, COMMAND_OFFSET, NoirUtils.packFieldsArray(bytes(publicInputs.command), COMMAND_NUM_FIELDS));
+        _copyTo(fields, X_HANDLE_OFFSET, NoirUtils.packBoundedVecU8(bytes(publicInputs.xHandle), X_HANDLE_NUM_FIELDS));
+        _copyTo(
+            fields,
+            SENDER_DOMAIN_OFFSET,
+            NoirUtils.packBoundedVecU8(bytes(publicInputs.senderDomain), SENDER_DOMAIN_NUM_FIELDS)
         );
         fields[NULLIFIER_OFFSET] = publicInputs.nullifier;
         return fields;
@@ -218,5 +221,12 @@ contract LinkXHandleCommandVerifier is IVerifier {
         template[5] = CommandUtils.STRING_MATCHER;
 
         return template;
+    }
+
+    function _copyTo(bytes32[] memory fields, uint256 offset, bytes32[] memory data) private pure {
+        // solhint-disable-next-line no-inline-assembly
+        assembly ("memory-safe") {
+            mcopy(add(add(0x20, fields), mul(offset, 0x20)), add(0x20, data), mul(mload(data), 0x20))
+        }
     }
 }

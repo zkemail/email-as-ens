@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
+import { Arrays } from "@openzeppelin/contracts/utils/Arrays.sol";
 import { CircomUtils } from "@zk-email/contracts/utils/CircomUtils.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { IGroth16Verifier } from "../interfaces/IGroth16Verifier.sol";
 import { IVerifier } from "../interfaces/IVerifier.sol";
-import { Bytes32 } from "../utils/Bytes32.sol";
 import { EnsUtils } from "../utils/EnsUtils.sol";
 
 struct EmailAuthProof {
@@ -48,7 +48,7 @@ struct PublicInputs {
  *       ----------------------------------------------------------------------------------------------------------
  */
 abstract contract EmailAuthVerifier is IVerifier {
-    using Bytes32 for bytes32[];
+    using Arrays for bytes32[];
 
     /// @notice The order of the BN128 elliptic curve used in the ZK proofs
     /// @dev All field elements in proofs must be less than this value
@@ -182,19 +182,24 @@ abstract contract EmailAuthVerifier is IVerifier {
      */
     function _packPublicInputs(PublicInputs memory publicInputs) internal pure returns (bytes32[] memory fields) {
         fields = new bytes32[](PUBLIC_INPUTS_LENGTH);
-        fields.splice(
-            DOMAIN_NAME_OFFSET, CircomUtils.packFieldsArray(bytes(publicInputs.domainName), DOMAIN_NAME_PADDED_SIZE)
+        _copyTo(
+            fields,
+            DOMAIN_NAME_OFFSET,
+            CircomUtils.packFieldsArray(bytes(publicInputs.domainName), DOMAIN_NAME_PADDED_SIZE)
         );
         fields[PUBLIC_KEY_HASH_OFFSET] = publicInputs.publicKeyHash;
         fields[EMAIL_NULLIFIER_OFFSET] = publicInputs.emailNullifier;
         fields[TIMESTAMP_OFFSET] = bytes32(publicInputs.timestamp);
-        fields.splice(
-            MASKED_COMMAND_OFFSET, CircomUtils.packFieldsArray(bytes(publicInputs.maskedCommand), MASKED_COMMAND_SIZE)
+        _copyTo(
+            fields,
+            MASKED_COMMAND_OFFSET,
+            CircomUtils.packFieldsArray(bytes(publicInputs.maskedCommand), MASKED_COMMAND_SIZE)
         );
         fields[ACCOUNT_SALT_OFFSET] = publicInputs.accountSalt;
-        fields.splice(IS_CODE_EXIST_OFFSET, CircomUtils.packBool(publicInputs.isCodeExist));
-        fields.splice(MISCELLANEOUS_DATA_OFFSET, EnsUtils.packPubKey(publicInputs.miscellaneousData));
-        fields.splice(
+        _copyTo(fields, IS_CODE_EXIST_OFFSET, CircomUtils.packBool(publicInputs.isCodeExist));
+        _copyTo(fields, MISCELLANEOUS_DATA_OFFSET, EnsUtils.packPubKey(publicInputs.miscellaneousData));
+        _copyTo(
+            fields,
             EMAIL_ADDRESS_OFFSET,
             CircomUtils.packFieldsArray(bytes(publicInputs.emailAddress), EMAIL_ADDRESS_PADDED_SIZE)
         );
@@ -238,5 +243,12 @@ abstract contract EmailAuthVerifier is IVerifier {
                 )
             )
         });
+    }
+
+    function _copyTo(bytes32[] memory fields, uint256 offset, bytes32[] memory data) private pure {
+        // solhint-disable-next-line no-inline-assembly
+        assembly ("memory-safe") {
+            mcopy(add(add(0x20, fields), mul(offset, 0x20)), add(0x20, data), mul(mload(data), 0x20))
+        }
     }
 }
