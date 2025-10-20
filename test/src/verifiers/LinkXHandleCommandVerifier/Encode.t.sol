@@ -36,7 +36,13 @@ contract EncodeTest is _EmailAuthVerifierTest {
         assertEq(textRecord.nullifier, expectedTextRecord.nullifier, "nullifier mismatch");
     }
 
-    function _assertEq(PublicInputs memory publicInputs, PublicInputs memory expectedPublicInputs) internal pure {
+    function _assertEq(
+        PublicInputs memory publicInputs,
+        PublicInputs memory expectedPublicInputs
+    )
+        internal
+        pure
+    {
         assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "pubkeyHash mismatch");
         assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "headerHash mismatch");
         assertEq(publicInputs.proverAddress, expectedPublicInputs.proverAddress, "proverAddress mismatch");
