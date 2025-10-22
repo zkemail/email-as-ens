@@ -67,7 +67,7 @@ pub global NUM_CAPTURE_GROUPS: u32 = 1;
  * @dev start states are hardcoded in this function - "(start_state - {state})" for each start
  *      example: `(start_state - 0) * (start_state - 1) * (start_state - 2)` means 0, 1, or 2
  *      are valid first states
- * 
+ *
  * @param start_state - The start state of the NFA
  */
 fn check_start_state(start_state: Field) {
@@ -81,7 +81,7 @@ fn check_start_state(start_state: Field) {
  * @dev accept states are hardcoded in this function - "(next_state - {state})" for each accept
  *      example: `(next_state - 19) * (next_state - 20) * (next_state - 21)` means 19, 20, or 21
  *      are valid accept states
- * 
+ *
  * @param next_state - The asserted next state of the NFA
  * @param haystack_index - The index being operated on in the haystack
  * @param asserted_match_length - The asserted traversal path length

@@ -44,11 +44,11 @@ contract EncodeTest is _EmailAuthVerifierTest {
         pure
     {
         assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "pubkeyHash mismatch");
+        assertEq(publicInputs.emailNullifier, expectedPublicInputs.emailNullifier, "nullifier mismatch");
         assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "headerHash mismatch");
         assertEq(publicInputs.proverAddress, expectedPublicInputs.proverAddress, "proverAddress mismatch");
         assertEq(publicInputs.command, expectedPublicInputs.command, "command mismatch");
         assertEq(publicInputs.xHandle, expectedPublicInputs.xHandle, "xHandle mismatch");
         assertEq(publicInputs.senderDomain, expectedPublicInputs.senderDomain, "senderDomain mismatch");
-        assertEq(publicInputs.nullifier, expectedPublicInputs.nullifier, "nullifier mismatch");
     }
 }
