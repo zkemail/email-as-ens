@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.30;
+
+import { Test } from "forge-std/Test.sol";
+import { LinkHandleCommand } from "../../../../src/verifiers/HandleVerifier.sol";
+import { LinkHandleCommandVerifier } from "../../../../src/verifiers/LinkHandleCommandVerifier.sol";
+import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
+import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";
+import { LinkHandleEntrypointHelper } from "./_LinkHandleEntrypointHelper.sol";
+import { LinkTextRecordEntrypoint } from "../../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
+import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
+import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
+
+contract LinkHandleVerifierTest is Test {
+    using EnsUtils for bytes;
+
+    LinkHandleCommandVerifier public verifier;
+    LinkHandleEntrypointHelper public linkHandle;
+
+    function setUp() public {
+        (LinkHandleCommand memory command,) = HandleCommandTestFixture.getLinkXFixture();
+        address dkimRegistry = makeAddr("dkimRegistry");
+        vm.mockCall(
+            dkimRegistry,
+            abi.encodeWithSelector(
+                IDKIMRegistry.isKeyHashValid.selector,
+                keccak256(bytes(command.publicInputs.senderDomain)),
+                command.publicInputs.pubkeyHash
+            ),
+            abi.encode(true)
+        );
+        verifier = new LinkHandleCommandVerifier(address(new HonkVerifier()), dkimRegistry);
+        linkHandle = new LinkHandleEntrypointHelper(address(verifier));
+    }
+
+    function test_entrypoint_correctlyEncodesAndValidatesCommand() public {
+        (LinkHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getLinkXFixture();
+
+        bytes memory encodedCommand = linkHandle.encode(command.proof, expectedPublicInputs);
+        assertEq(linkHandle.textRecord(bytes(command.textRecord.ensName).namehash()), "");
+        linkHandle.entrypoint(encodedCommand);
+        assertEq(linkHandle.isUsed(command.publicInputs.emailNullifier), true);
+        assertEq(linkHandle.textRecord(bytes(command.textRecord.ensName).namehash()), command.textRecord.value);
+    }
+
+    function test_entrypoint_revertsWhenNullifierIsUsed() public {
+        (LinkHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getLinkXFixture();
+        bytes memory encodedCommand = linkHandle.encode(command.proof, expectedPublicInputs);
+        linkHandle.entrypoint(encodedCommand);
+        vm.expectRevert(abi.encodeWithSelector(LinkTextRecordEntrypoint.NullifierUsed.selector));
+        linkHandle.entrypoint(encodedCommand);
+    }
+
+    function test_verifyTextRecord_returnsFalseWhenTextRecordIsIncorrect() public {
+        (LinkHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getLinkXFixture();
+        bytes memory encodedCommand = linkHandle.encode(command.proof, expectedPublicInputs);
+        linkHandle.entrypoint(encodedCommand);
+        assertEq(
+            linkHandle.verifyTextRecord(bytes(command.textRecord.ensName).namehash(), "com.twitter", "incorrect"), false
+        );
+    }
+
+    function test_verifyTextRecord_returnsTrueWhenTextRecordIsCorrect() public {
+        (LinkHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getLinkXFixture();
+        bytes memory encodedCommand = linkHandle.encode(command.proof, expectedPublicInputs);
+        linkHandle.entrypoint(encodedCommand);
+        assertEq(
+            linkHandle.verifyTextRecord(
+                bytes(command.textRecord.ensName).namehash(), "com.twitter", command.textRecord.value
+            ),
+            true
+        );
+    }
+}

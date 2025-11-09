@@ -6,6 +6,13 @@ import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 import { NoirUtils } from "@zk-email/contracts/utils/NoirUtils.sol";
 import { IVerifier } from "../interfaces/IVerifier.sol";
 import { EnsUtils } from "../utils/EnsUtils.sol";
+import { TextRecord } from "../entrypoints/LinkTextRecordEntrypoint.sol";
+
+struct LinkHandleCommand {
+    TextRecord textRecord;
+    bytes proof;
+    PublicInputs publicInputs;
+}
 
 struct PublicInputs {
     bytes32 pubkeyHash;
@@ -13,7 +20,7 @@ struct PublicInputs {
     bytes32 headerHash;
     address proverAddress;
     string command;
-    string xHandle;
+    string handle;
     string senderDomain;
 }
 
@@ -35,8 +42,8 @@ abstract contract HandleVerifier is IVerifier {
     uint256 public constant COMMAND_OFFSET = 5;
     uint256 public constant COMMAND_NUM_FIELDS = 20;
     // #6: x_handle_capture_1 64 fields + 1 field (length) = 65 fields -> idx 25-89
-    uint256 public constant X_HANDLE_OFFSET = 25;
-    uint256 public constant X_HANDLE_NUM_FIELDS = 65;
+    uint256 public constant HANDLE_OFFSET = 25;
+    uint256 public constant HANDLE_NUM_FIELDS = 65;
     // #7: sender_domain_capture_1 64 fields + 1 field (length) -> idx 90-154
     uint256 public constant SENDER_DOMAIN_OFFSET = 90;
     uint256 public constant SENDER_DOMAIN_NUM_FIELDS = 65;
@@ -100,7 +107,7 @@ abstract contract HandleVerifier is IVerifier {
             NoirUtils.packFieldsArray(abi.encodePacked(publicInputs.proverAddress), PROVER_ADDRESS_NUM_FIELDS)
         );
         _copyTo(fields, COMMAND_OFFSET, NoirUtils.packFieldsArray(bytes(publicInputs.command), COMMAND_NUM_FIELDS));
-        _copyTo(fields, X_HANDLE_OFFSET, NoirUtils.packBoundedVecU8(bytes(publicInputs.xHandle), X_HANDLE_NUM_FIELDS));
+        _copyTo(fields, HANDLE_OFFSET, NoirUtils.packBoundedVecU8(bytes(publicInputs.handle), HANDLE_NUM_FIELDS));
         _copyTo(
             fields,
             SENDER_DOMAIN_OFFSET,
@@ -130,8 +137,8 @@ abstract contract HandleVerifier is IVerifier {
             command: string(
                 NoirUtils.unpackFieldsArray(fields.slice(COMMAND_OFFSET, COMMAND_OFFSET + COMMAND_NUM_FIELDS))
             ),
-            xHandle: string(
-                NoirUtils.unpackBoundedVecU8(fields.slice(X_HANDLE_OFFSET, X_HANDLE_OFFSET + X_HANDLE_NUM_FIELDS))
+            handle: string(
+                NoirUtils.unpackBoundedVecU8(fields.slice(HANDLE_OFFSET, HANDLE_OFFSET + HANDLE_NUM_FIELDS))
             ),
             senderDomain: string(
                 NoirUtils.unpackBoundedVecU8(
