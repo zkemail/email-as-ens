@@ -23,5 +23,5 @@ lcov.info
 .DS_Store
 
 Prover.toml
-inputs.json
+raw_inputs.json
 target/
