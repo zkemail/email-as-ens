@@ -6,11 +6,11 @@ import {
     LinkXHandleCommand,
     LinkXHandleCommandVerifier
 } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
-import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
+import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
 import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";
 import { LinkXHandleEntrypointHelper } from "./_LinkXHandleEntrypointHelper.sol";
 import { LinkTextRecordEntrypoint } from "../../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
-import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
+import { LinkXHandleCommandTestFixture } from "../../../fixtures/handleCommand/LinkXHandleCommandTestFixture.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
 contract LinkXHandleVerifierTest is Test {

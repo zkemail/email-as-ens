@@ -2,8 +2,8 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
-import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
+import { LinkXHandleCommandTestFixture } from "../../../fixtures/handleCommand/LinkXHandleCommandTestFixture.sol";
+import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
 import {
     LinkXHandleCommand,
     LinkXHandleCommandVerifier

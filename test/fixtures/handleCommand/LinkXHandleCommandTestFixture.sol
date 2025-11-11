@@ -13,10 +13,10 @@ library LinkXHandleCommandTestFixture {
     using Strings for string;
 
     function getFixture() internal view returns (LinkXHandleCommand memory command, bytes32[] memory publicInputs) {
-        string memory path = string.concat(vm.projectRoot(), "/test/fixtures/linkXHandleCommand/");
+        string memory path = string.concat(vm.projectRoot(), "/test/fixtures/handleCommand/");
 
         PublicInputs memory expectedPublicInputs =
-            _getExpectedPublicInputs(string.concat(path, "files/expected_public_inputs.json"));
+            _getExpectedPublicInputs(string.concat(path, "files/linkX/expected_public_inputs.json"));
 
         command = LinkXHandleCommand({
             textRecord: TextRecord({
@@ -24,11 +24,11 @@ library LinkXHandleCommandTestFixture {
                 value: expectedPublicInputs.xHandle,
                 nullifier: expectedPublicInputs.emailNullifier
             }),
-            proof: abi.encodePacked(_getProofFieldsFromBinary(string.concat(path, "circuit/target/proof"))),
+            proof: abi.encodePacked(_getProofFieldsFromBinary(string.concat(path, "files/linkX/proof"))),
             publicInputs: expectedPublicInputs
         });
 
-        return (command, _getPublicInputsFieldsFromBinary(string.concat(path, "circuit/target/public_inputs")));
+        return (command, _getPublicInputsFieldsFromBinary(string.concat(path, "files/linkX/public_inputs")));
     }
 
     /**
