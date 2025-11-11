@@ -60,5 +60,5 @@ contract XHandleResolver is IExtendedResolver, Initializable, UUPSUpgradeable, O
 
     /// @notice Authorizes an upgrade to a new implementation
     /// @dev Only the owner can authorize upgrades
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
+    function _authorizeUpgrade(address) internal override onlyOwner { }
 }
