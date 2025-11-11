@@ -21,3 +21,7 @@ lcov.info
 *.log
 
 .DS_Store
+
+Prover.toml
+inputs.json
+target/
