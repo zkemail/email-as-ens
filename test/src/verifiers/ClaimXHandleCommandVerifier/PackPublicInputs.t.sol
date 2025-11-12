@@ -3,21 +3,21 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
-import { LinkXHandleCommand } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
-import { LinkXHandleCommandVerifierHelper } from "./_LinkXHandleCommandVerifierHelper.sol";
+import { ClaimXHandleCommand } from "../../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
+import { ClaimXHandleCommandVerifierHelper } from "./_ClaimXHandleCommandVerifierHelper.sol";
 
 contract PackPublicInputsTest is Test {
-    LinkXHandleCommandVerifierHelper internal _verifier;
+    ClaimXHandleCommandVerifierHelper internal _verifier;
 
     function setUp() public {
         address honkVerifier = makeAddr("honkVerifier");
         address dkimRegistry = makeAddr("dkimRegistry");
-        _verifier = new LinkXHandleCommandVerifierHelper(honkVerifier, dkimRegistry);
+        _verifier = new ClaimXHandleCommandVerifierHelper(honkVerifier, dkimRegistry);
     }
 
-    function test_correctlyPacksPublicInputsForLinkXHandleCommand() public view {
-        (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
-            HandleCommandTestFixture.getLinkXFixture();
+    function test_correctlyPacksPublicInputsForClaimXHandleCommand() public view {
+        (ClaimXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getClaimXFixture();
         bytes32[] memory publicInputs = _verifier.packPublicInputs(command.publicInputs);
         _assertEq(publicInputs, expectedPublicInputs);
     }
