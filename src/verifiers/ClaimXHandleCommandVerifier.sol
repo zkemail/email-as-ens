@@ -10,14 +10,14 @@ import { PublicInputs } from "./HandleVerifier.sol";
 /**
  * @notice Enum representing the indices of command parameters in the command template
  * @dev Used to specify which parameter to extract from the command string
- * @param OPERATOR = 0
+ * @param TARGET = 0
  */
 enum CommandParamIndex {
-    OPERATOR
+    TARGET
 }
 
 struct ClaimXHandleCommand {
-    address operator;
+    address target;
     bytes proof;
     PublicInputs publicInputs;
 }
@@ -69,9 +69,9 @@ contract ClaimXHandleCommandVerifier is HandleVerifier {
     {
         PublicInputs memory publicInputs = _unpackPublicInputs(publicInputsFields);
         return ClaimXHandleCommand({
-            operator: Strings.parseAddress(
+            target: Strings.parseAddress(
                 CommandUtils.extractCommandParamByIndex(
-                    _getTemplate(), publicInputs.command, uint256(CommandParamIndex.OPERATOR)
+                    _getTemplate(), publicInputs.command, uint256(CommandParamIndex.TARGET)
                 )
             ),
             proof: proof,
@@ -81,20 +81,19 @@ contract ClaimXHandleCommandVerifier is HandleVerifier {
 
     function _getCommand(ClaimXHandleCommand memory command) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](1);
-        commandParams[0] = abi.encode(command.operator);
+        commandParams[0] = abi.encode(command.target);
 
         return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
     }
 
     function _getTemplate() private pure returns (string[] memory template) {
-        template = new string[](6);
+        template = new string[](5);
 
-        template[0] = "Claim";
-        template[1] = "my";
-        template[2] = "handle";
-        template[3] = "with";
-        template[4] = "operator";
-        template[5] = CommandUtils.ETH_ADDR_MATCHER;
+        template[0] = "Withdraw";
+        template[1] = "all";
+        template[2] = "eth";
+        template[3] = "to";
+        template[4] = CommandUtils.ETH_ADDR_MATCHER;
 
         return template;
     }
