@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.30;
+
+import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
+import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
+import {
+    ClaimXHandleCommand,
+    ClaimXHandleCommandVerifier,
+    PublicInputs
+} from "../../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
+import { _EmailAuthVerifierTest } from "../EmailAuthVerifier/_EmailAuthVerifierTest.sol";
+
+contract EncodeTest is _EmailAuthVerifierTest {
+    ClaimXHandleCommandVerifier internal _verifier;
+
+    function setUp() public {
+        _verifier = new ClaimXHandleCommandVerifier(address(new HonkVerifier()), makeAddr("dkimRegistry"));
+    }
+
+    function test_correctlyEncodesAndDecodesCommand() public view {
+        (ClaimXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getClaimXFixture();
+
+        bytes memory encodedData = _verifier.encode(command.proof, expectedPublicInputs);
+        ClaimXHandleCommand memory decodedCommand = abi.decode(encodedData, (ClaimXHandleCommand));
+
+        assertEq(decodedCommand.target, command.target);
+        assertEq(decodedCommand.proof, command.proof, "proof mismatch");
+        _assertEq(decodedCommand.publicInputs, command.publicInputs);
+    }
+
+    function _assertEq(PublicInputs memory publicInputs, PublicInputs memory expectedPublicInputs) internal pure {
+        assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "pubkeyHash mismatch");
+        assertEq(publicInputs.emailNullifier, expectedPublicInputs.emailNullifier, "nullifier mismatch");
+        assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "headerHash mismatch");
+        assertEq(publicInputs.proverAddress, expectedPublicInputs.proverAddress, "proverAddress mismatch");
+        assertEq(publicInputs.command, expectedPublicInputs.command, "command mismatch");
+        assertEq(publicInputs.xHandle, expectedPublicInputs.xHandle, "xHandle mismatch");
+        assertEq(publicInputs.senderDomain, expectedPublicInputs.senderDomain, "senderDomain mismatch");
+    }
+}
