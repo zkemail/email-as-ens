@@ -9,10 +9,14 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 address constant _VM_ADDR = address(uint160(uint256(keccak256("hevm cheat code"))));
 Vm constant vm = Vm(_VM_ADDR);
 
-library LinkXHandleCommandTestFixture {
+library HandleCommandTestFixture {
     using Strings for string;
 
-    function getFixture() internal view returns (LinkXHandleCommand memory command, bytes32[] memory publicInputs) {
+    function getLinkXFixture()
+        internal
+        view
+        returns (LinkXHandleCommand memory command, bytes32[] memory publicInputs)
+    {
         string memory path = string.concat(vm.projectRoot(), "/test/fixtures/handleCommand/");
 
         PublicInputs memory expectedPublicInputs =

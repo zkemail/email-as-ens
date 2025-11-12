@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { LinkXHandleCommandTestFixture } from "../../../fixtures/handleCommand/LinkXHandleCommandTestFixture.sol";
+import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
 import {
     LinkXHandleCommand,
@@ -20,7 +20,7 @@ contract EncodeTest is _EmailAuthVerifierTest {
 
     function test_correctlyEncodesAndDecodesCommand() public view {
         (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
-            LinkXHandleCommandTestFixture.getFixture();
+            HandleCommandTestFixture.getLinkXFixture();
 
         bytes memory encodedData = _verifier.encode(command.proof, expectedPublicInputs);
         LinkXHandleCommand memory decodedCommand = abi.decode(encodedData, (LinkXHandleCommand));
