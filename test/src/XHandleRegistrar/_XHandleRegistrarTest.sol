@@ -10,11 +10,15 @@ import {
     ClaimXHandleCommandVerifier
 } from "../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
+import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
 
 abstract contract XHandleRegistrarTest is Test {
+    using EnsUtils for bytes;
+
     XHandleRegistrarHelper internal _registrar;
     ClaimXHandleCommandVerifier internal _verifier;
     address internal _dkimRegistry;
+    bytes32 internal _rootNode;
 
     ClaimXHandleCommand internal _validCommand;
     bytes internal _validEncodedCommand;
@@ -36,12 +40,16 @@ abstract contract XHandleRegistrarTest is Test {
             abi.encode(true)
         );
 
+        // Calculate root node: namehash("x.zkemail.eth")
+        _rootNode = bytes("x.zkemail.eth").namehash();
+
         // Deploy verifier and registrar
         _verifier = new ClaimXHandleCommandVerifier(address(new HonkVerifier()), _dkimRegistry);
-        _registrar = new XHandleRegistrarHelper(address(_verifier));
+        _registrar = new XHandleRegistrarHelper(address(_verifier), _rootNode);
 
-        // Calculate ENS node from x handle
-        _ensNode = keccak256(bytes(_validCommand.publicInputs.xHandle));
+        // Calculate ENS node from x handle: namehash("xhandle.x.zkemail.eth")
+        bytes32 labelHash = keccak256(bytes(_validCommand.publicInputs.xHandle));
+        _ensNode = keccak256(abi.encodePacked(_rootNode, labelHash));
         _validEncodedCommand = abi.encode(_validCommand);
     }
 }

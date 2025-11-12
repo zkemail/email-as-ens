@@ -10,6 +10,7 @@ import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
 contract XHandleRegistrar is IEntryPoint {
     address public immutable implementation;
     address public immutable verifier;
+    bytes32 public immutable rootNode; // e.g., namehash("x.zkemail.eth")
 
     mapping(bytes32 ensNode => address account) public accounts;
     mapping(bytes32 nullifier => bool used) internal _isUsed;
@@ -21,9 +22,10 @@ contract XHandleRegistrar is IEntryPoint {
     error InvalidProof();
     error NullifierUsed();
 
-    constructor(address _verifier) {
+    constructor(address _verifier, bytes32 _rootNode) {
         implementation = address(new MinimalAccount());
         verifier = _verifier;
+        rootNode = _rootNode;
     }
 
     /**
@@ -90,7 +92,8 @@ contract XHandleRegistrar is IEntryPoint {
         }
 
         // Get the ENS node from the x handle in the proof
-        bytes32 ensNode = keccak256(bytes(command.publicInputs.xHandle));
+        // Convert x handle to ENS node: xhandle.x.zkemail.eth
+        bytes32 ensNode = _getEnsNode(command.publicInputs.xHandle);
         account = predictAddress(ensNode);
 
         // Deploy the account if it doesn't exist
@@ -117,5 +120,17 @@ contract XHandleRegistrar is IEntryPoint {
      */
     function predictAddress(bytes32 ensNode) public view returns (address) {
         return Clones.predictDeterministicAddress(implementation, ensNode, address(this));
+    }
+
+    /**
+     * @notice Converts an X handle to an ENS node
+     * @param xHandle The X handle (e.g., "thezdev1")
+     * @return The ENS node (namehash of "thezdev1.x.zkemail.eth")
+     */
+    function _getEnsNode(string memory xHandle) internal view returns (bytes32) {
+        // Create the label hash for the x handle
+        bytes32 labelHash = keccak256(bytes(xHandle));
+        // Compute namehash: keccak256(rootNode, labelHash)
+        return keccak256(abi.encodePacked(rootNode, labelHash));
     }
 }
