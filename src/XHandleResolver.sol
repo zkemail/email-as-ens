@@ -9,9 +9,17 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
+interface IXHandleRegistrar {
+    function getAccount(bytes32 ensNode) external view returns (address);
+    function predictAddress(bytes32 ensNode) external view returns (address);
+}
+
 contract XHandleResolver is IExtendedResolver, Initializable, UUPSUpgradeable, OwnableUpgradeable {
+    address public registrar;
+
     // https://docs.ens.domains/ensip/23
     error UnsupportedResolverProfile(bytes4 selector);
+    error RegistrarNotSet();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -19,8 +27,15 @@ contract XHandleResolver is IExtendedResolver, Initializable, UUPSUpgradeable, O
     }
 
     /// @notice Initializes the contract
-    function initialize() external initializer {
+    function initialize(address _registrar) external initializer {
         __Ownable_init(msg.sender);
+        registrar = _registrar;
+    }
+
+    /// @notice Sets the registrar address
+    /// @param _registrar The address of the XHandleRegistrar contract
+    function setRegistrar(address _registrar) external onlyOwner {
+        registrar = _registrar;
     }
 
     /// @notice Resolves a name, as specified by ENSIP 10.
@@ -48,7 +63,20 @@ contract XHandleResolver is IExtendedResolver, Initializable, UUPSUpgradeable, O
 
         // addr(node)
         if (selector == IAddrResolver.addr.selector) {
-            return abi.encode(address(uint160(uint256(keccak256(abi.encode(decodedName))))));
+            bytes32 node = abi.decode(data[4:], (bytes32));
+
+            // If registrar is set, get the actual account address
+            if (registrar != address(0)) {
+                address account = IXHandleRegistrar(registrar).getAccount(node);
+                // If account exists, return it; otherwise return predicted address
+                if (account != address(0)) {
+                    return abi.encode(account);
+                }
+                // Return predicted address
+                return abi.encode(IXHandleRegistrar(registrar).predictAddress(node));
+            }
+
+            revert RegistrarNotSet();
         }
 
         revert UnsupportedResolverProfile(selector);

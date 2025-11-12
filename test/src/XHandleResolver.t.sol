@@ -3,16 +3,25 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { XHandleResolver } from "../../src/XHandleResolver.sol";
+import { XHandleRegistrar } from "../../src/XHandleRegistrar.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { ITextResolver } from "@ensdomains/ens-contracts/contracts/resolvers/profiles/ITextResolver.sol";
 import { IAddrResolver } from "@ensdomains/ens-contracts/contracts/resolvers/profiles/IAddrResolver.sol";
 import { NameCoder } from "@ensdomains/ens-contracts/contracts/utils/NameCoder.sol";
+import { ClaimXHandleCommandVerifier } from "../../src/verifiers/ClaimXHandleCommandVerifier.sol";
+import { HonkVerifier } from "../fixtures/handleCommand/HonkVerifier.sol";
+import { EnsUtils } from "../../src/utils/EnsUtils.sol";
 
 contract XHandleResolverTest is Test {
+    using EnsUtils for bytes;
+
     XHandleResolver public resolver;
     XHandleResolver public implementation;
     ERC1967Proxy public proxy;
     address public owner;
+
+    XHandleRegistrar public registrar;
+    bytes32 public rootNode;
 
     function setUp() public {
         owner = address(this);
@@ -21,7 +30,7 @@ contract XHandleResolverTest is Test {
         implementation = new XHandleResolver();
 
         // Deploy proxy
-        bytes memory initData = abi.encodeWithSelector(XHandleResolver.initialize.selector);
+        bytes memory initData = abi.encodeWithSelector(XHandleResolver.initialize.selector, address(0));
         proxy = new ERC1967Proxy(address(implementation), initData);
 
         // Cast proxy to XHandleResolver interface
@@ -54,6 +63,48 @@ contract XHandleResolverTest is Test {
         resolver.upgradeToAndCall(address(newImplementation), "");
     }
 
+    function testResolveAddr() public {
+        bytes memory name = NameCoder.encode("test.platform.zkemail.eth");
+        bytes memory data = abi.encodeWithSelector(IAddrResolver.addr.selector, bytes32(0));
+
+        // Should revert because registrar is not set (initialized with address(0))
+        vm.expectRevert(abi.encodeWithSignature("RegistrarNotSet()"));
+        resolver.resolve(name, data);
+    }
+
+    function testResolveAddrWithRegistrar() public {
+        // Deploy a registrar
+        address dkimRegistry = makeAddr("dkimRegistry");
+        ClaimXHandleCommandVerifier verifier =
+            new ClaimXHandleCommandVerifier(address(new HonkVerifier()), dkimRegistry);
+        rootNode = bytes("x.zkemail.eth").namehash();
+        registrar = new XHandleRegistrar(address(verifier), rootNode);
+
+        // Set the registrar on the resolver
+        resolver.setRegistrar(address(registrar));
+
+        // Test resolving an address for a specific X handle
+        string memory xHandle = "thezdev1";
+        string memory ensName = string(abi.encodePacked(xHandle, ".x.zkemail.eth"));
+        bytes memory dnsName = NameCoder.encode(ensName);
+
+        // Calculate the ENS node
+        bytes32 labelHash = keccak256(bytes(xHandle));
+        bytes32 ensNode = keccak256(abi.encodePacked(rootNode, labelHash));
+
+        // Get predicted address from registrar
+        address predictedAddr = registrar.predictAddress(ensNode);
+
+        // Resolve address through resolver
+        bytes memory addrData = abi.encodeWithSelector(IAddrResolver.addr.selector, ensNode);
+        bytes memory result = resolver.resolve(dnsName, addrData);
+        address resolvedAddr = abi.decode(result, (address));
+
+        // Verify they match
+        assertEq(resolvedAddr, predictedAddr, "Resolver should return registrar's predicted address");
+        assertTrue(resolvedAddr != address(0), "Resolved address should not be zero");
+    }
+
     function testInitialization() public view {
         assertEq(resolver.owner(), owner);
     }
@@ -76,18 +127,6 @@ contract XHandleResolverTest is Test {
         string memory url = abi.decode(result, (string));
 
         assertEq(url, "https://zk.email/myhandle.platform.zkemail.eth");
-    }
-
-    function testResolveAddr() public view {
-        bytes memory name = NameCoder.encode("test.platform.zkemail.eth");
-        bytes memory data = abi.encodeWithSelector(IAddrResolver.addr.selector, bytes32(0));
-
-        bytes memory result = resolver.resolve(name, data);
-        address addr = abi.decode(result, (address));
-
-        // Verify it returns a deterministic address
-        address expected = address(uint160(uint256(keccak256(abi.encode("test.platform.zkemail.eth")))));
-        assertEq(addr, expected);
     }
 
     function testSupportsInterface() public view {

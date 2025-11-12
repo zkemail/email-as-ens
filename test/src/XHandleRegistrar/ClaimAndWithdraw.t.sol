@@ -150,7 +150,8 @@ contract ClaimAndWithdrawTest is XHandleRegistrarTest {
         command2.publicInputs.xHandle = "differenthandle";
         command2.publicInputs.emailNullifier = keccak256("nullifier2");
 
-        bytes32 ensNode2 = keccak256(bytes(command2.publicInputs.xHandle));
+        bytes32 labelHash2 = keccak256(bytes(command2.publicInputs.xHandle));
+        bytes32 ensNode2 = keccak256(abi.encodePacked(_rootNode, labelHash2));
         address predictedAddr2 = _registrar.predictAddress(ensNode2);
 
         // Pre-fund second address
