@@ -6,7 +6,6 @@ import { LinkXHandleCommand, PublicInputs } from "../../../src/verifiers/LinkXHa
 import { ClaimXHandleCommand } from "../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
 import { TextRecord } from "../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { console } from "forge-std/console.sol";
 
 address constant _VM_ADDR = address(uint160(uint256(keccak256("hevm cheat code"))));
 Vm constant vm = Vm(_VM_ADDR);
