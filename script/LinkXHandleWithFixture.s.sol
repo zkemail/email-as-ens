@@ -4,7 +4,7 @@ pragma solidity ^0.8.30;
 import { Script } from "forge-std/Script.sol";
 import { LinkXHandleEntrypoint } from "../src/entrypoints/LinkXHandleEntrypoint.sol";
 import { LinkXHandleCommand } from "../src/verifiers/LinkXHandleCommandVerifier.sol";
-import { LinkXHandleCommandTestFixture } from "../test/fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
+import { HandleCommandTestFixture } from "../test/fixtures/handleCommand/HandleCommandTestFixture.sol";
 
 contract LinkXHandleWithFixtureScript is Script {
     // sepolia mock
@@ -16,7 +16,7 @@ contract LinkXHandleWithFixtureScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         LinkXHandleEntrypoint verifier = LinkXHandleEntrypoint(LINK_X_HANDLE_VERIFIER);
-        (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
+        (LinkXHandleCommand memory command,) = HandleCommandTestFixture.getLinkXFixture();
 
         vm.startBroadcast(deployerPrivateKey);
 
