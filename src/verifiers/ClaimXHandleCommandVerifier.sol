@@ -56,7 +56,7 @@ contract ClaimXHandleCommandVerifier is HandleVerifier {
         PublicInputs memory publicInputs = command.publicInputs;
 
         return IHonkVerifier(HONK_VERIFIER).verify(command.proof, _packPublicInputs(publicInputs))
-            && Strings.equal(_getCommand(command), publicInputs.command);
+            && _checkCommand(command, publicInputs.command);
     }
 
     function _buildClaimXHandleCommand(
@@ -79,11 +79,27 @@ contract ClaimXHandleCommandVerifier is HandleVerifier {
         });
     }
 
-    function _getCommand(ClaimXHandleCommand memory command) private pure returns (string memory) {
+    function _checkCommand(
+        ClaimXHandleCommand memory command,
+        string memory expectedCommand
+    )
+        private
+        pure
+        returns (bool)
+    {
+        for (uint256 i = 0; i < 2; i++) {
+            if (Strings.equal(_getCommand(command, i), expectedCommand)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function _getCommand(ClaimXHandleCommand memory command, uint256 casing) private pure returns (string memory) {
         bytes[] memory commandParams = new bytes[](1);
         commandParams[0] = abi.encode(command.target);
 
-        return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), 0);
+        return CommandUtils.computeExpectedCommand(commandParams, _getTemplate(), casing);
     }
 
     function _getTemplate() private pure returns (string[] memory template) {
