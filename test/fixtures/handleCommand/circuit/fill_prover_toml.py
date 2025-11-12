@@ -97,7 +97,7 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
     # Paths relative to script location
-    inputs_path = os.path.join(script_dir, 'inputs.json')
+    inputs_path = os.path.join(script_dir, 'raw_inputs.json')
     output_path = os.path.join(script_dir, 'Prover.toml')
     
     # Load the inputs.json file
