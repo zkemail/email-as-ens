@@ -7,7 +7,10 @@ import { XHandleResolver } from "../src/XHandleResolver.sol";
 contract UpgradeXHandleResolverScript is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        address proxyAddress = 0xa217F713FB7873d39cb2ef43dAc29Da445c92cB9; // vm.envAddress("X_HANDLE_RESOLVER");
+
+        // Get addresses from environment or use defaults
+        address proxyAddress = vm.envOr("X_HANDLE_RESOLVER", 0xa217F713FB7873d39cb2ef43dAc29Da445c92cB9);
+        address registrarAddress = vm.envOr("X_HANDLE_REGISTRAR", address(0));
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -18,12 +21,22 @@ contract UpgradeXHandleResolverScript is Script {
         // Upgrade proxy to new implementation
         XHandleResolver proxy = XHandleResolver(proxyAddress);
         proxy.upgradeToAndCall(address(newImplementation), "");
+        console.log("Proxy upgraded successfully!");
+
+        // Set registrar if provided
+        if (registrarAddress != address(0)) {
+            proxy.setRegistrar(registrarAddress);
+            console.log("Registrar set to:", registrarAddress);
+        } else {
+            console.log("WARNING: No registrar address provided, skipping setRegistrar");
+        }
 
         vm.stopBroadcast();
 
-        console.log("\nProxy upgraded successfully!");
+        console.log("\n=== Upgrade Summary ===");
         console.log("Proxy address:", proxyAddress);
         console.log("New implementation:", address(newImplementation));
+        console.log("Registrar:", registrarAddress);
     }
 }
 
