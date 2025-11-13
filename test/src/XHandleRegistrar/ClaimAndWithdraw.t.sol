@@ -101,6 +101,10 @@ contract ClaimAndWithdrawTest is XHandleRegistrarTest {
         // First successful claim
         _registrar.claimAndWithdraw(_validEncodedCommand);
 
+        // Verify nullifier is marked as used
+        bool isUsed = _registrar.isNullifierUsed(_validCommand.publicInputs.emailNullifier);
+        assertTrue(isUsed, "Nullifier should be marked as used after first claim");
+
         // Try to claim again with same nullifier
         vm.expectRevert(XHandleRegistrar.NullifierUsed.selector);
         _registrar.claimAndWithdraw(_validEncodedCommand);
@@ -150,7 +154,9 @@ contract ClaimAndWithdrawTest is XHandleRegistrarTest {
         command2.publicInputs.xHandle = "differenthandle";
         command2.publicInputs.emailNullifier = keccak256("nullifier2");
 
-        bytes32 labelHash2 = keccak256(bytes(command2.publicInputs.xHandle));
+        // Calculate ENS node with lowercase (same as registrar does)
+        string memory lowercaseHandle = _toLowercase(command2.publicInputs.xHandle);
+        bytes32 labelHash2 = keccak256(bytes(lowercaseHandle));
         bytes32 ensNode2 = keccak256(abi.encodePacked(_rootNode, labelHash2));
         address predictedAddr2 = _registrar.predictAddress(ensNode2);
 
