@@ -8,7 +8,7 @@ import { HandleCommandTestFixture } from "../test/fixtures/handleCommand/HandleC
 
 contract ClaimXHandleWithFixtureScript is Script {
     // Deployed registrar address on Sepolia
-    address public constant REGISTRAR = 0x750996a1d8B272Ca6074362331f60A3CbF9DaC0E;
+    address public constant REGISTRAR = 0xDC7b42532e8cBdEd0C453cB16116B40298a0E0e3;
 
     error FundingFailed();
 
@@ -45,6 +45,18 @@ contract ClaimXHandleWithFixtureScript is Script {
         console.log("X Handle claimed:", command.publicInputs.xHandle);
         console.log("ETH withdrawn to:", command.target);
         console.log("Nullifier:", vm.toString(command.publicInputs.emailNullifier));
+
+        console.log("\n=== View Transaction on Block Explorer ===");
+        console.log("After broadcast completes, get the transaction hash from:");
+        console.log("  broadcast/ClaimXHandleWithFixture.s.sol/11155111/run-latest.json");
+        console.log("");
+        console.log("Or run this command to extract it:");
+        console.log(
+            "  cat broadcast/ClaimXHandleWithFixture.s.sol/11155111/run-latest.json | jq -r '.transactions[0].hash'"
+        );
+        console.log("");
+        console.log("View on Sepolia Etherscan:");
+        console.log("  https://sepolia.etherscan.io/tx/[TRANSACTION_HASH]");
     }
 }
 

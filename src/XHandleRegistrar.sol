@@ -124,13 +124,37 @@ contract XHandleRegistrar is IEntryPoint {
 
     /**
      * @notice Converts an X handle to an ENS node
-     * @param xHandle The X handle (e.g., "thezdev1")
-     * @return The ENS node (namehash of "thezdev1.x.zkemail.eth")
+     * @param xHandle The X handle (e.g., "thezdev1" or "TheZDev1")
+     * @return The ENS node (namehash of lowercase handle)
      */
     function _getEnsNode(string memory xHandle) internal view returns (bytes32) {
+        // Normalize to lowercase first (ENS names are case-insensitive)
+        string memory lowercaseHandle = _toLowercase(xHandle);
         // Create the label hash for the x handle
-        bytes32 labelHash = keccak256(bytes(xHandle));
+        bytes32 labelHash = keccak256(bytes(lowercaseHandle));
         // Compute namehash: keccak256(rootNode, labelHash)
         return keccak256(abi.encodePacked(rootNode, labelHash));
+    }
+
+    /**
+     * @notice Converts a string to lowercase
+     * @param str The input string
+     * @return The lowercase version of the string
+     */
+    function _toLowercase(string memory str) internal pure returns (string memory) {
+        bytes memory bStr = bytes(str);
+        bytes memory bLower = new bytes(bStr.length);
+
+        for (uint256 i = 0; i < bStr.length; i++) {
+            // If uppercase letter (A-Z is 65-90 in ASCII)
+            if (bStr[i] >= 0x41 && bStr[i] <= 0x5A) {
+                // Convert to lowercase by adding 32
+                bLower[i] = bytes1(uint8(bStr[i]) + 32);
+            } else {
+                bLower[i] = bStr[i];
+            }
+        }
+
+        return string(bLower);
     }
 }

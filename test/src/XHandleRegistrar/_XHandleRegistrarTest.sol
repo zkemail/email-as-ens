@@ -48,9 +48,31 @@ abstract contract XHandleRegistrarTest is Test {
         _registrar = new XHandleRegistrarHelper(address(_verifier), _rootNode);
 
         // Calculate ENS node from x handle: namehash("xhandle.x.zkemail.eth")
-        bytes32 labelHash = keccak256(bytes(_validCommand.publicInputs.xHandle));
+        // Note: Must lowercase the handle first, as the registrar does
+        string memory lowercaseHandle = _toLowercase(_validCommand.publicInputs.xHandle);
+        bytes32 labelHash = keccak256(bytes(lowercaseHandle));
         _ensNode = keccak256(abi.encodePacked(_rootNode, labelHash));
         _validEncodedCommand = abi.encode(_validCommand);
+    }
+
+    /**
+     * @dev Helper function to convert string to lowercase for ENS node calculation
+     */
+    function _toLowercase(string memory str) internal pure returns (string memory) {
+        bytes memory bStr = bytes(str);
+        bytes memory bLower = new bytes(bStr.length);
+
+        for (uint256 i = 0; i < bStr.length; i++) {
+            // If uppercase letter (A-Z is 65-90 in ASCII)
+            if (bStr[i] >= 0x41 && bStr[i] <= 0x5A) {
+                // Convert to lowercase by adding 32
+                bLower[i] = bytes1(uint8(bStr[i]) + 32);
+            } else {
+                bLower[i] = bStr[i];
+            }
+        }
+
+        return string(bLower);
     }
 }
 
