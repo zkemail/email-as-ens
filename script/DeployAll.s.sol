@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Script, console } from "forge-std/Script.sol";
 import { XHandleRegistrar } from "../src/XHandleRegistrar.sol";
-import { XHandleResolver } from "../src/XHandleResolver.sol";
+import { XHandleResolver } from "../src/resolvers/XHandleResolver.sol";
 import { ClaimXHandleCommandVerifier } from "../src/verifiers/ClaimXHandleCommandVerifier.sol";
 import { HonkVerifier } from "../test/fixtures/handleCommand/HonkVerifier.sol";
 import { EnsUtils } from "../src/utils/EnsUtils.sol";
@@ -75,7 +75,9 @@ contract DeployAllScript is Script {
             vm.toString(ROOT_NODE),
             ")"
         );
-        console.log("\nforge verify-contract", address(newResolverImpl), "src/XHandleResolver.sol:XHandleResolver");
+        console.log(
+            "\nforge verify-contract", address(newResolverImpl), "src/resolvers/XHandleResolver.sol:XHandleResolver"
+        );
     }
 }
 

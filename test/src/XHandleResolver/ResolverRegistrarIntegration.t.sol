@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
-import { XHandleResolver } from "../../../src/XHandleResolver.sol";
+import { XHandleResolver } from "../../../src/resolvers/XHandleResolver.sol";
 import { XHandleRegistrar } from "../../../src/XHandleRegistrar.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { IAddrResolver } from "@ensdomains/ens-contracts/contracts/resolvers/profiles/IAddrResolver.sol";
