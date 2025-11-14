@@ -4,6 +4,6 @@
   "headerHash": "0x85fb869a94511ccbaaf108f91f59b407f36f89025341ed6536cbe2d0d338b7a1",
   "proverAddress": "0x0000000000000000000000000000000000000000",
   "command": "Link my x handle to zkfriendly.eth",
-  "xHandle": "thezdev1",
+  "handle": "thezdev1",
   "senderDomain": "x.com"
 }
