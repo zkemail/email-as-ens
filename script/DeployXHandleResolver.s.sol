@@ -3,7 +3,7 @@
 pragma solidity ^0.8.30;
 
 import { Script, console } from "forge-std/Script.sol";
-import { XHandleResolver } from "../src/XHandleResolver.sol";
+import { XHandleResolver } from "../src/resolvers/XHandleResolver.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployXHandleResolverScript is Script {

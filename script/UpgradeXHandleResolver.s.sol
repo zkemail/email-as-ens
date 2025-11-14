@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { Script, console } from "forge-std/Script.sol";
-import { XHandleResolver } from "../src/XHandleResolver.sol";
+import { XHandleResolver } from "../src/resolvers/XHandleResolver.sol";
 
 contract UpgradeXHandleResolverScript is Script {
     function run() external {
