@@ -2,8 +2,8 @@
 pragma solidity ^0.8.30;
 
 import { Vm } from "forge-std/Vm.sol";
-import { LinkXHandleCommand, PublicInputs } from "../../../src/verifiers/LinkXHandleCommandVerifier.sol";
-import { ClaimXHandleCommand } from "../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
+import { LinkHandleCommand, PublicInputs } from "../../../src/verifiers/HandleVerifier.sol";
+import { ClaimHandleCommand } from "../../../src/verifiers/ClaimHandleCommandVerifier.sol";
 import { TextRecord } from "../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -16,14 +16,14 @@ library HandleCommandTestFixture {
     function getClaimXFixture()
         internal
         view
-        returns (ClaimXHandleCommand memory command, bytes32[] memory publicInputs)
+        returns (ClaimHandleCommand memory command, bytes32[] memory publicInputs)
     {
         string memory path = string.concat(vm.projectRoot(), "/test/fixtures/handleCommand/");
 
         PublicInputs memory expectedPublicInputs =
             _getExpectedPublicInputs(string.concat(path, "files/claimX/expected_public_inputs.json"));
 
-        command = ClaimXHandleCommand({
+        command = ClaimHandleCommand({
             target: Strings.parseAddress(_getLastWord(expectedPublicInputs.command)),
             proof: abi.encodePacked(_getProofFieldsFromBinary(string.concat(path, "files/claimX/proof"))),
             publicInputs: expectedPublicInputs
@@ -32,20 +32,16 @@ library HandleCommandTestFixture {
         return (command, _getPublicInputsFieldsFromBinary(string.concat(path, "files/claimX/public_inputs")));
     }
 
-    function getLinkXFixture()
-        internal
-        view
-        returns (LinkXHandleCommand memory command, bytes32[] memory publicInputs)
-    {
+    function getLinkXFixture() internal view returns (LinkHandleCommand memory command, bytes32[] memory publicInputs) {
         string memory path = string.concat(vm.projectRoot(), "/test/fixtures/handleCommand/");
 
         PublicInputs memory expectedPublicInputs =
             _getExpectedPublicInputs(string.concat(path, "files/linkX/expected_public_inputs.json"));
 
-        command = LinkXHandleCommand({
+        command = LinkHandleCommand({
             textRecord: TextRecord({
                 ensName: _getLastWord(expectedPublicInputs.command),
-                value: expectedPublicInputs.xHandle,
+                value: expectedPublicInputs.handle,
                 nullifier: expectedPublicInputs.emailNullifier
             }),
             proof: abi.encodePacked(_getProofFieldsFromBinary(string.concat(path, "files/linkX/proof"))),
@@ -68,7 +64,7 @@ library HandleCommandTestFixture {
             headerHash: abi.decode(vm.parseJson(publicInputsFile, ".headerHash"), (bytes32)),
             proverAddress: abi.decode(vm.parseJson(publicInputsFile, ".proverAddress"), (address)),
             command: abi.decode(vm.parseJson(publicInputsFile, ".command"), (string)),
-            xHandle: abi.decode(vm.parseJson(publicInputsFile, ".xHandle"), (string)),
+            handle: abi.decode(vm.parseJson(publicInputsFile, ".handle"), (string)),
             senderDomain: abi.decode(vm.parseJson(publicInputsFile, ".senderDomain"), (string))
         });
     }
