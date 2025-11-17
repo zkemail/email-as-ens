@@ -8,7 +8,7 @@ import { ClaimHandleCommandVerifier } from "../src/verifiers/ClaimHandleCommandV
 import { HonkVerifier } from "../test/fixtures/handleCommand/HonkVerifier.sol";
 import { EnsUtils } from "../src/utils/EnsUtils.sol";
 
-contract DeployAllScript is Script {
+contract DeployAllDiscordScript is Script {
     using EnsUtils for bytes;
 
     // Sepolia always valid DKIM registry
