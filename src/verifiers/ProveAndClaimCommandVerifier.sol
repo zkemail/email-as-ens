@@ -32,12 +32,7 @@ contract ProveAndClaimCommandVerifier is EmailAuthVerifier {
     using CircomUtils for bytes;
     using CommandUtils for bytes;
 
-    constructor(
-        address _groth16Verifier,
-        address _dkimRegistry
-    )
-        EmailAuthVerifier(_groth16Verifier, _dkimRegistry)
-    { }
+    constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
 
     /**
      * @inheritdoc EmailAuthVerifier
