@@ -19,7 +19,7 @@ contract DeployAllDiscordScript is Script {
     bytes32 public constant ROOT_NODE = 0xb657600555f5843da9cade4edffeb814c79d0635e75163d69116d923d386a147;
 
     // Existing resolver proxy on Sepolia
-    address public constant RESOLVER_PROXY = 0xa217F713FB7873d39cb2ef43dAc29Da445c92cB9;
+    address public constant RESOLVER_PROXY = 0xd72779845E642fbB8042d9E8EFc8f072355d9E53;
 
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
