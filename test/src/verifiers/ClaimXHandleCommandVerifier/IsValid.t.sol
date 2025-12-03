@@ -5,16 +5,16 @@ import { Test } from "forge-std/Test.sol";
 import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
 import {
-    LinkXHandleCommand,
-    LinkXHandleCommandVerifier
-} from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
+    ClaimXHandleCommand,
+    ClaimXHandleCommandVerifier
+} from "../../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
 contract IsValidTest is Test {
-    LinkXHandleCommandVerifier internal _verifier;
+    ClaimXHandleCommandVerifier internal _verifier;
 
     function setUp() public {
-        (LinkXHandleCommand memory command,) = HandleCommandTestFixture.getLinkXFixture();
+        (ClaimXHandleCommand memory command,) = HandleCommandTestFixture.getClaimXFixture();
         address dkimRegistry = makeAddr("dkimRegistry");
         vm.mockCall(
             dkimRegistry,
@@ -25,14 +25,14 @@ contract IsValidTest is Test {
             ),
             abi.encode(true)
         );
-        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), dkimRegistry);
+        _verifier = new ClaimXHandleCommandVerifier(address(new HonkVerifier()), dkimRegistry);
     }
 
     // when verifier fails it reverts not returns false
     // expect revert for now
     // TODO: figure this out
     function test_revertsWhen_InvalidProof() public {
-        (LinkXHandleCommand memory command,) = HandleCommandTestFixture.getLinkXFixture();
+        (ClaimXHandleCommand memory command,) = HandleCommandTestFixture.getClaimXFixture();
         bytes memory proof = new bytes(command.proof.length);
         proof[0] = command.proof[0] ^ bytes1(uint8(1));
         command.proof = proof;
@@ -41,21 +41,21 @@ contract IsValidTest is Test {
     }
 
     function test_returnsTrueForValidCommand() public view {
-        (LinkXHandleCommand memory command,) = HandleCommandTestFixture.getLinkXFixture();
+        (ClaimXHandleCommand memory command,) = HandleCommandTestFixture.getClaimXFixture();
         bool isValid = _verifier.verify(abi.encode(command));
         assertTrue(isValid);
     }
 
     function test_returnsFalseForWrongENSName() public view {
-        (LinkXHandleCommand memory command,) = HandleCommandTestFixture.getLinkXFixture();
-        command.textRecord.ensName = "wrong.eth";
+        (ClaimXHandleCommand memory command,) = HandleCommandTestFixture.getClaimXFixture();
+        command.target = address(0x123);
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }
 
     function test_returnsFalseForWrongXHandle() public view {
-        (LinkXHandleCommand memory command,) = HandleCommandTestFixture.getLinkXFixture();
-        command.textRecord.value = "wrong";
+        (ClaimXHandleCommand memory command,) = HandleCommandTestFixture.getClaimXFixture();
+        command.target = address(0x123);
         bool isValid = _verifier.verify(abi.encode(command));
         assertFalse(isValid);
     }
