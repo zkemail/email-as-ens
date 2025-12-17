@@ -29,6 +29,19 @@ contract EncodeTest is _EmailAuthVerifierTest {
         _assertEq(decodedCommand.publicInputs, command.publicInputs);
     }
 
+    function test_encodeExtractsTargetFromCommandTemplate() public view {
+        (ClaimXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getClaimXFixture();
+
+        // The encode function uses _getTemplate() to extract the target address from the command
+        bytes memory encodedData = _verifier.encode(command.proof, expectedPublicInputs);
+        ClaimXHandleCommand memory decodedCommand = abi.decode(encodedData, (ClaimXHandleCommand));
+
+        // Verify the target was correctly extracted using the template "Withdraw all eth to {address}"
+        assertTrue(decodedCommand.target != address(0), "Target should be extracted from command using template");
+        assertEq(decodedCommand.target, command.target, "Target should match expected address from command");
+    }
+
     function _assertEq(PublicInputs memory publicInputs, PublicInputs memory expectedPublicInputs) internal pure {
         assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "pubkeyHash mismatch");
         assertEq(publicInputs.emailNullifier, expectedPublicInputs.emailNullifier, "nullifier mismatch");
