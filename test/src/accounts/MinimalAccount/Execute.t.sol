@@ -4,14 +4,7 @@ pragma solidity ^0.8.30;
 import { Test } from "forge-std/Test.sol";
 import { MinimalAccount } from "../../../../src/accounts/MinimalAccount.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
-contract RevertingContract {
-    error AlwaysReverts();
-
-    fallback() external payable {
-        revert AlwaysReverts();
-    }
-}
+import { RevertingContract } from "./RevertingContract.sol";
 
 contract MinimalAccountExecuteTest is Test {
     MinimalAccount internal _account;

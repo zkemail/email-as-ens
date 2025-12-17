@@ -105,6 +105,18 @@ contract XHandleResolverTest is Test {
         assertTrue(resolvedAddr != address(0), "Resolved address should not be zero");
     }
 
+    function testResolveUnsupportedSelector() public {
+        bytes memory name = NameCoder.encode("test.platform.zkemail.eth");
+        // Use a random unsupported selector
+        bytes4 unsupportedSelector = bytes4(keccak256("unsupported()"));
+        bytes memory data = abi.encodePacked(unsupportedSelector, bytes32(0));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(XHandleResolver.UnsupportedResolverProfile.selector, unsupportedSelector)
+        );
+        resolver.resolve(name, data);
+    }
+
     function testInitialization() public view {
         assertEq(resolver.owner(), owner);
     }
@@ -133,6 +145,16 @@ contract XHandleResolverTest is Test {
         // Test IExtendedResolver interface
         bytes4 extendedResolverInterface = 0x9061b923; // IExtendedResolver interfaceId
         assertTrue(resolver.supportsInterface(extendedResolverInterface));
+    }
+
+    function testResolveTextUnknownKey() public view {
+        bytes memory name = NameCoder.encode("test.platform.zkemail.eth");
+        bytes memory data = abi.encodeWithSelector(ITextResolver.text.selector, bytes32(0), "unknownKey");
+
+        bytes memory result = resolver.resolve(name, data);
+        string memory value = abi.decode(result, (string));
+
+        assertEq(value, "", "Unknown text key should return empty string");
     }
 }
 
