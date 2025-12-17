@@ -122,6 +122,19 @@ contract ClaimAndWithdrawTest is XHandleRegistrarTest {
         _registrar.claimAndWithdraw(abi.encode(invalidCommand));
     }
 
+    function test_RevertsWhen_VerifierReturnsFalse() public {
+        // Create a command with a fresh nullifier
+        ClaimXHandleCommand memory command = _validCommand;
+        command.publicInputs.emailNullifier = keccak256("fresh_nullifier");
+
+        // Mock the verifier to return false (instead of reverting)
+        vm.mockCall(address(_verifier), abi.encodeWithSelector(IVerifier.verify.selector), abi.encode(false));
+
+        // Should revert with InvalidProof error
+        vm.expectRevert(XHandleRegistrar.InvalidProof.selector);
+        _registrar.claimAndWithdraw(abi.encode(command));
+    }
+
     function test_RevertsWhen_InvalidDkimKey() public {
         // Setup a command that will fail DKIM validation
         ClaimXHandleCommand memory invalidCommand = _validCommand;
@@ -173,6 +186,33 @@ contract ClaimAndWithdrawTest is XHandleRegistrarTest {
         assertTrue(account1 != account2, "Different handles should have different accounts");
         assertEq(_registrar.getAccount(_ensNode), account1, "First account should be stored");
         assertEq(_registrar.getAccount(ensNode2), account2, "Second account should be stored");
+    }
+
+    function test_NormalizesUppercaseHandleToLowercase() public {
+        // Create command with uppercase handle
+        ClaimXHandleCommand memory command = _validCommand;
+        command.publicInputs.xHandle = "TheZDev1"; // Mixed case
+        command.publicInputs.emailNullifier = keccak256("uppercase_nullifier");
+
+        // Calculate expected ENS node using lowercase version
+        bytes32 labelHash = keccak256(bytes("thezdev1")); // lowercase
+        bytes32 expectedEnsNode = keccak256(abi.encodePacked(_rootNode, labelHash));
+        address predictedAddr = _registrar.predictAddress(expectedEnsNode);
+
+        // Pre-fund the predicted address
+        vm.deal(predictedAddr, 1 ether);
+
+        // Mock verifier to accept this command
+        vm.mockCall(address(_verifier), abi.encodeWithSelector(IVerifier.verify.selector), abi.encode(true));
+
+        // Claim with uppercase handle
+        address deployedAccount = _registrar.claimAndWithdraw(abi.encode(command));
+
+        // Verify account was deployed at predicted address (using lowercase ENS node)
+        assertEq(deployedAccount, predictedAddr, "Account should be at lowercase ENS node address");
+        assertEq(
+            _registrar.getAccount(expectedEnsNode), deployedAccount, "Account should be stored under lowercase node"
+        );
     }
 }
 
