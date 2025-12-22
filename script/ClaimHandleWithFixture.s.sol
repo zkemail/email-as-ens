@@ -3,8 +3,8 @@ pragma solidity ^0.8.30;
 
 import { Script, console } from "forge-std/Script.sol";
 import { HandleRegistrar } from "../src/entrypoints/HandleRegistrar.sol";
-import { ClaimHandleCommand } from "../../src/verifiers/ClaimHandleCommandVerifier.sol";
-import { HandleCommandTestFixture } from "../../../../test/fixtures/handleCommand/HandleCommandTestFixture.sol";
+import { ClaimHandleCommand } from "../src/verifiers/ClaimHandleCommandVerifier.sol";
+import { HandleCommandTestFixture } from "../test/fixtures/handleCommand/HandleCommandTestFixture.sol";
 
 contract ClaimHandleWithFixtureScript is Script {
     // Deployed registrar address on Sepolia
