@@ -68,7 +68,9 @@ contract DeployAllScript is Script {
         console.log("ROOT_NODE (x.zkemail.eth)=", vm.toString(ROOT_NODE));
 
         console.log("\n=== Verification Commands ===");
-        console.log("forge verify-contract", address(registrar), "src/XHandleRegistrar.sol:XHandleRegistrar");
+        console.log(
+            "forge verify-contract", address(registrar), "src/entrypoints/XHandleRegistrar.sol:XHandleRegistrar"
+        );
         console.log(
             "  --constructor-args $(cast abi-encode 'constructor(address,bytes32)'",
             address(commandVerifier),
