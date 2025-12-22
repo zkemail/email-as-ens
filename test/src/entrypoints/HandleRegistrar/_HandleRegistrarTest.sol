@@ -47,7 +47,7 @@ abstract contract HandleRegistrarTest is Test {
         _verifier = new ClaimHandleCommandVerifier(address(new HonkVerifier()), _dkimRegistry);
         _registrar = new HandleRegistrarHelper(address(_verifier), _rootNode);
 
-        // Calculate ENS node from x handle: namehash("handle.x.zkemail.eth")
+        // Calculate ENS node from x handle: namehash("xhandle.x.zkemail.eth")
         // Note: Must lowercase the handle first, as the registrar does
         string memory lowercaseHandle = _toLowercase(_validCommand.publicInputs.handle);
         bytes32 labelHash = keccak256(bytes(lowercaseHandle));

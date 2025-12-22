@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { Script, console } from "forge-std/Script.sol";
-import { HandleRegistrar } from "../src/registrars/HandleRegistrar.sol";
+import { HandleRegistrar } from "../src/entrypoints/HandleRegistrar.sol";
 import { HandleResolver } from "../src/resolvers/HandleResolver.sol";
 import { ClaimHandleCommandVerifier } from "../src/verifiers/ClaimHandleCommandVerifier.sol";
 import { HonkVerifier } from "../test/fixtures/handleCommand/HonkVerifier.sol";

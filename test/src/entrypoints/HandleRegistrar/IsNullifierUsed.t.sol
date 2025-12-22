@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { XHandleRegistrarTest } from "./_XHandleRegistrarTest.sol";
+import { HandleRegistrarTest } from "./_HandleRegistrarTest.sol";
 
-contract IsNullifierUsedTest is XHandleRegistrarTest {
+contract IsNullifierUsedTest is HandleRegistrarTest {
     function test_ReturnsTrueAfterClaim() public {
         _registrar.entrypoint(_validEncodedCommand);
         assertTrue(

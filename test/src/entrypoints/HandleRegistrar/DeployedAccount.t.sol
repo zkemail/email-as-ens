@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { XHandleRegistrarTest } from "./_XHandleRegistrarTest.sol";
+import { HandleRegistrarTest } from "./_HandleRegistrarTest.sol";
 import { MinimalAccount } from "../../../../src/accounts/MinimalAccount.sol";
 
-contract DeployedAccountTest is XHandleRegistrarTest {
+contract DeployedAccountTest is HandleRegistrarTest {
     function test_HasCorrectOwner() public {
         _registrar.entrypoint(_validEncodedCommand);
         address accountAddr = _registrar.getAccount(_ensNode);

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { Script, console } from "forge-std/Script.sol";
-import { XHandleRegistrar } from "../src/entrypoints/XHandleRegistrar.sol";
+import { HandleRegistrar } from "../src/entrypoints/HandleRegistrar.sol";
 import { HandleResolver } from "../src/resolvers/HandleResolver.sol";
 import { ClaimHandleCommandVerifier } from "../src/verifiers/ClaimHandleCommandVerifier.sol";
 import { HonkVerifier } from "../test/fixtures/handleCommand/HonkVerifier.sol";
@@ -68,9 +68,7 @@ contract DeployAllXScript is Script {
         console.log("ROOT_NODE (x.zkemail.eth)=", vm.toString(ROOT_NODE));
 
         console.log("\n=== Verification Commands ===");
-        console.log(
-            "forge verify-contract", address(registrar), "src/entrypoints/XHandleRegistrar.sol:XHandleRegistrar"
-        );
+        console.log("forge verify-contract", address(registrar), "src/entrypoints/HandleRegistrar.sol:HandleRegistrar");
         console.log(
             "  --constructor-args $(cast abi-encode 'constructor(address,bytes32)'",
             address(commandVerifier),

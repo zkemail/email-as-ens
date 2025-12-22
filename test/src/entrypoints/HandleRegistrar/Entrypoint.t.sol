@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { XHandleRegistrarTest } from "./_XHandleRegistrarTest.sol";
-import { XHandleRegistrar } from "../../../../src/entrypoints/XHandleRegistrar.sol";
-import { ClaimXHandleCommand } from "../../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
+import { HandleRegistrarTest } from "./_HandleRegistrarTest.sol";
+import { HandleRegistrar } from "../../../../src/entrypoints/HandleRegistrar.sol";
+import { ClaimHandleCommand } from "../../../../src/verifiers/ClaimHandleCommandVerifier.sol";
 import { IVerifier } from "../../../../src/interfaces/IVerifier.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
-contract EntrypointTest is XHandleRegistrarTest {
+contract EntrypointTest is HandleRegistrarTest {
     event AccountClaimed(
         bytes32 indexed ensNode, address indexed account, address indexed target, uint256 withdrawnAmount
     );
@@ -88,7 +88,7 @@ contract EntrypointTest is XHandleRegistrarTest {
         vm.deal(accountAddr, secondFundAmount);
 
         // Get a new command with different nullifier but same handle
-        ClaimXHandleCommand memory secondCommand = _validCommand;
+        ClaimHandleCommand memory secondCommand = _validCommand;
         secondCommand.publicInputs.emailNullifier = keccak256("different_nullifier");
 
         // Mock the verifier to accept this command
@@ -112,13 +112,13 @@ contract EntrypointTest is XHandleRegistrarTest {
         assertTrue(isUsed, "Nullifier should be marked as used after first claim");
 
         // Try to claim again with same nullifier
-        vm.expectRevert(XHandleRegistrar.NullifierUsed.selector);
+        vm.expectRevert(HandleRegistrar.NullifierUsed.selector);
         _registrar.entrypoint(_validEncodedCommand);
     }
 
     function test_RevertsWhen_InvalidProof() public {
         // Corrupt the proof
-        ClaimXHandleCommand memory invalidCommand = _validCommand;
+        ClaimHandleCommand memory invalidCommand = _validCommand;
         bytes memory corruptedProof = new bytes(invalidCommand.proof.length);
         corruptedProof[0] = invalidCommand.proof[0] ^ bytes1(uint8(1));
         invalidCommand.proof = corruptedProof;
@@ -130,20 +130,20 @@ contract EntrypointTest is XHandleRegistrarTest {
 
     function test_RevertsWhen_VerifierReturnsFalse() public {
         // Create a command with a fresh nullifier
-        ClaimXHandleCommand memory command = _validCommand;
+        ClaimHandleCommand memory command = _validCommand;
         command.publicInputs.emailNullifier = keccak256("fresh_nullifier");
 
         // Mock the verifier to return false (instead of reverting)
         vm.mockCall(address(_verifier), abi.encodeWithSelector(IVerifier.verify.selector), abi.encode(false));
 
         // Should revert with InvalidProof error
-        vm.expectRevert(XHandleRegistrar.InvalidProof.selector);
+        vm.expectRevert(HandleRegistrar.InvalidProof.selector);
         _registrar.entrypoint(abi.encode(command));
     }
 
     function test_RevertsWhen_InvalidDkimKey() public {
         // Setup a command that will fail DKIM validation
-        ClaimXHandleCommand memory invalidCommand = _validCommand;
+        ClaimHandleCommand memory invalidCommand = _validCommand;
 
         // Clear the mock for DKIM registry
         vm.clearMockedCalls();
@@ -170,12 +170,12 @@ contract EntrypointTest is XHandleRegistrarTest {
         address account1 = _registrar.getAccount(_ensNode);
 
         // Create second command for different handle
-        ClaimXHandleCommand memory command2 = _validCommand;
-        command2.publicInputs.xHandle = "differenthandle";
+        ClaimHandleCommand memory command2 = _validCommand;
+        command2.publicInputs.handle = "differenthandle";
         command2.publicInputs.emailNullifier = keccak256("nullifier2");
 
         // Calculate ENS node with lowercase (same as registrar does)
-        string memory lowercaseHandle = _toLowercase(command2.publicInputs.xHandle);
+        string memory lowercaseHandle = _toLowercase(command2.publicInputs.handle);
         bytes32 labelHash2 = keccak256(bytes(lowercaseHandle));
         bytes32 ensNode2 = keccak256(abi.encodePacked(_rootNode, labelHash2));
         address predictedAddr2 = _registrar.predictAddress(ensNode2);
@@ -198,8 +198,8 @@ contract EntrypointTest is XHandleRegistrarTest {
 
     function test_NormalizesUppercaseHandleToLowercase() public {
         // Create command with uppercase handle
-        ClaimXHandleCommand memory command = _validCommand;
-        command.publicInputs.xHandle = "TheZDev1"; // Mixed case
+        ClaimHandleCommand memory command = _validCommand;
+        command.publicInputs.handle = "TheZDev1"; // Mixed case
         command.publicInputs.emailNullifier = keccak256("uppercase_nullifier");
 
         // Calculate expected ENS node using lowercase version

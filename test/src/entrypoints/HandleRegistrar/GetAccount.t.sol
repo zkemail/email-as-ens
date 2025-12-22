@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { XHandleRegistrarTest } from "./_XHandleRegistrarTest.sol";
+import { HandleRegistrarTest } from "./_HandleRegistrarTest.sol";
 
-contract GetAccountTest is XHandleRegistrarTest {
+contract GetAccountTest is HandleRegistrarTest {
     function test_ReturnsAddressAfterDeployment() public {
         address predictedAddr = _registrar.predictAddress(_ensNode);
         _registrar.entrypoint(_validEncodedCommand);

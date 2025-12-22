@@ -8,7 +8,7 @@ node_modules/
 out/
 
 # circuit generated files
-test/fixtures/linkXHandleCommand/circuit/target
+test/fixtures/handleCommand/circuit/target
 
 # files
 .env

@@ -3,7 +3,7 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { HandleResolver } from "../../../../src/resolvers/HandleResolver.sol";
-import { XHandleRegistrar } from "../../../../src/entrypoints/XHandleRegistrar.sol";
+import { HandleRegistrar } from "../../../../src/entrypoints/HandleRegistrar.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { IAddrResolver } from "@ensdomains/ens-contracts/contracts/resolvers/profiles/IAddrResolver.sol";
 import { NameCoder } from "@ensdomains/ens-contracts/contracts/utils/NameCoder.sol";
