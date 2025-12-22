@@ -2,8 +2,8 @@
 pragma solidity ^0.8.30;
 
 import { XHandleRegistrarTest } from "./_XHandleRegistrarTest.sol";
-import { HandleCommandTestFixture } from "../../fixtures/handleCommand/HandleCommandTestFixture.sol";
-import { ClaimXHandleCommand } from "../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
+import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
+import { ClaimXHandleCommand } from "../../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
 
 contract EncodeTest is XHandleRegistrarTest {
     function test_ReturnsCorrectEncodedData() public view {

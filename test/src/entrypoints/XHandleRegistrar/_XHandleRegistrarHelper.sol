@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { XHandleRegistrar } from "../../../src/XHandleRegistrar.sol";
+import { XHandleRegistrar } from "../../../../src/entrypoints/XHandleRegistrar.sol";
 
 contract XHandleRegistrarHelper is XHandleRegistrar {
     constructor(address verifier, bytes32 rootNode) XHandleRegistrar(verifier, rootNode) { }

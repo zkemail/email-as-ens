@@ -2,9 +2,9 @@
 pragma solidity ^0.8.30;
 
 import { XHandleRegistrarTest } from "./_XHandleRegistrarTest.sol";
-import { XHandleRegistrar } from "../../../src/XHandleRegistrar.sol";
-import { ClaimXHandleCommand } from "../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
-import { IVerifier } from "../../../src/interfaces/IVerifier.sol";
+import { XHandleRegistrar } from "../../../../src/entrypoints/XHandleRegistrar.sol";
+import { ClaimXHandleCommand } from "../../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
+import { IVerifier } from "../../../../src/interfaces/IVerifier.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
 contract ClaimAndWithdrawTest is XHandleRegistrarTest {

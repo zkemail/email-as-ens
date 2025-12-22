@@ -2,7 +2,7 @@
 pragma solidity ^0.8.30;
 
 import { XHandleRegistrarTest } from "./_XHandleRegistrarTest.sol";
-import { MinimalAccount } from "../../../src/accounts/MinimalAccount.sol";
+import { MinimalAccount } from "../../../../src/accounts/MinimalAccount.sol";
 
 contract DeployedAccountTest is XHandleRegistrarTest {
     function test_HasCorrectOwner() public {

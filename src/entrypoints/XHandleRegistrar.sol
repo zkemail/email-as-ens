@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import { MinimalAccount } from "./accounts/MinimalAccount.sol";
+import { MinimalAccount } from "../accounts/MinimalAccount.sol";
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { ClaimXHandleCommand } from "./verifiers/ClaimXHandleCommandVerifier.sol";
-import { IVerifier } from "./interfaces/IVerifier.sol";
-import { IEntryPoint } from "./interfaces/IEntryPoint.sol";
+import { ClaimXHandleCommand } from "../verifiers/ClaimXHandleCommandVerifier.sol";
+import { IVerifier } from "../interfaces/IVerifier.sol";
+import { IEntryPoint } from "../interfaces/IEntryPoint.sol";
 
 contract XHandleRegistrar is IEntryPoint {
     address public immutable implementation;

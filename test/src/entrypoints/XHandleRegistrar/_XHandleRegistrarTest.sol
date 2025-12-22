@@ -3,14 +3,14 @@ pragma solidity ^0.8.30;
 
 import { Test } from "forge-std/Test.sol";
 import { XHandleRegistrarHelper } from "./_XHandleRegistrarHelper.sol";
-import { HandleCommandTestFixture } from "../../fixtures/handleCommand/HandleCommandTestFixture.sol";
-import { HonkVerifier } from "../../fixtures/handleCommand/HonkVerifier.sol";
+import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
+import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
 import {
     ClaimXHandleCommand,
     ClaimXHandleCommandVerifier
-} from "../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
+} from "../../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
-import { EnsUtils } from "../../../src/utils/EnsUtils.sol";
+import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";
 
 abstract contract XHandleRegistrarTest is Test {
     using EnsUtils for bytes;
