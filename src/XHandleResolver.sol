@@ -17,6 +17,9 @@ interface IXHandleRegistrar {
 contract XHandleResolver is IExtendedResolver, Initializable, UUPSUpgradeable, OwnableUpgradeable {
     address public registrar;
 
+    /// @dev Reserved storage gap for future upgrades
+    uint256[50] private __gap;
+
     // https://docs.ens.domains/ensip/23
     error UnsupportedResolverProfile(bytes4 selector);
     error RegistrarNotSet();
