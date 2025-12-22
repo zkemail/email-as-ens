@@ -71,7 +71,7 @@ contract LinkHandleCommandVerifier is HandleVerifier {
                         _getTemplate(), publicInputs.command, uint256(CommandParamIndex.ENS_NAME)
                     )
                 ),
-                // x handle is the value
+                // handle is the value
                 value: publicInputs.handle,
                 nullifier: publicInputs.emailNullifier
             }),

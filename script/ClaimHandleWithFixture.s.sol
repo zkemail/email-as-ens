@@ -18,9 +18,9 @@ contract ClaimHandleWithFixtureScript is Script {
         // Load the fixture
         (ClaimHandleCommand memory command,) = HandleCommandTestFixture.getClaimXFixture();
 
-        console.log("\n=== Claim X Handle With Fixture ===");
+        console.log("\n=== Claim Handle With Fixture ===");
         console.log("Registrar:", REGISTRAR);
-        console.log("X Handle:", command.publicInputs.handle);
+        console.log("Handle:", command.publicInputs.handle);
         console.log("Target Address:", command.target);
         console.log("Sender Domain:", command.publicInputs.senderDomain);
 
@@ -42,7 +42,7 @@ contract ClaimHandleWithFixtureScript is Script {
         vm.stopBroadcast();
 
         console.log("\n=== Summary ===");
-        console.log("X Handle claimed:", command.publicInputs.handle);
+        console.log("Handle claimed:", command.publicInputs.handle);
         console.log("ETH withdrawn to:", command.target);
         console.log("Nullifier:", vm.toString(command.publicInputs.emailNullifier));
 

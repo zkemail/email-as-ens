@@ -82,7 +82,7 @@ contract HandleResolverTest is Test {
         // Set the registrar on the resolver
         resolver.setRegistrar(address(registrar));
 
-        // Test resolving an address for a specific X handle
+        // Test resolving an address for a specific handle
         string memory handle = "thezdev1";
         string memory ensName = string(abi.encodePacked(handle, ".x.zkemail.eth"));
         bytes memory dnsName = NameCoder.encode(ensName);

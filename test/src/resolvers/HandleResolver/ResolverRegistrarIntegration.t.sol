@@ -58,7 +58,7 @@ contract ResolverRegistrarIntegrationTest is Test {
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), initData);
         _resolver = HandleResolver(address(proxy));
 
-        // Calculate ENS node from x handle
+        // Calculate ENS node from handle
         bytes32 labelHash = keccak256(bytes(_validCommand.publicInputs.handle));
         _ensNode = keccak256(abi.encodePacked(_rootNode, labelHash));
         _validEncodedCommand = abi.encode(_validCommand);
@@ -146,7 +146,7 @@ contract ResolverRegistrarIntegrationTest is Test {
         // Get predicted address from registrar
         address registrarPredicted = _registrar.predictAddress(_ensNode);
 
-        // Construct DNS-encoded name for the x handle
+        // Construct DNS-encoded name for the handle
         string memory ensName = string(abi.encodePacked(_validCommand.publicInputs.handle, ".x.zkemail.eth"));
         bytes memory dnsEncodedName = NameCoder.encode(ensName);
 

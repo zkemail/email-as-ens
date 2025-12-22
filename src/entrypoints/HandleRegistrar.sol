@@ -47,8 +47,8 @@ contract HandleRegistrar is IEntryPoint {
             revert InvalidProof();
         }
 
-        // Get the ENS node from the x handle in the proof
-        // Convert x handle to ENS node: xhandle.x.zkemail.eth
+        // Get the ENS node from the handle in the proof
+        // Convert handle to ENS node: handle.x.zkemail.eth
         bytes32 ensNode = _getEnsNode(command.publicInputs.handle);
         address account = predictAddress(ensNode);
 
@@ -113,14 +113,14 @@ contract HandleRegistrar is IEntryPoint {
     }
 
     /**
-     * @notice Converts an X handle to an ENS node
-     * @param handle The X handle (e.g., "thezdev1" or "TheZDev1")
+     * @notice Converts an handle to an ENS node
+     * @param handle The handle (e.g., "thezdev1" or "TheZDev1")
      * @return The ENS node (namehash of lowercase handle)
      */
     function _getEnsNode(string memory handle) internal view returns (bytes32) {
         // Normalize to lowercase first (ENS names are case-insensitive)
         string memory lowercaseHandle = _toLowercase(handle);
-        // Create the label hash for the x handle
+        // Create the label hash for the handle
         bytes32 labelHash = keccak256(bytes(lowercaseHandle));
         // Compute namehash: keccak256(rootNode, labelHash)
         return keccak256(abi.encodePacked(rootNode, labelHash));
