@@ -88,7 +88,8 @@ contract ResolverRegistrarIntegrationTest is Test {
         vm.deal(predictedAddr, 1 ether);
 
         // Claim the handle (deploys account and withdraws)
-        address deployedAccount = _registrar.claimAndWithdraw(_validEncodedCommand);
+        _registrar.entrypoint(_validEncodedCommand);
+        address deployedAccount = _registrar.getAccount(_ensNode);
 
         // Get address from registrar
         address registrarAddr = _registrar.getAccount(_ensNode);

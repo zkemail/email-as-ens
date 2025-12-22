@@ -6,7 +6,7 @@ import { XHandleRegistrarTest } from "./_XHandleRegistrarTest.sol";
 contract GetAccountTest is XHandleRegistrarTest {
     function test_ReturnsAddressAfterDeployment() public {
         address predictedAddr = _registrar.predictAddress(_ensNode);
-        _registrar.claimAndWithdraw(_validEncodedCommand);
+        _registrar.entrypoint(_validEncodedCommand);
 
         assertEq(_registrar.getAccount(_ensNode), predictedAddr, "Should return deployed account address");
     }

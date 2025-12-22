@@ -6,7 +6,8 @@ import { MinimalAccount } from "../../../../src/accounts/MinimalAccount.sol";
 
 contract DeployedAccountTest is XHandleRegistrarTest {
     function test_HasCorrectOwner() public {
-        address accountAddr = _registrar.claimAndWithdraw(_validEncodedCommand);
+        _registrar.entrypoint(_validEncodedCommand);
+        address accountAddr = _registrar.getAccount(_ensNode);
 
         MinimalAccount account = MinimalAccount(payable(accountAddr));
 
@@ -14,7 +15,8 @@ contract DeployedAccountTest is XHandleRegistrarTest {
     }
 
     function test_HasCorrectOperator() public {
-        address accountAddr = _registrar.claimAndWithdraw(_validEncodedCommand);
+        _registrar.entrypoint(_validEncodedCommand);
+        address accountAddr = _registrar.getAccount(_ensNode);
 
         MinimalAccount account = MinimalAccount(payable(accountAddr));
 
@@ -22,7 +24,8 @@ contract DeployedAccountTest is XHandleRegistrarTest {
     }
 
     function test_HasCorrectEnsNode() public {
-        address accountAddr = _registrar.claimAndWithdraw(_validEncodedCommand);
+        _registrar.entrypoint(_validEncodedCommand);
+        address accountAddr = _registrar.getAccount(_ensNode);
 
         MinimalAccount account = MinimalAccount(payable(accountAddr));
 

@@ -30,10 +30,43 @@ contract XHandleRegistrar is IEntryPoint {
 
     /**
      * @inheritdoc IEntryPoint
-     * @dev Entry point for the relayer to call claimAndWithdraw
+     * @dev Entry point for the relayer to claim an account and withdraw ETH
      */
     function entrypoint(bytes memory data) external {
-        claimAndWithdraw(data);
+        ClaimXHandleCommand memory command = abi.decode(data, (ClaimXHandleCommand));
+
+        // Check nullifier hasn't been used
+        bytes32 emailNullifier = command.publicInputs.emailNullifier;
+        if (_isUsed[emailNullifier]) {
+            revert NullifierUsed();
+        }
+        _isUsed[emailNullifier] = true;
+
+        // Verify the proof
+        if (!IVerifier(verifier).verify(data)) {
+            revert InvalidProof();
+        }
+
+        // Get the ENS node from the x handle in the proof
+        // Convert x handle to ENS node: xhandle.x.zkemail.eth
+        bytes32 ensNode = _getEnsNode(command.publicInputs.xHandle);
+        address account = predictAddress(ensNode);
+
+        // Deploy the account if it doesn't exist
+        if (accounts[ensNode] == address(0)) {
+            account = Clones.cloneDeterministic(implementation, ensNode);
+            accounts[ensNode] = account;
+            MinimalAccount(payable(account)).initialize(address(this), ensNode);
+            MinimalAccount(payable(account)).setOperator(address(this));
+        }
+
+        // Withdraw all ETH from the account to the target address
+        uint256 balance = account.balance;
+        if (balance > 0) {
+            MinimalAccount(payable(account)).execute(command.target, balance, new bytes(0));
+        }
+
+        emit AccountClaimed(ensNode, account, command.target, balance);
     }
 
     /**
@@ -68,49 +101,6 @@ contract XHandleRegistrar is IEntryPoint {
      */
     function isNullifierUsed(bytes32 nullifier) external view returns (bool) {
         return _isUsed[nullifier];
-    }
-
-    /**
-     * @notice Claims an account for the given ENS node and withdraws all ETH to the target address
-     * @dev Verifies the proof using ClaimXHandleCommandVerifier, deploys account if not exists, and withdraws ETH
-     * @param data Encoded ClaimXHandleCommand containing proof, public inputs, and target address
-     * @return account The address of the claimed account
-     */
-    function claimAndWithdraw(bytes memory data) public returns (address account) {
-        ClaimXHandleCommand memory command = abi.decode(data, (ClaimXHandleCommand));
-
-        // Check nullifier hasn't been used
-        bytes32 emailNullifier = command.publicInputs.emailNullifier;
-        if (_isUsed[emailNullifier]) {
-            revert NullifierUsed();
-        }
-        _isUsed[emailNullifier] = true;
-
-        // Verify the proof
-        if (!IVerifier(verifier).verify(data)) {
-            revert InvalidProof();
-        }
-
-        // Get the ENS node from the x handle in the proof
-        // Convert x handle to ENS node: xhandle.x.zkemail.eth
-        bytes32 ensNode = _getEnsNode(command.publicInputs.xHandle);
-        account = predictAddress(ensNode);
-
-        // Deploy the account if it doesn't exist
-        if (accounts[ensNode] == address(0)) {
-            account = Clones.cloneDeterministic(implementation, ensNode);
-            accounts[ensNode] = account;
-            MinimalAccount(payable(account)).initialize(address(this), ensNode);
-            MinimalAccount(payable(account)).setOperator(address(this));
-        }
-
-        // Withdraw all ETH from the account to the target address
-        uint256 balance = account.balance;
-        if (balance > 0) {
-            MinimalAccount(payable(account)).execute(command.target, balance, new bytes(0));
-        }
-
-        emit AccountClaimed(ensNode, account, command.target, balance);
     }
 
     /**
