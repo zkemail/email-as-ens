@@ -10,8 +10,6 @@ contract ClaimHandleWithFixtureScript is Script {
     // Deployed registrar address on Sepolia
     address public constant REGISTRAR = 0xDC7b42532e8cBdEd0C453cB16116B40298a0E0e3;
 
-    error FundingFailed();
-
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
