@@ -99,9 +99,9 @@ contract XHandleRegistrar is IEntryPoint {
         // Deploy the account if it doesn't exist
         if (accounts[ensNode] == address(0)) {
             account = Clones.cloneDeterministic(implementation, ensNode);
+            accounts[ensNode] = account;
             MinimalAccount(payable(account)).initialize(address(this), ensNode);
             MinimalAccount(payable(account)).setOperator(address(this));
-            accounts[ensNode] = account;
         }
 
         // Withdraw all ETH from the account to the target address
