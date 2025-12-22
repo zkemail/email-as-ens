@@ -6,11 +6,11 @@ import {
     LinkXHandleCommand,
     LinkXHandleCommandVerifier
 } from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
-import { HonkVerifier } from "../../../fixtures/linkXHandleCommand/circuit/target/HonkVerifier.sol";
+import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
 import { EnsUtils } from "../../../../src/utils/EnsUtils.sol";
 import { LinkXHandleEntrypointHelper } from "./_LinkXHandleEntrypointHelper.sol";
 import { LinkTextRecordEntrypoint } from "../../../../src/entrypoints/LinkTextRecordEntrypoint.sol";
-import { LinkXHandleCommandTestFixture } from "../../../fixtures/linkXHandleCommand/LinkXHandleCommandTestFixture.sol";
+import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
 import { IDKIMRegistry } from "@zk-email/contracts/interfaces/IERC7969.sol";
 
 contract LinkXHandleVerifierTest is Test {
@@ -20,7 +20,7 @@ contract LinkXHandleVerifierTest is Test {
     LinkXHandleEntrypointHelper public linkXHandle;
 
     function setUp() public {
-        (LinkXHandleCommand memory command,) = LinkXHandleCommandTestFixture.getFixture();
+        (LinkXHandleCommand memory command,) = HandleCommandTestFixture.getLinkXFixture();
         address dkimRegistry = makeAddr("dkimRegistry");
         vm.mockCall(
             dkimRegistry,
@@ -37,7 +37,7 @@ contract LinkXHandleVerifierTest is Test {
 
     function test_entrypoint_correctlyEncodesAndValidatesCommand() public {
         (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
-            LinkXHandleCommandTestFixture.getFixture();
+            HandleCommandTestFixture.getLinkXFixture();
 
         bytes memory encodedCommand = linkXHandle.encode(command.proof, expectedPublicInputs);
         assertEq(linkXHandle.textRecord(bytes(command.textRecord.ensName).namehash()), "");
@@ -48,7 +48,7 @@ contract LinkXHandleVerifierTest is Test {
 
     function test_entrypoint_revertsWhenNullifierIsUsed() public {
         (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
-            LinkXHandleCommandTestFixture.getFixture();
+            HandleCommandTestFixture.getLinkXFixture();
         bytes memory encodedCommand = linkXHandle.encode(command.proof, expectedPublicInputs);
         linkXHandle.entrypoint(encodedCommand);
         vm.expectRevert(abi.encodeWithSelector(LinkTextRecordEntrypoint.NullifierUsed.selector));
@@ -57,7 +57,7 @@ contract LinkXHandleVerifierTest is Test {
 
     function test_verifyTextRecord_returnsFalseWhenTextRecordIsIncorrect() public {
         (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
-            LinkXHandleCommandTestFixture.getFixture();
+            HandleCommandTestFixture.getLinkXFixture();
         bytes memory encodedCommand = linkXHandle.encode(command.proof, expectedPublicInputs);
         linkXHandle.entrypoint(encodedCommand);
         assertEq(
@@ -68,7 +68,7 @@ contract LinkXHandleVerifierTest is Test {
 
     function test_verifyTextRecord_returnsTrueWhenTextRecordIsCorrect() public {
         (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
-            LinkXHandleCommandTestFixture.getFixture();
+            HandleCommandTestFixture.getLinkXFixture();
         bytes memory encodedCommand = linkXHandle.encode(command.proof, expectedPublicInputs);
         linkXHandle.entrypoint(encodedCommand);
         assertEq(

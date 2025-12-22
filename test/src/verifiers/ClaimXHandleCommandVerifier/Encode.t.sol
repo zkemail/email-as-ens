@@ -4,36 +4,42 @@ pragma solidity ^0.8.30;
 import { HandleCommandTestFixture } from "../../../fixtures/handleCommand/HandleCommandTestFixture.sol";
 import { HonkVerifier } from "../../../fixtures/handleCommand/HonkVerifier.sol";
 import {
-    LinkXHandleCommand,
-    LinkXHandleCommandVerifier,
-    PublicInputs,
-    TextRecord
-} from "../../../../src/verifiers/LinkXHandleCommandVerifier.sol";
+    ClaimXHandleCommand,
+    ClaimXHandleCommandVerifier,
+    PublicInputs
+} from "../../../../src/verifiers/ClaimXHandleCommandVerifier.sol";
 import { _EmailAuthVerifierTest } from "../EmailAuthVerifier/_EmailAuthVerifierTest.sol";
 
 contract EncodeTest is _EmailAuthVerifierTest {
-    LinkXHandleCommandVerifier internal _verifier;
+    ClaimXHandleCommandVerifier internal _verifier;
 
     function setUp() public {
-        _verifier = new LinkXHandleCommandVerifier(address(new HonkVerifier()), makeAddr("dkimRegistry"));
+        _verifier = new ClaimXHandleCommandVerifier(address(new HonkVerifier()), makeAddr("dkimRegistry"));
     }
 
     function test_correctlyEncodesAndDecodesCommand() public view {
-        (LinkXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
-            HandleCommandTestFixture.getLinkXFixture();
+        (ClaimXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getClaimXFixture();
 
         bytes memory encodedData = _verifier.encode(command.proof, expectedPublicInputs);
-        LinkXHandleCommand memory decodedCommand = abi.decode(encodedData, (LinkXHandleCommand));
+        ClaimXHandleCommand memory decodedCommand = abi.decode(encodedData, (ClaimXHandleCommand));
 
-        _assertEq(decodedCommand.textRecord, command.textRecord);
+        assertEq(decodedCommand.target, command.target);
         assertEq(decodedCommand.proof, command.proof, "proof mismatch");
         _assertEq(decodedCommand.publicInputs, command.publicInputs);
     }
 
-    function _assertEq(TextRecord memory textRecord, TextRecord memory expectedTextRecord) internal pure {
-        assertEq(textRecord.ensName, expectedTextRecord.ensName, "ENS name mismatch");
-        assertEq(textRecord.value, expectedTextRecord.value, "value mismatch");
-        assertEq(textRecord.nullifier, expectedTextRecord.nullifier, "nullifier mismatch");
+    function test_encodeExtractsTargetFromCommandTemplate() public view {
+        (ClaimXHandleCommand memory command, bytes32[] memory expectedPublicInputs) =
+            HandleCommandTestFixture.getClaimXFixture();
+
+        // The encode function uses _getTemplate() to extract the target address from the command
+        bytes memory encodedData = _verifier.encode(command.proof, expectedPublicInputs);
+        ClaimXHandleCommand memory decodedCommand = abi.decode(encodedData, (ClaimXHandleCommand));
+
+        // Verify the target was correctly extracted using the template "Withdraw all eth to {address}"
+        assertTrue(decodedCommand.target != address(0), "Target should be extracted from command using template");
+        assertEq(decodedCommand.target, command.target, "Target should match expected address from command");
     }
 
     function _assertEq(PublicInputs memory publicInputs, PublicInputs memory expectedPublicInputs) internal pure {
