@@ -68,7 +68,7 @@ contract DeployAllDiscordScript is Script {
         console.log("ROOT_NODE (discord.zkemail.eth)=", vm.toString(ROOT_NODE));
 
         console.log("\n=== Verification Commands ===");
-        console.log("forge verify-contract", address(registrar), "src/HandleRegistrar.sol:HandleRegistrar");
+        console.log("forge verify-contract", address(registrar), "src/entrypoints/HandleRegistrar.sol:HandleRegistrar");
         console.log(
             "  --constructor-args $(cast abi-encode 'constructor(address,bytes32)'",
             address(commandVerifier),
