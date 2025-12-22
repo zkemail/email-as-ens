@@ -10,10 +10,10 @@ import { PublicInputs } from "./HandleVerifier.sol";
 /**
  * @notice Enum representing the indices of command parameters in the command template
  * @dev Used to specify which parameter to extract from the command string
- * @param TARGET = 0
+ * @param RECIPIENT = 0
  */
 enum CommandParamIndex {
-    TARGET
+    RECIPIENT
 }
 
 struct ClaimXHandleCommand {
@@ -71,7 +71,7 @@ contract ClaimXHandleCommandVerifier is HandleVerifier {
         return ClaimXHandleCommand({
             target: Strings.parseAddress(
                 CommandUtils.extractCommandParamByIndex(
-                    _getTemplate(), publicInputs.command, uint256(CommandParamIndex.TARGET)
+                    _getTemplate(), publicInputs.command, uint256(CommandParamIndex.RECIPIENT)
                 )
             ),
             proof: proof,
