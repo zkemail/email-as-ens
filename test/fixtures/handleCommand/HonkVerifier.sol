@@ -138,7 +138,7 @@ using { equal as == } for Fr global;
 
 uint256 constant MODULUS =
     21_888_242_871_839_275_222_246_405_745_257_275_088_548_364_400_416_034_343_698_204_186_575_808_495_617; // Prime
-// field order
+    // field order
 
 Fr constant MINUS_ONE = Fr.wrap(MODULUS - 1);
 
@@ -263,10 +263,10 @@ uint256 constant NUMBER_OF_ALPHAS = 25;
 // Prime field order
 uint256 constant Q =
     21_888_242_871_839_275_222_246_405_745_257_275_088_696_311_157_297_823_662_689_037_894_645_226_208_583; // EC group
-// order. F_q
+    // order. F_q
 uint256 constant P =
     21_888_242_871_839_275_222_246_405_745_257_275_088_548_364_400_416_034_343_698_204_186_575_808_495_617; // Prime
-// field order, F_r
+    // field order, F_r
 
 // ENUM FOR WIRES
 enum WIRE {
@@ -1165,7 +1165,7 @@ library RelationsLib {
          */
         ap.limb_subproduct = wire(p, WIRE.W_L) * wire(p, WIRE.W_R_SHIFT) + wire(p, WIRE.W_L_SHIFT) * wire(p, WIRE.W_R);
         ap.non_native_field_gate_2 =
-        (wire(p, WIRE.W_L) * wire(p, WIRE.W_4) + wire(p, WIRE.W_R) * wire(p, WIRE.W_O) - wire(p, WIRE.W_O_SHIFT));
+            (wire(p, WIRE.W_L) * wire(p, WIRE.W_4) + wire(p, WIRE.W_R) * wire(p, WIRE.W_O) - wire(p, WIRE.W_O_SHIFT));
         ap.non_native_field_gate_2 = ap.non_native_field_gate_2 * LIMB_SIZE;
         ap.non_native_field_gate_2 = ap.non_native_field_gate_2 - wire(p, WIRE.W_4_SHIFT);
         ap.non_native_field_gate_2 = ap.non_native_field_gate_2 + ap.limb_subproduct;
@@ -1285,7 +1285,7 @@ library RelationsLib {
         ap.index_is_monotonically_increasing = ap.index_delta * ap.index_delta - ap.index_delta; // deg 2
 
         ap.adjacent_values_match_if_adjacent_indices_match = (ap.index_delta * MINUS_ONE + Fr.wrap(1)) * ap.record_delta; // deg
-        // 2
+            // 2
 
         evals[13] = ap.adjacent_values_match_if_adjacent_indices_match * (wire(p, WIRE.Q_L) * wire(p, WIRE.Q_R))
             * (wire(p, WIRE.Q_AUX) * domainSep); // deg 5
@@ -1293,7 +1293,7 @@ library RelationsLib {
             * (wire(p, WIRE.Q_AUX) * domainSep); // deg 5
 
         ap.ROM_consistency_check_identity = ap.memory_record_check * (wire(p, WIRE.Q_L) * wire(p, WIRE.Q_R)); // deg 3
-        // or 7
+            // or 7
 
         /**
          * Contributions 15,16,17
@@ -1339,9 +1339,9 @@ library RelationsLib {
         evals[15] = ap.adjacent_values_match_if_adjacent_indices_match_and_next_access_is_a_read_operation
             * (wire(p, WIRE.Q_ARITH)) * (wire(p, WIRE.Q_AUX) * domainSep); // deg 5 or 8
         evals[16] = ap.index_is_monotonically_increasing * (wire(p, WIRE.Q_ARITH)) * (wire(p, WIRE.Q_AUX) * domainSep); // deg
-        // 4
+            // 4
         evals[17] = ap.next_gate_access_type_is_boolean * (wire(p, WIRE.Q_ARITH)) * (wire(p, WIRE.Q_AUX) * domainSep); // deg
-        // 4 or 6
+            // 4 or 6
 
         ap.RAM_consistency_check_identity = ap.access_check * (wire(p, WIRE.Q_ARITH)); // deg 3 or 9
 
@@ -1369,7 +1369,7 @@ library RelationsLib {
         ap.memory_identity =
             ap.memory_identity + ap.RAM_timestamp_check_identity * (wire(p, WIRE.Q_4) * wire(p, WIRE.Q_L)); // deg 4
         ap.memory_identity = ap.memory_identity + ap.memory_record_check * (wire(p, WIRE.Q_M) * wire(p, WIRE.Q_L)); // deg
-        // 3 or 6
+            // 3 or 6
         ap.memory_identity = ap.memory_identity + ap.RAM_consistency_check_identity; // deg 3 or 9
 
         // (deg 3 or 9) + (deg 4) + (deg 3)
@@ -1421,9 +1421,9 @@ library RelationsLib {
         ep.t0 = ep.u1 + ep.u2; // u_1 + u_2
         ep.t1 = ep.u3 + ep.u4; // u_3 + u_4
         ep.t2 = ep.u2 + ep.u2 + ep.t1; // 2u_2
-        // ep.t2 += ep.t1; // 2u_2 + u_3 + u_4
+            // ep.t2 += ep.t1; // 2u_2 + u_3 + u_4
         ep.t3 = ep.u4 + ep.u4 + ep.t0; // 2u_4
-        // ep.t3 += ep.t0; // u_1 + u_2 + 2u_4
+            // ep.t3 += ep.t0; // u_1 + u_2 + 2u_4
         ep.v4 = ep.t1 + ep.t1;
         ep.v4 = ep.v4 + ep.v4 + ep.t3;
         // ep.v4 += ep.t3; // u_1 + u_2 + 4u_3 + 6u_4
@@ -1564,8 +1564,7 @@ library CommitmentSchemeLib {
             Fr challengePower = geminiEvalChallengePowers[i - 1];
             Fr u = sumcheckUChallenges[i - 1];
 
-            Fr batchedEvalRoundAcc =
-            ((challengePower * batchedEvalAccumulator * Fr.wrap(2)) - geminiEvaluations[i - 1]
+            Fr batchedEvalRoundAcc = ((challengePower * batchedEvalAccumulator * Fr.wrap(2)) - geminiEvaluations[i - 1]
                     * (challengePower * (Fr.wrap(1) - u) - u));
             // Divide by the denominator
             batchedEvalRoundAcc = batchedEvalRoundAcc * (challengePower * (Fr.wrap(1) - u) + u).invert();

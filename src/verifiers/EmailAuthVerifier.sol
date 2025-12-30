@@ -154,9 +154,8 @@ abstract contract EmailAuthVerifier is IVerifier {
             abi.decode(emailAuthProof.proof, (uint256[2], uint256[2][2], uint256[2]));
 
         // check if all values are less than Q (max value of bn128 curve)
-        bool validFieldElements =
-            (pA[0] < Q && pA[1] < Q && pB[0][0] < Q && pB[0][1] < Q && pB[1][0] < Q && pB[1][1] < Q && pC[0] < Q
-                && pC[1] < Q);
+        bool validFieldElements = (pA[0] < Q && pA[1] < Q && pB[0][0] < Q && pB[0][1] < Q && pB[1][0] < Q
+                && pB[1][1] < Q && pC[0] < Q && pC[1] < Q);
 
         if (!validFieldElements) {
             return false;
@@ -183,24 +182,19 @@ abstract contract EmailAuthVerifier is IVerifier {
      */
     function _packPublicInputs(PublicInputs memory publicInputs) internal pure returns (bytes32[] memory fields) {
         fields = new bytes32[](PUBLIC_INPUTS_LENGTH);
-        _copyTo(
-            fields,
-            DOMAIN_NAME_OFFSET,
-            CircomUtils.packFieldsArray(bytes(publicInputs.domainName), DOMAIN_NAME_PADDED_SIZE)
+        fields.replace(
+            DOMAIN_NAME_OFFSET, CircomUtils.packFieldsArray(bytes(publicInputs.domainName), DOMAIN_NAME_PADDED_SIZE)
         );
         fields[PUBLIC_KEY_HASH_OFFSET] = publicInputs.publicKeyHash;
         fields[EMAIL_NULLIFIER_OFFSET] = publicInputs.emailNullifier;
         fields[TIMESTAMP_OFFSET] = bytes32(publicInputs.timestamp);
-        _copyTo(
-            fields,
-            MASKED_COMMAND_OFFSET,
-            CircomUtils.packFieldsArray(bytes(publicInputs.maskedCommand), MASKED_COMMAND_SIZE)
+        fields.replace(
+            MASKED_COMMAND_OFFSET, CircomUtils.packFieldsArray(bytes(publicInputs.maskedCommand), MASKED_COMMAND_SIZE)
         );
         fields[ACCOUNT_SALT_OFFSET] = publicInputs.accountSalt;
-        _copyTo(fields, IS_CODE_EXIST_OFFSET, CircomUtils.packBool(publicInputs.isCodeExist));
-        _copyTo(fields, MISCELLANEOUS_DATA_OFFSET, EnsUtils.packPubKey(publicInputs.miscellaneousData));
-        _copyTo(
-            fields,
+        fields.replace(IS_CODE_EXIST_OFFSET, CircomUtils.packBool(publicInputs.isCodeExist));
+        fields.replace(MISCELLANEOUS_DATA_OFFSET, EnsUtils.packPubKey(publicInputs.miscellaneousData));
+        fields.replace(
             EMAIL_ADDRESS_OFFSET,
             CircomUtils.packFieldsArray(bytes(publicInputs.emailAddress), EMAIL_ADDRESS_PADDED_SIZE)
         );
@@ -244,12 +238,5 @@ abstract contract EmailAuthVerifier is IVerifier {
                 )
             )
         });
-    }
-
-    function _copyTo(bytes32[] memory fields, uint256 offset, bytes32[] memory data) private pure {
-        // solhint-disable-next-line no-inline-assembly
-        assembly ("memory-safe") {
-            mcopy(add(add(0x20, fields), mul(offset, 0x20)), add(0x20, data), mul(mload(data), 0x20))
-        }
     }
 }

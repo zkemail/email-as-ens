@@ -27,7 +27,12 @@ contract LinkEmailCommandVerifier is EmailAuthVerifier {
     using Strings for string;
     using CircomUtils for bytes;
 
-    constructor(address _groth16Verifier, address _dkimRegistry) EmailAuthVerifier(_groth16Verifier, _dkimRegistry) { }
+    constructor(
+        address _groth16Verifier,
+        address _dkimRegistry
+    )
+        EmailAuthVerifier(_groth16Verifier, _dkimRegistry)
+    { }
 
     /**
      * @inheritdoc EmailAuthVerifier

@@ -42,7 +42,13 @@ contract EncodeTest is _EmailAuthVerifierTest {
         assertEq(decodedCommand.target, command.target, "Target should match expected address from command");
     }
 
-    function _assertEq(PublicInputs memory publicInputs, PublicInputs memory expectedPublicInputs) internal pure {
+    function _assertEq(
+        PublicInputs memory publicInputs,
+        PublicInputs memory expectedPublicInputs
+    )
+        internal
+        pure
+    {
         assertEq(publicInputs.pubkeyHash, expectedPublicInputs.pubkeyHash, "pubkeyHash mismatch");
         assertEq(publicInputs.emailNullifier, expectedPublicInputs.emailNullifier, "nullifier mismatch");
         assertEq(publicInputs.headerHash, expectedPublicInputs.headerHash, "headerHash mismatch");
