@@ -154,8 +154,9 @@ abstract contract EmailAuthVerifier is IVerifier {
             abi.decode(emailAuthProof.proof, (uint256[2], uint256[2][2], uint256[2]));
 
         // check if all values are less than Q (max value of bn128 curve)
-        bool validFieldElements = (pA[0] < Q && pA[1] < Q && pB[0][0] < Q && pB[0][1] < Q && pB[1][0] < Q
-                && pB[1][1] < Q && pC[0] < Q && pC[1] < Q);
+        bool validFieldElements =
+            (pA[0] < Q && pA[1] < Q && pB[0][0] < Q && pB[0][1] < Q && pB[1][0] < Q && pB[1][1] < Q && pC[0] < Q
+                && pC[1] < Q);
 
         if (!validFieldElements) {
             return false;
